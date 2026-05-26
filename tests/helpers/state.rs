@@ -1,0 +1,14 @@
+use arc_core::AuthorityState;
+
+pub fn sample_state(epoch: u64) -> AuthorityState {
+    AuthorityState {
+        authority_root: [epoch as u8; 32],
+        revocation_root: [(epoch as u8).wrapping_add(1); 32],
+        transparency_root: [0u8; 32],
+        epoch,
+        authority_id: "auth-main".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+    }
+}

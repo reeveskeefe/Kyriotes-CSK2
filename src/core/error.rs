@@ -1,0 +1,17 @@
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum ArcError {
+    #[error("invalid capability: {0}")]
+    InvalidCapability(&'static str),
+    #[error("temporal policy rejected open request")]
+    TemporalRejected,
+    #[error("authority state mismatch: {0}")]
+    AuthorityState(&'static str),
+    #[error("missing authority wrapper for required epoch")]
+    MissingWrapper,
+    #[error("cryptographic failure: {0}")]
+    Crypto(&'static str),
+    #[error("parse failure: {0}")]
+    Parse(&'static str),
+}

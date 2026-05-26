@@ -1,0 +1,259 @@
+//! Integration tests for AuthorityCapabilityTree (§6) and capability issuance
+//! proofs (§9 point 7).
+
+use arc_core::{
+    AuthorityCapabilityTree, AuthorityRootKeyPair, Capability, CapabilityIssuanceProof,
+    EpochSigningKeyPair, Rights,
+    capability_leaf_hash,
+    verify_capability_inclusion, verify_capability_issuance, ArcError,
+};
+
+fn sample_cap(tag: u8) -> Capability {
+    Capability {
+        subject: format!("user-{tag}"),
+        object_id: "secret.dat".to_string(),
+        rights: Rights::READ,
+        policy_hash: [tag; 32],
+        epoch_start: 1,
+        epoch_end: 50,
+        nonce: [tag; 16],
+    }
+}
+
+fn fresh_keypairs() -> (AuthorityRootKeyPair, EpochSigningKeyPair) {
+    use rand::rngs::OsRng;
+    (
+        AuthorityRootKeyPair::generate(&mut OsRng),
+        EpochSigningKeyPair::generate(&mut OsRng),
+    )
+}
+
+fn issue_proof(
+    cap: &Capability,
+    tree: &AuthorityCapabilityTree,
+    epoch: u64,
+    root_kp: &AuthorityRootKeyPair,
+    epoch_kp: &EpochSigningKeyPair,
+) -> CapabilityIssuanceProof {
+    let authority_root = tree.authority_root();
+    let leaf_hash = capability_leaf_hash(cap);
+    let sig = epoch_kp.sign_capability_issuance(&leaf_hash, &authority_root, epoch);
+    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), epoch, 20);
+    CapabilityIssuanceProof { sig, epoch_cert }
+}
+
+// ---------------------------------------------------------------------------
+// §6 — Authority Capability Tree
+// ---------------------------------------------------------------------------
+
+#[test]
+fn authority_root_from_single_capability() {
+    let cap = sample_cap(1);
+    let mut tree = AuthorityCapabilityTree::new();
+    let leaf = tree.add_capability(&cap);
+
+    // Single-element Merkle root == the leaf itself.
+    assert_eq!(tree.authority_root(), leaf);
+}
+
+#[test]
+fn authority_root_changes_on_second_capability() {
+    let cap1 = sample_cap(2);
+    let cap2 = sample_cap(3);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap1);
+    let root1 = tree.authority_root();
+    tree.add_capability(&cap2);
+    assert_ne!(tree.authority_root(), root1);
+}
+
+#[test]
+fn duplicate_add_is_idempotent() {
+    let cap = sample_cap(4);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+    let root1 = tree.authority_root();
+    tree.add_capability(&cap); // second add
+    assert_eq!(tree.authority_root(), root1);
+    assert_eq!(tree.len(), 1);
+}
+
+#[test]
+fn revocation_root_updates_after_stamp_added() {
+    let cap = sample_cap(5);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+    let rev_root_before = tree.revocation_root();
+
+    tree.revoke_stamp([0xAB; 32]);
+    assert_ne!(tree.revocation_root(), rev_root_before);
+}
+
+#[test]
+fn is_revoked_returns_false_before_revocation() {
+    let tree = AuthorityCapabilityTree::new();
+    assert!(!tree.is_revoked(&[0x00; 32]));
+}
+
+#[test]
+fn is_revoked_returns_true_after_revocation() {
+    let mut tree = AuthorityCapabilityTree::new();
+    let stamp = [0x99u8; 32];
+    tree.revoke_stamp(stamp);
+    assert!(tree.is_revoked(&stamp));
+}
+
+// ---------------------------------------------------------------------------
+// §9 point 1 — Merkle capability inclusion proofs
+// ---------------------------------------------------------------------------
+
+#[test]
+fn inclusion_proof_verifies_for_every_cap_in_tree() {
+    let caps: Vec<Capability> = (10..18u8).map(sample_cap).collect();
+    let mut tree = AuthorityCapabilityTree::new();
+    for cap in &caps {
+        tree.add_capability(cap);
+    }
+    let root = tree.authority_root();
+
+    for cap in &caps {
+        let proof = tree.inclusion_proof(cap).expect("cap must be in tree");
+        verify_capability_inclusion(cap, &proof, &root)
+            .expect("each inclusion proof must verify");
+    }
+}
+
+#[test]
+fn inclusion_proof_rejects_tampered_authority_root() {
+    let cap = sample_cap(20);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+    let proof = tree.inclusion_proof(&cap).unwrap();
+
+    let err = verify_capability_inclusion(&cap, &proof, &[0xFF; 32])
+        .expect_err("wrong root must be rejected");
+    assert!(matches!(
+        err,
+        ArcError::InvalidCapability("capability Merkle inclusion proof root mismatch")
+    ));
+}
+
+#[test]
+fn inclusion_proof_rejects_wrong_capability() {
+    let issued_cap = sample_cap(21);
+    let other_cap = sample_cap(22);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&issued_cap);
+    let root = tree.authority_root();
+    let proof = tree.inclusion_proof(&issued_cap).unwrap();
+
+    // Use the proof for a capability with a different leaf hash.
+    let err = verify_capability_inclusion(&other_cap, &proof, &root)
+        .expect_err("wrong capability must be rejected");
+    assert!(matches!(
+        err,
+        ArcError::InvalidCapability("inclusion proof leaf hash does not match capability")
+    ));
+}
+
+#[test]
+fn inclusion_proof_returns_none_for_absent_capability() {
+    let cap = sample_cap(23);
+    let other = sample_cap(24);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&other);
+
+    assert!(tree.inclusion_proof(&cap).is_none());
+}
+
+// ---------------------------------------------------------------------------
+// §9 point 7 — Capability issuance signature
+// ---------------------------------------------------------------------------
+
+#[test]
+fn issuance_proof_verifies_for_valid_chain() {
+    let cap = sample_cap(30);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+    let (root_kp, epoch_kp) = fresh_keypairs();
+    let proof = issue_proof(&cap, &tree, 5, &root_kp, &epoch_kp);
+
+    verify_capability_issuance(
+        &cap,
+        &tree.authority_root(),
+        5,
+        &proof,
+        &root_kp.verifying_key_bytes(),
+    )
+    .expect("valid proof must verify");
+}
+
+#[test]
+fn issuance_proof_rejects_tampered_capability() {
+    let cap = sample_cap(31);
+    let mut tampered = cap.clone();
+    tampered.rights = Rights::WRITE;
+
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+    let (root_kp, epoch_kp) = fresh_keypairs();
+    let proof = issue_proof(&cap, &tree, 5, &root_kp, &epoch_kp);
+
+    let err = verify_capability_issuance(
+        &tampered, // different leaf hash
+        &tree.authority_root(),
+        5,
+        &proof,
+        &root_kp.verifying_key_bytes(),
+    )
+    .expect_err("tampered capability must be rejected");
+    assert!(matches!(
+        err,
+        ArcError::InvalidCapability("capability issuance signature invalid")
+    ));
+}
+
+#[test]
+fn issuance_proof_rejects_wrong_root_pk() {
+    let cap = sample_cap(32);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+    let (root_kp, epoch_kp) = fresh_keypairs();
+    let (unrelated_root, _) = fresh_keypairs();
+    let proof = issue_proof(&cap, &tree, 5, &root_kp, &epoch_kp);
+
+    let err = verify_capability_issuance(
+        &cap,
+        &tree.authority_root(),
+        5,
+        &proof,
+        &unrelated_root.verifying_key_bytes(),
+    )
+    .expect_err("wrong trust anchor must be rejected");
+    assert!(matches!(
+        err,
+        ArcError::AuthorityState("epoch key certificate signature invalid")
+    ));
+}
+
+#[test]
+fn issuance_proof_rejects_wrong_epoch() {
+    let cap = sample_cap(33);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+    let (root_kp, epoch_kp) = fresh_keypairs();
+    let proof = issue_proof(&cap, &tree, 5, &root_kp, &epoch_kp);
+
+    let err = verify_capability_issuance(
+        &cap,
+        &tree.authority_root(),
+        99, // wrong epoch
+        &proof,
+        &root_kp.verifying_key_bytes(),
+    )
+    .expect_err("mismatched epoch must be rejected");
+    assert!(matches!(
+        err,
+        ArcError::InvalidCapability("capability issuance signature invalid")
+    ));
+}

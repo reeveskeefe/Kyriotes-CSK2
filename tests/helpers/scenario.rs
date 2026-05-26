@@ -12,9 +12,8 @@ use arc_core::{
     TemporalPolicy,
 };
 
-use super::capability::{sample_cap, sample_proof};
+use super::capability::{sample_cap, TestAuthority};
 use super::request_builders::{policy_hash, sample_req};
-use super::state::sample_state;
 use super::transparency::commit_state;
 
 pub struct Scenario {
@@ -28,6 +27,7 @@ pub struct Scenario {
     pub req: OpenRequest,
     pub temporal_policy: TemporalPolicy,
     pub message: Vec<u8>,
+    pub authority: TestAuthority,
     log: InMemoryTransparencyLog,
 }
 
@@ -40,11 +40,27 @@ impl Scenario {
         let p_hash = policy_hash(policy_label);
         let mut log = InMemoryTransparencyLog::new();
 
-        let seal_seed = sample_state(epoch);
-        let (seal_state, seal_transparency_proof) = commit_state(&mut log, &seal_seed)?;
+        let cap = sample_cap(40, 60, p_hash);
+        let authority = TestAuthority::new_for_cap(&cap, epoch);
 
-        let open_seed = sample_state(epoch);
-        let (open_state, open_transparency_proof) = commit_state(&mut log, &open_seed)?;
+        let seed_state = AuthorityState {
+            authority_root: authority.authority_root(),
+            revocation_root: authority.revocation_root(),
+            transparency_root: [0u8; 32],
+            epoch,
+            authority_id: "auth-main".to_string(),
+            epoch_signature_valid: true,
+            epoch_key_cert_valid: true,
+            transparency_inclusion_valid: true,
+            root_pk: authority.root_pk(),
+            revocation_count: 0,
+        };
+
+        let (seal_state, seal_transparency_proof) = commit_state(&mut log, &seed_state)?;
+        let (open_state, open_transparency_proof) = commit_state(&mut log, &seed_state)?;
+
+        let proof = authority.build_proof_for_state(&cap, &seal_state);
+        let req = sample_req(epoch, p_hash);
 
         Ok(Self {
             keypair: RecipientKeyPair::generate(&mut rand::rngs::OsRng),
@@ -52,17 +68,40 @@ impl Scenario {
             open_state,
             seal_transparency_proof,
             open_transparency_proof,
-            cap: sample_cap(40, 60, p_hash),
-            proof: sample_proof(),
-            req: sample_req(epoch, p_hash),
+            cap,
+            proof,
+            req,
             temporal_policy: TemporalPolicy::Historical(epoch),
             message: b"payload".to_vec(),
+            authority,
             log,
         })
     }
 
+    /// Build a new AuthorityState for the same authority at a different epoch.
+    /// Preserves authority_root, revocation_root, root_pk.
+    pub fn make_state_at_epoch(&self, epoch: u64) -> AuthorityState {
+        AuthorityState {
+            authority_root: self.authority.authority_root(),
+            revocation_root: self.authority.revocation_root(),
+            transparency_root: [0u8; 32],
+            epoch,
+            authority_id: "auth-main".to_string(),
+            epoch_signature_valid: true,
+            epoch_key_cert_valid: true,
+            transparency_inclusion_valid: true,
+            root_pk: self.authority.root_pk(),
+            revocation_count: self.authority.tree.revocation_count(),
+        }
+    }
+
+    /// Build a real CapabilityProof for the given state using this Scenario's authority.
+    pub fn build_proof_for_state(&self, state: &AuthorityState) -> CapabilityProof {
+        self.authority.build_proof_for_state(&self.cap, state)
+    }
+
     pub fn with_open_epoch(mut self, epoch: u64) -> Self {
-        let open_seed = sample_state(epoch);
+        let open_seed = self.make_state_at_epoch(epoch);
         let (open_state, open_proof) = commit_state(&mut self.log, &open_seed)
             .expect("open epoch state should be committable to transparency log");
         self.open_state = open_state;
@@ -81,7 +120,7 @@ impl Scenario {
     }
 
     pub fn revoked_proof(mut self) -> Self {
-        self.proof.non_revoked = false;
+        self.proof.non_revocation.stamp[0] ^= 0xFF;
         self
     }
 

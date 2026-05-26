@@ -143,7 +143,10 @@ pub fn encode_arc_object(object: &ArcObject) -> Vec<u8> {
     put_bytes(&mut out, &object.payload_nonce);
     put_bytes(&mut out, &object.payload_ciphertext);
 
-    put_u32(&mut out, object.wrappers.len() as u32);
+    put_u32(
+        &mut out,
+        u32::try_from(object.wrappers.len()).expect("ARC object wrapper count exceeds u32::MAX"),
+    );
     for w in &object.wrappers {
         put_u64(&mut out, w.epoch);
         put_bytes(&mut out, &w.kem_ct_classical);
@@ -154,7 +157,11 @@ pub fn encode_arc_object(object: &ArcObject) -> Vec<u8> {
         put_bytes(&mut out, &w.capability_stamp);
         put_bytes(&mut out, &w.transparency_proof.leaf_hash);
         put_u64(&mut out, w.transparency_proof.leaf_index);
-        put_u32(&mut out, w.transparency_proof.sibling_hashes.len() as u32);
+        put_u32(
+            &mut out,
+            u32::try_from(w.transparency_proof.sibling_hashes.len())
+                .expect("transparency proof sibling_hashes count exceeds u32::MAX"),
+        );
         for sibling in &w.transparency_proof.sibling_hashes {
             put_bytes(&mut out, sibling);
         }

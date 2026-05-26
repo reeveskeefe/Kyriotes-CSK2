@@ -42,14 +42,18 @@ pub struct Capability {
     pub policy_hash: [u8; 32],
     pub epoch_start: u64,
     pub epoch_end: u64,
+    /// Delegation depth (0 = leaf / directly issued, >0 reserved for future delegated issuance).
+    /// Conformant implementations must reject any capability with `delegation_depth > 0`
+    /// until the Delegate algorithm is formally specified (spec §2).
+    pub delegation_depth: u64,
     pub nonce: [u8; 16],
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CapabilityProof {
-    pub inclusion_valid: bool,
-    pub non_revoked: bool,
-    pub issued_signature_valid: bool,
+    pub inclusion: super::capability_tree::CapabilityInclusionProof,
+    pub non_revocation: super::capability_tree::NonRevocationWitness,
+    pub issuance: super::capability_tree::CapabilityIssuanceProof,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -69,6 +73,26 @@ pub struct AuthorityState {
     pub epoch_signature_valid: bool,
     pub epoch_key_cert_valid: bool,
     pub transparency_inclusion_valid: bool,
+    pub root_pk: [u8; 32],
+    /// Authenticated count of entries in the revocation tree `V_e`.
+    ///
+    /// Bound into `transparency_leaf_hash` and `authority_digest` so that
+    /// non-revocation witnesses cannot lie about the tree size to bypass the
+    /// sorted-boundary position check.
+    pub revocation_count: u64,
+}
+
+/// Signed compromise declaration from the offline authority root (spec §16).
+///
+/// `compromised_epoch_pk` identifies the epoch signer key that must no longer
+/// be trusted beyond `compromised_epoch`. `recovery_authority_root` anchors the
+/// declared recovery boundary.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CompromiseNotice {
+    pub compromised_epoch_pk: [u8; 32],
+    pub compromised_epoch: u64,
+    pub recovery_authority_root: [u8; 32],
+    pub signature: [u8; 64],
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -122,6 +146,7 @@ pub fn capability_leaf_hash(cap: &Capability) -> [u8; 32] {
     put_bytes(&mut enc, &cap.policy_hash);
     put_u64(&mut enc, cap.epoch_start);
     put_u64(&mut enc, cap.epoch_end);
+    put_u64(&mut enc, cap.delegation_depth);
     put_bytes(&mut enc, &cap.nonce);
 
     let mut hasher = Sha256::new();
@@ -147,6 +172,7 @@ pub fn transparency_leaf_hash(state: &AuthorityState) -> [u8; 32] {
     put_bytes(&mut enc, &state.revocation_root);
     put_u64(&mut enc, state.epoch);
     put_str(&mut enc, &state.authority_id);
+    put_u64(&mut enc, state.revocation_count);
 
     let mut hasher = Sha256::new();
     hasher.update(b"ARC-TRANSPARENCY-LEAF-v1");

@@ -27,55 +27,67 @@ fn seal_open_historical_success() {
 
 #[test]
 fn current_policy_requires_rewrap_for_new_epoch() {
-    let s42 = Scenario::baseline("current-only", 42)
+    let s = Scenario::baseline("current-only", 42)
         .with_temporal_policy(TemporalPolicy::Current)
         .with_message(b"draft-v1");
 
-    let s50 = Scenario::baseline("current-only", 42).with_open_epoch(50);
+    let s_open50 = Scenario::baseline("current-only", 42).with_open_epoch(50);
+    // Use the same underlying authority by building s50 from s.
+    let open_state50 = s.make_state_at_epoch(50);
+    let (open_state50, open_tp50) = {
+        use arc_core::InMemoryTransparencyLog;
+        use arc_core::TransparencyLog;
+        let mut log = InMemoryTransparencyLog::new();
+        let commit = log.commit_state(&open_state50).expect("commit");
+        (commit.state, commit.proof)
+    };
 
     let mut object = seal(
-        &s42.keypair.public,
-        &s42.message,
-        &s42.cap,
-        &s42.proof,
-        &s42.seal_transparency_proof,
-        &s42.seal_state,
-        &s42.req,
-        s42.temporal_policy.clone(),
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
+        s.temporal_policy.clone(),
     )
     .expect("seal should succeed");
 
     let err = open(
-        &s42.keypair.secret,
+        &s.keypair.secret,
         &object,
-        &s42.cap,
-        &s42.proof,
-        &s50.open_state,
+        &s.cap,
+        &s.proof,
+        &open_state50,
     )
     .expect_err("wrapper for epoch 50 missing");
     assert!(matches!(err, ArcError::MissingWrapper));
 
+    let proof_from = s.proof.clone();
     add_epoch_wrapper(
-        &s42.keypair.secret,
-        &s42.keypair.public,
+        &s.keypair.secret,
+        &s.keypair.public,
         &mut object,
-        &s42.cap,
-        &s42.proof,
-        &s42.seal_state,
-        &s50.open_state,
-        &s50.open_transparency_proof,
+        &s.cap,
+        &proof_from,
+        &s.seal_state,
+        &open_state50,
+        &open_tp50,
     )
         .expect("rewrap should succeed");
 
+    let proof_50 = s.build_proof_for_state(&open_state50);
     let opened = open(
-        &s42.keypair.secret,
+        &s.keypair.secret,
         &object,
-        &s42.cap,
-        &s42.proof,
-        &s50.open_state,
+        &s.cap,
+        &proof_50,
+        &open_state50,
     )
     .expect("open after rewrap succeeds");
     assert_eq!(opened, b"draft-v1");
+    let _ = s_open50; // unused but keep to avoid confusion
 }
 
 #[test]

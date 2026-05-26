@@ -198,6 +198,8 @@ mod tests {
             epoch_signature_valid: true,
             epoch_key_cert_valid: true,
             transparency_inclusion_valid: true,
+            root_pk: [0u8; 32],
+            revocation_count: 0,
         }
     }
 

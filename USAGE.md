@@ -33,7 +33,7 @@ Shared secret in the current API is the caller-provided 32-byte input used to de
 
 ## IMPORTANT: Development stage
 
-This implementation is not production-ready cryptography. The authority validation booleans in examples are stubs. Before production use, plan for external cryptographic review, side-channel analysis, and real verifier integrations.
+This implementation is not production-ready cryptography. Before production use, plan for external cryptographic review, side-channel analysis, and real verifier integrations.
 
 ## Before you write any code
 
@@ -53,6 +53,15 @@ Persist or transmit an ARC object
 
 Handle untrusted input from the network
   -> Sections 7 or 8 (Decode limits or Decode profiles), then Section 6 (Wire format encode/decode)
+
+Understand how proofs and authority roots are constructed
+    -> Section 11 (Authority capability tree and proof building blocks)
+
+Revoke a capability and commit the updated state to a log
+  -> Section 12 (Capability revocation)
+
+Handle a declared epoch key compromise
+  -> Section 13 (CompromiseNotice — §16 recovery)
 
 ## 1. Prerequisites
 
@@ -98,35 +107,26 @@ When this example fails, the error usually points directly to a mismatch in obje
 
 ```rust
 use arc_core::{
-    hash_policy, open, seal, ArcError, AuthorityState, Capability, CapabilityProof,
-    OpenRequest, Rights, TemporalPolicy,
+    ArcError, AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, Capability,
+    CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair, OpenRequest,
+    RecipientKeyPair, Rights, TemporalPolicy, TransparencyProof,
+    capability_leaf_hash, capability_stamp, hash_policy, open, seal,
 };
+use rand::rngs::OsRng;
 
 fn example() -> Result<Vec<u8>, ArcError> {
-    // Demo placeholder secret.
-    // In production derive or load this from your key management flow.
-    let shared_secret = [42u8; 32];
-
-    // hash_policy hashes a human-readable policy string into the 32-byte
-    // policy_hash used throughout ARC. Use a consistent string per policy.
+    // hash_policy turns a human-readable policy string into the 32-byte policy_hash
+    // used throughout ARC. Use a consistent string per policy.
     let policy_hash = hash_policy("only-valid-current-capability");
+    let epoch: u64 = 42;
 
-    // Stage 1: Define the authority state for the current epoch.
-    // In production, these roots come from your transparency log and verifier.
-    // The boolean fields are production stubs. Replace with real verifier calls.
-    let state = AuthorityState {
-        authority_root: [1u8; 32],
-        revocation_root: [2u8; 32],
-        epoch: 42,
-        authority_id: "auth-main".to_string(),
-        epoch_signature_valid: true,        // stub: replace with real epoch signature check
-        epoch_key_cert_valid: true,         // stub: replace with real cert chain check
-        transparency_inclusion_valid: true, // stub: replace with real log proof check
-    };
+    // Stage 1: Authority keypairs.
+    // Keep root_kp offline (cold storage). Rotate epoch_kp each epoch.
+    let root_kp = AuthorityRootKeyPair::generate(&mut OsRng);
+    let epoch_kp = EpochSigningKeyPair::generate(&mut OsRng);
+    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), epoch, 10);
 
-    // Stage 2: Define the capability.
-    // This says subject "keefe" may READ and DECRYPT "research-notes.pdf"
-    // between epochs 40 and 60, under this policy hash.
+    // Stage 2: Capability and tree.
     let cap = Capability {
         subject: "keefe".to_string(),
         object_id: "research-notes.pdf".to_string(),
@@ -137,40 +137,70 @@ fn example() -> Result<Vec<u8>, ArcError> {
         // Generate randomly per capability in production.
         nonce: [7u8; 16],
     };
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
 
-    // Stage 3: Define proof that capability is currently valid.
-    // In production these come from Merkle inclusion and revocation verification.
-    // These booleans are stubs.
-    let proof = CapabilityProof {
-        inclusion_valid: true,        // stub: Merkle path check
-        non_revoked: true,            // stub: revocation witness check
-        issued_signature_valid: true, // stub: authority signature check
+    // Stage 3: Authority state — roots derived from the tree, root_pk from offline key.
+    // In production, transparency_root comes from your transparency log commit.
+    let state = AuthorityState {
+        authority_root: tree.authority_root(),    // MerkleRoot(L_e)
+        revocation_root: tree.revocation_root(),  // MerkleRoot(V_e)
+        transparency_root: [0u8; 32],             // set by commit_state() on your log
+        epoch,
+        authority_id: "auth-main".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),   // trust anchor for issuance verification
     };
 
-    // Stage 4: Define the open request.
-    // Must match capability object, required rights, policy hash, and epoch.
+    // Stage 4: Build the capability proof (inclusion + non-revocation + issuance).
+    let inclusion = tree.inclusion_proof(&cap).expect("cap must be in tree");
+    let stamp = capability_stamp(&cap, &state);
+    let non_revocation = tree.non_revocation_witness(&stamp)
+        .expect("cap must not be revoked");
+    let leaf_hash = capability_leaf_hash(&cap);
+    let sig = epoch_kp.sign_capability_issuance(&leaf_hash, &state.authority_root, epoch_cert.epoch);
+    let proof = CapabilityProof {
+        inclusion,
+        non_revocation,
+        issuance: CapabilityIssuanceProof { sig, epoch_cert },
+    };
+
+    // Stage 5: Recipient keypair (X25519).
+    // Only the holder of recipient.secret can unwrap the DEK.
+    let recipient = RecipientKeyPair::generate(&mut OsRng);
+
+    // Stage 6: Seal.
     let req = OpenRequest {
         object_id: "research-notes.pdf".to_string(),
         required_rights: Rights::READ,
         policy_hash,
-        epoch: 42,
+        epoch,
     };
-
-    // Stage 5: Seal and open.
+    // In production, get the TransparencyProof from commit_state() on your log.
+    // BasicAuthorityVerifier checks the boolean flags rather than the Merkle path,
+    // so a placeholder proof is fine here until CryptoAuthorityVerifier is wired in.
+    let tp = TransparencyProof {
+        leaf_hash: state.authority_root,
+        sibling_hashes: vec![],
+        leaf_index: 0,
+    };
     let object = seal(
-        &shared_secret,
+        &recipient.public,
         b"secret bytes",
         &cap,
         &proof,
+        &tp,
         &state,
         &req,
         // Historical(42) means opening is pinned to epoch 42 specifically.
         TemporalPolicy::Historical(42),
     )?;
 
-    // open() does not take OpenRequest directly.
-    // Request context is reconstructed from ArcObject fields.
-    let plaintext = open(&shared_secret, &object, &cap, &proof, &state)?;
+    // Stage 7: Open.
+    // open() reconstructs the request context from ArcObject fields.
+    let plaintext = open(&recipient.secret, &object, &cap, &proof, &state)?;
 
     // Empty plaintext is valid: Ok(vec![]) means authenticated empty content.
     // Treat Err(_) as failure and Ok(_) as successful authenticated bytes.
@@ -183,11 +213,15 @@ What to customize first in real usage:
 - `object_id`: set this to your actual object namespace key
 - `rights`: keep minimal rights for least privilege
 - `epoch_start` and `epoch_end`: bound capability lifetime tightly
-- authority validation booleans: replace with production verifier integrations
+- replace the placeholder `TransparencyProof` with the proof from `commit_state()` on your log
+- in production, load `root_pk` from your out-of-band trust anchor (hardware or pinned config)
 
 ## 4. Rewrap for newer authority epoch
 
 For current-authority mode, opening at a later epoch requires a wrapper for that epoch.
+
+This example uses `InMemoryTransparencyLog` and `commit_state`; see Section 10 for
+the transparency trait model and how to swap in a real backend.
 
 When you seal with `TemporalPolicy::Current`, the DEK wrapper is bound to the authority state at sealing time. At epoch 50, that wrapper is unreadable because the authority context changed. `add_epoch_wrapper` decrypts the DEK using the old authority state and re-wraps it under the new one, without touching the payload ciphertext. The object then carries two wrappers, one for epoch 42 and one for epoch 50.
 
@@ -199,39 +233,22 @@ Why rewrap exists:
 
 ```rust
 use arc_core::{
-    add_epoch_wrapper, open, seal, ArcError, AuthorityState, Capability,
-    CapabilityProof, OpenRequest, Rights, TemporalPolicy, hash_policy,
+    ArcError, AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, Capability,
+    CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair, InMemoryTransparencyLog,
+    OpenRequest, RecipientKeyPair, Rights, TemporalPolicy, TransparencyLog,
+    capability_leaf_hash, capability_stamp, hash_policy, add_epoch_wrapper, open, seal,
 };
+use rand::rngs::OsRng;
 
 fn rewrap_example() -> Result<Vec<u8>, ArcError> {
-    // Demo placeholder secret.
-    // In production derive or load this from your key management flow.
-    let shared_secret = [9u8; 32];
     let policy_hash = hash_policy("current-only");
+    let epoch42: u64 = 42;
 
-    // Stage 1: Authority state at sealing epoch (42).
-    // Booleans are stubs. Replace with real verifier outputs.
-    let state42 = AuthorityState {
-        authority_root: [42u8; 32],
-        revocation_root: [43u8; 32],
-        epoch: 42,
-        authority_id: "auth-main".to_string(),
-        epoch_signature_valid: true,        // stub: real epoch signature validation
-        epoch_key_cert_valid: true,         // stub: real cert-chain validation
-        transparency_inclusion_valid: true, // stub: real transparency proof validation
-    };
-
-    // Stage 2: Authority state at opening epoch (50).
-    // This is the target state for the new wrapper.
-    let state50 = AuthorityState {
-        authority_root: [50u8; 32],
-        revocation_root: [51u8; 32],
-        epoch: 50,
-        authority_id: "auth-main".to_string(),
-        epoch_signature_valid: true,        // stub: real epoch signature validation
-        epoch_key_cert_valid: true,         // stub: real cert-chain validation
-        transparency_inclusion_valid: true, // stub: real transparency proof validation
-    };
+    // Stage 1: Authority — single root key, single epoch key, single tree.
+    // The same authority_root/root_pk must be used for all epoch states.
+    let root_kp = AuthorityRootKeyPair::generate(&mut OsRng);
+    let epoch_kp = EpochSigningKeyPair::generate(&mut OsRng);
+    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), epoch42, 10);
 
     let cap = Capability {
         subject: "keefe".to_string(),
@@ -243,54 +260,113 @@ fn rewrap_example() -> Result<Vec<u8>, ArcError> {
         // Generate randomly per capability in production.
         nonce: [1u8; 16],
     };
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
 
-    // Stage 3: Capability proof values. These are stubs.
-    let proof = CapabilityProof {
-        inclusion_valid: true,        // stub: Merkle inclusion verification
-        non_revoked: true,            // stub: revocation witness verification
-        issued_signature_valid: true, // stub: authority issuance signature verification
+    let authority_root = tree.authority_root();
+    let revocation_root = tree.revocation_root();
+    let root_pk = root_kp.verifying_key_bytes();
+
+    // Stage 2: Commit authority state at epoch 42 to the transparency log.
+    let mut log = InMemoryTransparencyLog::new();
+    let commit42 = log.commit_state(&AuthorityState {
+        authority_root,
+        revocation_root,
+        transparency_root: [0u8; 32],
+        epoch: epoch42,
+        authority_id: "auth-main".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk,
+    })?;
+    let state42 = commit42.state;
+    let tp42    = commit42.proof;
+
+    // Stage 3: Commit authority state at epoch 50.
+    // Roots are unchanged — same tree, same authority, new epoch number only.
+    let commit50 = log.commit_state(&AuthorityState {
+        authority_root,
+        revocation_root,
+        transparency_root: [0u8; 32],
+        epoch: 50,
+        authority_id: "auth-main".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk,
+    })?;
+    let state50 = commit50.state;
+    let tp50    = commit50.proof;
+
+    // Stage 4: Build capability proof for epoch 42.
+    let inclusion = tree.inclusion_proof(&cap).expect("cap must be in tree");
+    let stamp42   = capability_stamp(&cap, &state42);
+    let nr42      = tree.non_revocation_witness(&stamp42).expect("not revoked");
+    let leaf_hash = capability_leaf_hash(&cap);
+    let sig42     = epoch_kp.sign_capability_issuance(&leaf_hash, &state42.authority_root, epoch_cert.epoch);
+    let proof42 = CapabilityProof {
+        inclusion: inclusion.clone(),
+        non_revocation: nr42,
+        issuance: CapabilityIssuanceProof { sig: sig42, epoch_cert: epoch_cert.clone() },
     };
+
+    let recipient = RecipientKeyPair::generate(&mut OsRng);
 
     let req42 = OpenRequest {
         object_id: "research-notes.pdf".to_string(),
         required_rights: Rights::READ,
         policy_hash,
-        epoch: 42,
+        epoch: epoch42,
     };
 
-    // Stage 4: Seal under epoch 42 current-authority context.
+    // Stage 5: Seal under epoch 42 with current-authority temporal policy.
     let mut object = seal(
-        &shared_secret,
+        &recipient.public,
         b"draft-v1",
         &cap,
-        &proof,
+        &proof42,
+        &tp42,
         &state42,
         &req42,
-        // Current has no epoch argument because it follows live authority state.
+        // Current: opening requires the live authority state at open time.
         TemporalPolicy::Current,
     )?;
 
-    // Stage 5: Rewrap DEK for epoch 50 without rewriting payload ciphertext.
-    // Argument order: old authority state first, target epoch state second.
+    // Stage 6: Rewrap DEK for epoch 50 without rewriting payload ciphertext.
+    // proof42 authenticates the old wrapper; the new wrapper is computed for state50.
     add_epoch_wrapper(
-        &shared_secret,
+        &recipient.secret,
+        &recipient.public,
         &mut object,
         &cap,
-        &proof,
+        &proof42,
         &state42,
         &state50,
+        &tp50,
     )?;
 
-    let opened = open(&shared_secret, &object, &cap, &proof, &state50)?;
+    // Stage 7: Build proof for epoch 50 and open.
+    // capability_stamp embeds state.epoch, so proof42 cannot be reused at epoch 50.
+    let stamp50 = capability_stamp(&cap, &state50);
+    let nr50    = tree.non_revocation_witness(&stamp50).expect("not revoked");
+    let sig50   = epoch_kp.sign_capability_issuance(&leaf_hash, &state50.authority_root, epoch_cert.epoch);
+    let proof50 = CapabilityProof {
+        inclusion,
+        non_revocation: nr50,
+        issuance: CapabilityIssuanceProof { sig: sig50, epoch_cert },
+    };
+
+    let opened = open(&recipient.secret, &object, &cap, &proof50, &state50)?;
     Ok(opened)
 }
 ```
 
 What to customize first:
 
-- replace `state42` and `state50` roots with your authority state provider
-- replace proof booleans with your verifier integration
-- ensure epoch rollover jobs call `add_epoch_wrapper` before readers at the new epoch open
+- in production, `state42` and `state50` come from your authority state provider
+- `add_epoch_wrapper` validates the proof against `from_state`; ensure the target epoch is within the cap's epoch range
+- call `add_epoch_wrapper` before readers open at the new epoch
 
 ## 5. Diagnosing failures
 
@@ -308,6 +384,9 @@ Treat these as diagnostics, not just failures. They usually map directly to one 
   - required epoch wrapper not present
 - `ArcError::AuthorityState(...)`
   - authority chain, cert, transparency, or context checks failed
+- `ArcError::Crypto(...)`
+    - cryptographic verification failed (for example inclusion proof, non-revocation witness,
+        epoch cert chain, or issuance signature verification)
 - `ArcError::Parse(...)`
   - malformed wire payload or decode limit exceeded
 
@@ -339,6 +418,9 @@ Object and encoding notes:
 - `encode_arc_object` is deterministic for identical field values and wrapper order.
 
 ## 7. Decode limits (default and custom)
+
+If you arrived here from the decision tree, this section defines the decode guardrails
+to choose before applying the wire APIs in Section 6.
 
 `decode_arc_object` uses strict defaults.
 
@@ -526,9 +608,10 @@ let log: Box<dyn AsyncTransparencyLog> = if cfg!(test) {
 
 ## 11. Authority capability tree and real proof construction
 
-Sections 3 and 4 use stub booleans for `CapabilityProof`.  This section shows
-how to replace them with real cryptographic proofs using the four building
-blocks that implement §6, §7, and §9 of the spec.
+Sections 3 and 4 already use real `CapabilityProof` values end to end.  This
+section is a reference that explains each proof building block independently so
+you can reason about construction, verification, and trust boundaries when
+integrating ARC in your own authority pipeline.
 
 ### 11a. Building authority roots with `AuthorityCapabilityTree`
 
@@ -538,10 +621,10 @@ byte arrays, build them from the actual capability set.
 
 ```rust
 use arc_core::{
-    AuthorityCapabilityTree, AuthorityState, Capability, Rights, capability_stamp, hash_policy,
+    AuthorityCapabilityTree, AuthorityState, Capability, Rights, hash_policy,
 };
 
-fn build_authority_state(epoch: u64) -> (AuthorityCapabilityTree, AuthorityState) {
+fn build_authority_state(epoch: u64, root_pk: [u8; 32]) -> (AuthorityCapabilityTree, AuthorityState) {
     let policy_hash = hash_policy("read-only-research");
 
     let cap = Capability {
@@ -569,6 +652,7 @@ fn build_authority_state(epoch: u64) -> (AuthorityCapabilityTree, AuthorityState
         epoch_signature_valid: true,
         epoch_key_cert_valid: true,
         transparency_inclusion_valid: true,
+        root_pk, // pass root_kp.verifying_key_bytes() from your offline key
     };
 
     (tree, state)
@@ -593,6 +677,8 @@ to a specific epoch.  Keep `AuthorityRootKeyPair` offline.  Use
 use arc_core::{AuthorityRootKeyPair, EpochSigningKeyPair, verify_epoch_cert};
 use rand::rngs::OsRng;
 
+// illustrative fragment — adapt into your function
+
 // Offline key — generate once, store in cold storage.
 let root_kp = AuthorityRootKeyPair::generate(&mut OsRng);
 let root_pk = root_kp.verifying_key_bytes();
@@ -614,6 +700,8 @@ Distribute `root_pk` out-of-band (pinned in client config or hardware).  Distrib
 
 ```rust
 use arc_core::{AuthorityCapabilityTree, verify_capability_inclusion};
+
+// illustrative fragment — adapt into your function
 
 let mut tree = AuthorityCapabilityTree::new();
 tree.add_capability(&cap);
@@ -649,6 +737,8 @@ use arc_core::{
     capability_stamp, verify_non_revocation,
 };
 
+// illustrative fragment — adapt into your function
+
 let stamp = capability_stamp(&cap, &state);
 
 // Authority side: generate the witness (fails if cap is already revoked).
@@ -679,6 +769,8 @@ use arc_core::{
 };
 use rand::rngs::OsRng;
 
+// illustrative fragment — adapt into your function
+
 let root_kp  = AuthorityRootKeyPair::generate(&mut OsRng);
 let epoch_kp = EpochSigningKeyPair::generate(&mut OsRng);
 
@@ -704,20 +796,235 @@ verify_capability_issuance(
 .expect("issuance proof must verify");
 ```
 
-### 11f. What to replace in production
+### 11f. Assembling a CapabilityProof
 
-The stub booleans in `CapabilityProof` correspond directly to the three checks above:
+`CapabilityProof` holds real proof structs directly — no stub booleans.  Build it
+from the authority tree and signing keys, then pass it unchanged to `seal` and `open`.
 
-| Stub field | Replaced by |
+```rust
+use arc_core::{
+    AuthorityCapabilityTree, AuthorityState, Capability, CapabilityIssuanceProof,
+    CapabilityProof, EpochKeyCert, EpochSigningKeyPair,
+    capability_leaf_hash, capability_stamp,
+};
+
+/// Build a CapabilityProof for the given capability and authority state.
+/// Call once per (cap, state) pair.  The stamp embeds `state.epoch`, so
+/// rebuild when opening at a different epoch.
+fn build_proof(
+    cap: &Capability,
+    state: &AuthorityState,
+    tree: &AuthorityCapabilityTree,
+    epoch_kp: &EpochSigningKeyPair,
+    epoch_cert: EpochKeyCert,
+) -> CapabilityProof {
+    let inclusion = tree.inclusion_proof(cap).expect("cap must be in tree");
+    let stamp = capability_stamp(cap, state);
+    let non_revocation = tree.non_revocation_witness(&stamp)
+        .expect("cap must not be revoked");
+    let leaf_hash = capability_leaf_hash(cap);
+    let sig = epoch_kp.sign_capability_issuance(
+        &leaf_hash,
+        &state.authority_root,
+        epoch_cert.epoch,
+    );
+    CapabilityProof {
+        inclusion,
+        non_revocation,
+        issuance: CapabilityIssuanceProof { sig, epoch_cert },
+    }
+}
+```
+
+The three fields in `CapabilityProof` map to the three cryptographic checks
+that `validate_capability` runs:
+
+| Field | Checked by | Verifies |
+|---|---|---|
+| `inclusion` | `verify_capability_inclusion` | capability leaf is in `R_e` |
+| `non_revocation` | `verify_non_revocation` | stamp is absent from `V_e` |
+| `issuance` | `verify_capability_issuance` | epoch key signed this capability |
+
+`non_revocation.stamp` is also checked against `capability_stamp(cap, state)` before
+the Merkle non-membership proof runs.  A stamp that does not match the current
+authority state is rejected immediately with `"capability revoked"`.
+
+## 12. Capability revocation
+
+Revoking a capability adds its stamp to the revocation tree, then publishes the
+resulting authority state so every verifier sees the updated revocation root.  Any
+`open` or `validate_capability` call that presents the revoked capability will fail
+with `ArcError::InvalidCapability("capability revoked")`.
+
+Two commit helpers exist depending on your transparency backend:
+
+| Function | Backend |
 |---|---|
-| `inclusion_valid: true` | `verify_capability_inclusion(&cap, &inclusion_proof, &state.authority_root)` |
-| `non_revoked: true` | `verify_non_revocation(&witness, &state.revocation_root)` |
-| `issued_signature_valid: true` | `verify_capability_issuance(&cap, &authority_root, epoch, &issuance_proof, &root_pk)` |
+| `revoke_capability_and_commit` | `TransparencyLog` — synchronous |
+| `revoke_capability_and_commit_async` | `AsyncTransparencyLog` — async/await |
 
-Run all three checks before setting `inclusion_valid`, `non_revoked`, and
-`issued_signature_valid` to `true` in your `CapabilityProof`.
+### Synchronous revocation
 
-## 12. Before you ship
+```rust
+use arc_core::{
+    ArcError, AuthorityCapabilityTree, Capability, AuthorityState,
+    InMemoryTransparencyLog, TransparencyStateCommit,
+    revoke_capability_and_commit,
+};
+
+fn revoke_sync(
+    log: &mut InMemoryTransparencyLog,
+    tree: &mut AuthorityCapabilityTree,
+    cap: &Capability,
+    state: &AuthorityState,
+) -> Result<TransparencyStateCommit, ArcError> {
+    // illustrative fragment — adapt into your function
+
+    // revoke_epoch must be strictly greater than state.epoch.
+    let revoke_epoch = state.epoch + 1;
+
+    // Returns the committed state (revocation_root and transparency_root updated)
+    // together with its Merkle inclusion proof in the log.
+    revoke_capability_and_commit(log, tree, cap, state, revoke_epoch)
+}
+```
+
+After this call:
+- `tree.is_revoked(stamp)` returns `true` for the capability's stamp.
+- Publish `commit.state` as the new authority state for the epoch.
+- Any proof built against the old revocation root is now invalid.
+
+### Async revocation
+
+Use `revoke_capability_and_commit_async` for network-backed or async log
+implementations.  The function accepts `&mut dyn AsyncTransparencyLog`, so it
+works with both concrete types and `Box<dyn AsyncTransparencyLog>`.
+
+```rust
+use arc_core::{
+    ArcError, AsyncTransparencyLog, AuthorityCapabilityTree, Capability,
+    AuthorityState, TransparencyStateCommit,
+    revoke_capability_and_commit_async,
+};
+
+async fn revoke_async(
+    log: &mut dyn AsyncTransparencyLog,
+    tree: &mut AuthorityCapabilityTree,
+    cap: &Capability,
+    state: &AuthorityState,
+) -> Result<TransparencyStateCommit, ArcError> {
+    // illustrative fragment — adapt into your function
+    revoke_capability_and_commit_async(log, tree, cap, state, state.epoch + 1).await
+}
+```
+
+With a boxed log, pass `log.as_mut()` to coerce to `&mut dyn AsyncTransparencyLog`:
+
+```rust
+// illustrative fragment — adapt into your function
+
+let mut log: Box<dyn AsyncTransparencyLog> = Box::new(InMemoryTransparencyLog::new());
+let commit = revoke_capability_and_commit_async(log.as_mut(), &mut tree, &cap, &state, 43)
+    .await?;
+```
+
+### Revocation error cases
+
+- `ArcError::AuthorityState("revocation epoch must be greater than base authority epoch")`
+  — `revoke_epoch` must be strictly greater than `state.epoch`.
+- `ArcError::AuthorityState("revocation root does not match capability tree")`
+  — `state.revocation_root` must match `tree.revocation_root()` at call time;
+    ensure tree and state are in sync before calling.
+
+## 13. CompromiseNotice (§16 key compromise recovery)
+
+A `CompromiseNotice` is a signed declaration from the offline authority root
+stating that epoch online key `compromised_epoch_pk` is no longer trustworthy
+starting at epoch `compromised_epoch`.  Clients check any presented epoch key
+against the notice to block further use of the compromised key.
+
+Historical opens at epochs **strictly before** `compromised_epoch` remain valid —
+only uses of `compromised_epoch_pk` at or after the boundary epoch are blocked.
+
+### Issuing a notice
+
+Call `issue_compromise_notice` on `AuthorityRootKeyPair` (offline, cold-storage key).
+
+```rust
+use arc_core::{AuthorityRootKeyPair, CompromiseNotice, EpochSigningKeyPair};
+use rand::rngs::OsRng;
+
+// illustrative fragment — adapt into your function
+
+let root_kp      = AuthorityRootKeyPair::generate(&mut OsRng);
+let bad_epoch_kp = EpochSigningKeyPair::generate(&mut OsRng);
+
+// recovery_authority_root is the root_pk clients should trust after recovery.
+// If only the epoch key was rotated and the authority root is unchanged, pass
+// root_kp.verifying_key_bytes() here.
+let recovery_root: [u8; 32] = root_kp.verifying_key_bytes();
+
+let notice: CompromiseNotice = root_kp.issue_compromise_notice(
+    &bad_epoch_kp.verifying_key_bytes(), // the compromised epoch online key
+    42,                                  // the epoch at which the compromise occurred
+    recovery_root,
+);
+```
+
+Distribute the notice out-of-band to all relying parties via the same channel
+you use for authority state updates.
+
+### Verifying a notice
+
+Clients must verify the notice signature before trusting its fields:
+
+```rust
+use arc_core::{ArcError, CompromiseNotice, verify_compromise_notice};
+
+// illustrative fragment — adapt into your function
+
+// root_pk is your pinned offline authority root public key.
+verify_compromise_notice(&root_pk, &notice)
+    .expect("notice must be signed by the known authority root");
+```
+
+An invalid signature returns
+`ArcError::AuthorityState("compromise notice signature invalid")`.
+
+### Checking whether an epoch key is compromised
+
+After verifying the notice, call `check_epoch_not_compromised` to determine
+whether a specific (epoch, epoch_pk) pair is blocked:
+
+```rust
+use arc_core::{ArcError, check_epoch_not_compromised};
+
+// illustrative fragment — adapt into your function
+
+// epoch and epoch_pk come from the authority state being evaluated.
+match check_epoch_not_compromised(state.epoch, &presented_epoch_pk, &notice) {
+    Ok(())  => { /* epoch key is clean for this epoch — proceed */ }
+    Err(_)  => { /* reject: key has been declared compromised */ }
+}
+```
+
+Returns `Err(ArcError::AuthorityState("epoch key has been declared compromised"))`
+when `presented_epoch_pk == notice.compromised_epoch_pk` and
+`state.epoch >= notice.compromised_epoch`.
+
+### Full enforcement pattern
+
+Combine both checks in your verifier path:
+
+```rust
+// 1. Verify the notice signature against your pinned root pk.
+verify_compromise_notice(&root_pk, &notice)?;
+
+// 2. Block use of the compromised epoch key at or after the declared boundary.
+check_epoch_not_compromised(state.epoch, &presented_epoch_pk, &notice)?;
+```
+
+## 14. Before you ship
 
 ### Choosing a temporal policy
 
@@ -733,8 +1040,9 @@ For production rollout, add metrics around:
 - open failures by ArcError variant
 - decode rejections by limit type
 - rewrap backlog and latency per epoch transition
+- revocation latency from decision to committed state
 
-## 13. Running checks locally
+## 15. Running checks locally
 
 For users integrating the crate:
 
@@ -757,6 +1065,9 @@ Integration tests to inspect for examples:
 - `tests/arc_async_transparency.rs` — transparency log trait integration and object-safety
 - `tests/arc_capability_tree.rs` — authority capability tree, inclusion proofs, non-revocation witnesses, issuance proofs
 - `tests/arc_crypto_verifier.rs` — full epoch cert chain verification end-to-end
+- `tests/arc_revocation.rs` — synchronous capability revocation and commit
+- `tests/arc_async_revocation.rs` — async capability revocation via `AsyncTransparencyLog` and boxed dyn
+- `tests/arc_compromise_notice.rs` — `CompromiseNotice` issue/verify roundtrips and `check_epoch_not_compromised` enforcement
 
 Suggested daily loop for contributors:
 

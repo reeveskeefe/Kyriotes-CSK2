@@ -18,6 +18,65 @@ Message space:
 
 M in {0,1}*
 
+### Setup
+
+Setup(1^lambda) -> pp
+
+Generates public parameters: hash function H (SHA-256, 256-bit output), AEAD
+suite (ChaCha20-Poly1305), classical KEM parameters (X25519), post-quantum KEM
+parameters, and ed25519 signing parameters.
+
+### KeyGen
+
+KeyGen(pp) -> (pk_B, sk_B)
+
+Generates a recipient keypair:
+
+- Classical component: (pk_C, sk_C) <- KEM_C.KeyGen
+- Post-quantum component: (pk_Q, sk_Q) <- KEM_Q.KeyGen
+- pk_B = (pk_C, pk_Q),  sk_B = (sk_C, sk_Q)
+
+### Issue
+
+Issue(pp, sk_A_e, cert_e, cap, A_e) -> sigma_issue or reject
+
+1. Compute h_cap from cap fields (§5).
+2. Require h_cap in L_e (cap must be in the active capability set).
+3. sigma_issue = Sign(sk_A_e, "ARC-ISSUANCE-v1" || h_cap || R_e || e_le64).
+4. Return sigma_issue.
+
+The caller distributes (cap, sigma_issue, cert_e) together as the issuance bundle.
+
+### Delegate
+
+Delegate is reserved for a future version.  Fields delegation_depth and
+parent_stamp in cap are allocated but not enforced in v0.1.  Conformant
+implementations must reject any cap with delegation_depth > 0 until Delegate
+is formally specified.
+
+### Revoke
+
+See §16.
+
+### Seal and Open
+
+See §13 and §14.
+
+### Verify
+
+Verify(pp, ARCObject, cap, proof, A_e, req) -> {0,1}
+
+Public verifiability check that does not require sk_B.
+
+1. Verify epoch key certificate chain for ARCObject.seal_epoch (§7).
+2. Verify epoch root signature sigma_e (§7).
+3. Verify transparency inclusion proof (§8).
+4. Require TemporalAccept(ARCObject.temporal_policy, e_req, ARCObject.seal_epoch) = 1.
+5. Return ValidCap(cap, proof, A_e, req) (§9).
+
+Verify confirms authority-chain integrity and capability validity without
+decrypting the payload.  Full authentication of plaintext requires Open.
+
 ## 3. Domains and Sets
 
 - Subjects S
@@ -81,12 +140,12 @@ Leaf hash:
 h_cap = H(
   "ARC-CAPABILITY-LEAF-v1" ||
   version || subject || object || rights || policy_hash ||
-  epoch_start || epoch_end || delegation_depth || parent_stamp || nonce
+  epoch_start_le64 || epoch_end_le64 || delegation_depth_le64 || parent_stamp || nonce
 )
 
 Capability stamp at epoch e:
 
-stamp_e = H("ARC-CAPABILITY-STAMP-v1" || h_cap || R_e || e || a)
+stamp_e = H("ARC-CAPABILITY-STAMP-v1" || h_cap || R_e || e_le64 || a)
 
 ## 6. Authority State and Roots
 
@@ -110,11 +169,23 @@ ARC authority signing is epoch-scoped.
 
 Epoch key certificate:
 
-cert_e = Sign(sk_A_off, H("ARC-EPOCH-KEY-v1" || pk_A_e || e || validity_window))
+cert_e = Sign(sk_A_off, "ARC-EPOCH-KEY-v1" || pk_A_e || e_le64 || validity_window_le64)
 
 Epoch root signature:
 
-sigma_e = TSIG.Sign(t-of-n, H("ARC-EPOCH-ROOT-v1" || R_e || Rev_e || e || prev_epoch_hash))
+sigma_e = TSIG.Sign(t-of-n, "ARC-EPOCH-ROOT-v1" || R_e || Rev_e || e_le64 || prev_epoch_hash)
+
+Capability issuance signature:
+
+sigma_issue = Sign(sk_A_e, "ARC-ISSUANCE-v1" || h_cap || R_e || e_le64)
+
+The epoch online key signs each capability leaf hash against the current authority
+root and epoch, binding issuance to the epoch certificate chain.  Verifying
+sigma_issue requires first verifying cert_e under pk_A_off.
+
+Note on signing message format: all signing inputs above are raw concatenated
+byte strings, not pre-hashed.  The signature scheme (ed25519) applies SHA-512
+internally.  Integer fields are unsigned 64-bit little-endian.
 
 Security consequence:
 
@@ -124,7 +195,7 @@ Leak(sk_A_e) compromises epoch e scope, not all historical epochs.
 
 Each epoch root is committed to an append-only transparency log.
 
-Log_e = H(Log_(e-1) || R_e || Rev_e || e || pk_A_e || sigma_e)
+Log_e = H(Log_(e-1) || R_e || Rev_e || e_le64 || pk_A_e || sigma_e)
 
 Each ARC object carries or references transparency material for the sealing epoch.
 
@@ -151,7 +222,9 @@ ValidCap = 1 iff all hold:
 4. Rights sufficient: R_cap superset_eq R_req.
 5. Policy hash match.
 6. Epoch range valid: epoch_start <= e_req <= epoch_end.
-7. Issuance signature verifies under authority chain for epoch e_req.
+7. SIG.Verify(cert_e.pk_A_e, proof.sigma_issue, m_issue) = 1,
+   where m_issue = "ARC-ISSUANCE-v1" || h_cap || R_e || e_req_le64,
+   and cert_e verifies under pk_A_off (§7).
 
 ## 10. Temporal Policy
 
@@ -174,6 +247,18 @@ Semantics:
 - Current: open only against current authority state at e_open.
 - Window(e_start, e_end): open only when e_start <= e_open <= e_end.
 - ResealRequired(e_after): old wrapper accepted until e_after, then new wrapper required.
+
+Formal predicate:
+
+  T = Historical(e_s):         TemporalAccept = 1 iff e_open = e_s
+  T = Current:                 TemporalAccept = 1 iff A_open is the live authority state at e_open
+  T = Window(e_s, e_t):        TemporalAccept = 1 iff e_s <= e_open <= e_t
+  T = ResealRequired(e_after): TemporalAccept = 1 iff e_open <= e_after
+
+  TemporalAccept = 0 otherwise.
+
+For ResealRequired: if e_open > e_after, Open rejects and signals that Reseal
+is required before the object can be opened at the later epoch (§15).
 
 ## 11. Corrected Key Hierarchy (DEK + Authority Wrapper)
 
@@ -266,15 +351,54 @@ Open(pp, sk_B, ARCObject, cap, proof, A_open) -> M or reject
 
 ## 15. Reseal and Rewrap
 
-Reseal and rewrap are explicit operations:
+Rewrap and reseal are distinct operations:
 
-- Rewrap updates authority wrappers for new epoch or recipient authority state.
-- Reseal may rotate DEK and regenerate payload ciphertext when policy requires.
+- **Rewrap**: add a DEK wrapper for a new epoch or authority state without touching C_payload.
+- **Reseal**: full regeneration — new DEK, new ciphertext, new wrappers.
 
-Practical default:
+Rewrap is the dominant operation.  Reseal is reserved for policy-mandated DEK rotation
+(e.g. ResealRequired) or post-compromise ciphertext refresh.
 
-- Keep C_payload unchanged.
-- Replace or add WrappedDEK_(e_new) wrappers.
+### Rewrap
+
+Rewrap(sk_B, pk_B, ARCObject, cap, proof_from, A_from, A_to, tp_to) -> ARCObject' or reject
+
+Preconditions:
+
+- A_to.epoch > A_from.epoch
+- A_to.epoch in [cap.epoch_start, cap.epoch_end]
+
+Algorithm:
+
+1. Select the authority wrapper in ARCObject matching A_from.epoch.  Reject if absent.
+2. Verify epoch key certificate chain for A_from (cert_e under pk_A_off).
+3. Verify epoch root signature sigma_e for A_from.
+4. Verify transparency inclusion proof for A_from.
+5. Require ValidCap(cap, proof_from, A_from, req_from) = 1.
+6. Decapsulate ct_C and ct_Q under sk_B to recover ss_H for A_from.epoch.
+7. Compute chi_from and derive KEK_from.
+8. DEK = AEAD.Dec(KEK_from, WrappedDEK_from, AAD_authority_from).  Reject on failure.
+9. Compute chi_to using A_to and tp_to.
+10. Derive KEK_to.
+11. WrappedDEK_to = AEAD.Enc(KEK_to, n_wrap_to, DEK, AAD_authority_to).
+12. Append the new authority wrapper to ARCObject.authority_wrappers[].
+13. Output ARCObject'.
+
+C_payload is never rewritten during Rewrap.  Only the authority wrapper set changes.
+
+### Reseal
+
+Reseal(sk_B, pk_B, pk_B', M, cap, proof, A_new, req, T_new) -> ARCObject' or reject
+
+1. Require ValidCap(cap, proof, A_new, req) = 1.
+2. Sample a fresh DEK <- random 256-bit.
+3. C_payload' = AEAD.Enc(DEK, n_payload', M, AAD_payload').
+4. Continue as Seal from step 4, using the fresh DEK, A_new, req, T_new.
+
+Use Reseal when:
+
+- T = ResealRequired(e_after) and e_open > e_after.
+- Policy mandates fresh ciphertext after suspected payload-layer compromise.
 
 ## 16. Revocation and Recovery
 
@@ -290,9 +414,37 @@ Compromise recovery:
 2. Create recovery epoch e_recover = e_bad + 1 with fresh keyset.
 3. Publish signed compromise notice from offline root:
 
-CompromiseNotice = Sign(sk_A_off, H("ARC-COMPROMISE-v1" || pk_A_e_bad || e_bad || R_recover))
+CompromiseNotice fields:
 
-Clients reject compromised signer roots beyond declared boundary.
+- compromised_epoch_pk: pk_A_e_bad
+- compromised_epoch: e_bad
+- recovery_authority_root: R_recover
+- signature: Sign(sk_A_off, "ARC-COMPROMISE-v1" || pk_A_e_bad || e_bad_le64 || R_recover)
+
+The signing input is a raw concatenation.  Integer fields are unsigned 64-bit little-endian.
+
+Compromise check predicate:
+
+CheckCompromise(e, pk_A_e, notice) -> accept | reject
+
+  Reject iff:
+    notice.compromised_epoch_pk = pk_A_e
+    AND e >= notice.compromised_epoch
+
+  Accept otherwise.
+
+Historical opens at epochs strictly before notice.compromised_epoch remain valid.
+Only uses of pk_A_e_bad at or after the declared boundary epoch are rejected.
+
+Enforcement flow (integrated into the Open predicate):
+
+If a CompromiseNotice is available:
+
+1. Verify notice signature: SIG.Verify(pk_A_off, notice.signature, m) = 1,
+   where m = "ARC-COMPROMISE-v1" || pk_A_e_bad || e_bad_le64 || R_recover.
+   Reject if verification fails.
+2. Require CheckCompromise(e_open, pk_A_e, notice) = accept.  Reject if compromised.
+3. Continue with normal Open predicate checks.
 
 ## 17. Correctness
 
@@ -335,6 +487,23 @@ Required property:
 
 TemporalAccept and current authority checks reject stale openings when policy demands current validity.
 
+Game 5: Epoch Key Compromise (ARC-Compromise)
+
+Adversary A receives sk_A_e_bad (the epoch online signing key for epoch e_bad).
+A wins if it produces a valid Open output for any object whose effective opening
+epoch is >= e_bad, when a valid CompromiseNotice for e_bad has been published
+and CheckCompromise enforcement is active.
+
+Required property:
+
+Adv_ARC_Compromise(A) <= negl(lambda)
+
+Intuition: sk_A_e_bad enables forgery of issuance signatures for epoch e_bad.
+CheckCompromise bounds the damage to that epoch boundary.  Historical objects
+at epochs strictly before e_bad retain distinct chi_e contexts and are not
+directly attacked.  Epochs after e_bad use fresh key material not derived
+from sk_A_e_bad.
+
 ## 19. Authority-Bound Confidentiality Law
 
 Recover(M) iff all required predicates hold:
@@ -346,11 +515,20 @@ Recover(M) iff all required predicates hold:
 - DEKUnwrapValid
 - PayloadAuthValid
 
+ValidEpochRoot(R_e, Rev_e, e, pk_A_off, cert_e, sigma_e, log_proof) = 1 iff all hold:
+
+1. SIG.Verify(pk_A_off, cert_e.sig,
+     "ARC-EPOCH-KEY-v1" || cert_e.pk_A_e || e_le64 || cert_e.validity_window_le64) = 1
+2. TSIG.Verify(t-of-n, cert_e.pk_A_e, sigma_e,
+     "ARC-EPOCH-ROOT-v1" || R_e || Rev_e || e_le64 || prev_epoch_hash) = 1
+3. MerkleVerify(log_proof, Log_e_root,
+     H(R_e || Rev_e || e_le64 || cert_e.pk_A_e || sigma_e)) = 1
+
 Expanded opening law:
 
 Open(ARCObject) = M
 iff
-ValidEpochRoot(R_e, Rev_e, e) = 1
+ValidEpochRoot(R_e, Rev_e, e, pk_A_off, cert_e, sigma_e, log_proof) = 1
 and TemporalAccept(T, e_open, e_seal) = 1
 and ValidCap(cap, proof, A_e, req) = 1
 and KEK_e derives correctly from ss_H and chi_e
@@ -412,24 +590,105 @@ That preserves the core novelty while making compromise handling, temporal behav
 
 ## 24. Reference Implementation Notes (Rust, Development Stage)
 
-This repository includes a development-stage Rust implementation scaffold intended to validate ARC semantics before production hardening.
+This repository includes a Rust implementation that validates ARC semantics
+and exercises the full capability and authority chain end to end.
 
 Scope of current code:
 
-- DEK plus authority-wrapper architecture
-- temporal policies and wrapper epoch selection
-- capability and authority precondition checks
-- rewrap path for epoch transitions
-- canonical framing for hashed and AAD transcripts
-- pluggable authority verifier hook for epoch-chain, cert, and transparency checks
+- DEK plus authority-wrapper architecture (§11, §13, §14)
+- Temporal policies and wrapper epoch selection (§10)
+- ValidCap checks 1, 2, 3, 4, 5, 6, 7 — all implemented with real cryptography (§9)
+- Rewrap path for epoch transitions — add_epoch_wrapper (§15)
+- Epoch key certificate chain — issue and verify, ed25519 (§7)
+- Merkle capability inclusion proofs — generate and verify (§9 check 1)
+- Sorted Merkle non-revocation witnesses — generate and verify (§9 check 2)
+- Capability issuance signatures — sign and verify under epoch cert chain (§9 check 7)
+- Synchronous and async transparency log trait model, InMemoryTransparencyLog (§8)
+- Synchronous and async capability revocation and transparency state commit (§16)
+- CompromiseNotice — issue, verify, and CheckCompromise enforcement (§16)
+- Canonical domain-separated signing transcripts for all operations (§25)
+- Pluggable authority verifier: BasicAuthorityVerifier and CryptoAuthorityVerifier
 
 Out of scope for current code:
 
-- production threshold signature stack
-- production transparency proof verifier
-- finalized binary canonical encoding
-- side-channel and constant-time audit
+- Production threshold signature stack (single-signer epoch root only; TSIG not implemented)
+- Production transparency proof verifier (Merkle path not verified by default verifier)
+- Finalized binary canonical encoding (format not yet stabilized)
+- Delegation flow (delegation_depth and parent_stamp fields reserved; depth > 0 not enforced)
+- Reseal with DEK rotation (Rewrap only; full reseal path not wired)
+- Side-channel and constant-time audit
 
 Conformance intent:
 
-The Rust implementation should be treated as a spec-aligned prototype. It is for testing and design iteration, not security-critical deployment.
+The Rust implementation is a spec-aligned prototype for testing and design
+iteration, not for security-critical deployment.
+
+## 25. Canonical Domain-Separated Signing Transcripts
+
+This section collects every signing and hashing message format used in ARC.
+Each transcript begins with a versioned ASCII domain separator that ensures
+distinct inputs across operation types.  All integer fields are unsigned 64-bit
+little-endian.  Signing inputs are raw concatenated byte strings; the signature
+scheme (ed25519) applies SHA-512 internally — no additional pre-hash is applied.
+
+### 25a. Capability leaf hash (§5)
+
+h_cap = H(
+  "ARC-CAPABILITY-LEAF-v1" ||
+  version || subject || object || rights || policy_hash ||
+  epoch_start_le64 || epoch_end_le64 ||
+  delegation_depth_le64 || parent_stamp || nonce
+)
+
+### 25b. Capability stamp (§5)
+
+stamp_e = H(
+  "ARC-CAPABILITY-STAMP-v1" || h_cap || R_e || e_le64 || a
+)
+
+### 25c. Context hash (§11)
+
+chi_e = H(
+  "ARC-CONTEXT-v1" ||
+  version || suite || subject || object || required_rights || policy_hash ||
+  e_le64 || R_e || Rev_e || stamp_e || a || TemporalPolicy
+)
+
+### 25d. Authority digest (§11)
+
+kappa_e = HKDF-Extract(
+  salt = H("ARC-AUTHORITY-DIGEST-v1" || R_e || Rev_e || e_le64 || policy_hash || a),
+  ikm  = ss_H || chi_e
+)
+
+### 25e. Epoch key certificate (§7)
+
+m_cert_e = "ARC-EPOCH-KEY-v1" || pk_A_e || e_le64 || validity_window_le64
+cert_e   = Sign(sk_A_off, m_cert_e)
+
+### 25f. Epoch root signature (§7)
+
+m_root_e = "ARC-EPOCH-ROOT-v1" || R_e || Rev_e || e_le64 || prev_epoch_hash
+sigma_e  = TSIG.Sign(t-of-n, m_root_e)
+
+### 25g. Capability issuance signature (§7)
+
+m_issue     = "ARC-ISSUANCE-v1" || h_cap || R_e || e_le64
+sigma_issue = Sign(sk_A_e, m_issue)
+
+### 25h. CompromiseNotice signature (§16)
+
+m_notice = "ARC-COMPROMISE-v1" || pk_A_e_bad || e_bad_le64 || R_recover
+CompromiseNotice.signature = Sign(sk_A_off, m_notice)
+
+### 25i. Transparency log chain (§8)
+
+Log_e = H(Log_(e-1) || R_e || Rev_e || e_le64 || pk_A_e || sigma_e)
+
+For the genesis epoch, Log_0 = H("ARC-LOG-GENESIS-v1" || R_0 || Rev_0 || 0_le64 || pk_A_0 || sigma_0).
+
+### Domain separator uniqueness
+
+All domain separators are distinct ASCII strings.  Collision between any two
+transcript formats is computationally infeasible given hash collision resistance.
+Adding a new operation type requires a fresh, never-previously-used separator.

@@ -16,6 +16,7 @@ use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use rand::{CryptoRng, RngCore};
 
 use crate::core::error::ArcError;
+use super::model::CompromiseNotice;
 
 // ---------------------------------------------------------------------------
 // Core cert type
@@ -93,6 +94,22 @@ pub fn epoch_root_signing_message(
     msg
 }
 
+/// Canonical message signed by the offline authority root to produce a `CompromiseNotice`.
+///
+/// Format: `"ARC-COMPROMISE-v1" || pk_A_e_bad || e_bad_le64 || R_recover`
+pub fn compromise_notice_signing_message(
+    compromised_epoch_pk: &[u8; 32],
+    compromised_epoch: u64,
+    recovery_authority_root: &[u8; 32],
+) -> Vec<u8> {
+    let mut msg = Vec::with_capacity(17 + 32 + 8 + 32);
+    msg.extend_from_slice(b"ARC-COMPROMISE-v1");
+    msg.extend_from_slice(compromised_epoch_pk);
+    msg.extend_from_slice(&compromised_epoch.to_le_bytes());
+    msg.extend_from_slice(recovery_authority_root);
+    msg
+}
+
 // ---------------------------------------------------------------------------
 // Verification helpers
 // ---------------------------------------------------------------------------
@@ -133,6 +150,25 @@ pub fn verify_epoch_root_sig(
     epoch_pk
         .verify_strict(&msg, &sig)
         .map_err(|_| ArcError::AuthorityState("epoch root signature invalid"))
+}
+
+/// Verify that `notice` was signed by the offline authority root whose public
+/// key is `root_pk_bytes`.
+pub fn verify_compromise_notice(
+    root_pk_bytes: &[u8; 32],
+    notice: &CompromiseNotice,
+) -> Result<(), ArcError> {
+    let root_pk = VerifyingKey::from_bytes(root_pk_bytes)
+        .map_err(|_| ArcError::AuthorityState("invalid authority root public key"))?;
+    let msg = compromise_notice_signing_message(
+        &notice.compromised_epoch_pk,
+        notice.compromised_epoch,
+        &notice.recovery_authority_root,
+    );
+    let sig = Signature::from_bytes(&notice.signature);
+    root_pk
+        .verify_strict(&msg, &sig)
+        .map_err(|_| ArcError::AuthorityState("compromise notice signature invalid"))
 }
 
 // ---------------------------------------------------------------------------
@@ -183,6 +219,31 @@ impl AuthorityRootKeyPair {
             epoch_pk: *epoch_pk,
             epoch,
             validity_window,
+            signature,
+        }
+    }
+
+    /// Issue a `CompromiseNotice` declaring that `compromised_epoch_pk` (the
+    /// epoch online key used at `compromised_epoch`) is no longer trustworthy.
+    ///
+    /// `recovery_authority_root` is the authority root from which clients
+    /// should resume trust (typically the root at `compromised_epoch + 1`).
+    pub fn issue_compromise_notice(
+        &self,
+        compromised_epoch_pk: &[u8; 32],
+        compromised_epoch: u64,
+        recovery_authority_root: [u8; 32],
+    ) -> CompromiseNotice {
+        let msg = compromise_notice_signing_message(
+            compromised_epoch_pk,
+            compromised_epoch,
+            &recovery_authority_root,
+        );
+        let signature = self.signing_key.sign(&msg).to_bytes();
+        CompromiseNotice {
+            compromised_epoch_pk: *compromised_epoch_pk,
+            compromised_epoch,
+            recovery_authority_root,
             signature,
         }
     }

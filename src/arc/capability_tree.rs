@@ -225,6 +225,15 @@ impl AuthorityCapabilityTree {
     pub fn is_empty(&self) -> bool {
         self.leaf_hashes.is_empty()
     }
+
+    /// Number of entries in the revocation set `V_e`.
+    ///
+    /// Store this in `AuthorityState::revocation_count` so that
+    /// `verify_non_revocation` can authenticate the witness's `total_revoked`
+    /// claim rather than trusting prover-supplied data.
+    pub fn revocation_count(&self) -> u64 {
+        self.revoked_stamps.len() as u64
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -315,20 +324,34 @@ pub fn verify_capability_inclusion(
 /// Verify a sorted-Merkle non-revocation witness (spec §9 predicate point 2).
 ///
 /// The witness proves `stamp ∉ V_e` under the authenticated `revocation_root`.
+/// `expected_revocation_count` is the authenticated count of entries in `V_e`,
+/// taken from `AuthorityState::revocation_count` (which is committed in the
+/// transparency leaf hash and thus cannot be forged by the prover).
+///
+/// **Security note**: do not pass `witness.total_revoked` as `expected_revocation_count`;
+/// the point of this parameter is to provide an independently authenticated value.
 ///
 /// Verification rules:
-/// - **Empty set** (`total_revoked == 0`): `revocation_root` must be `[0u8;32]`;
-///   both `left` and `right` must be absent.  Always passes.
+/// - **Empty set** (`expected_revocation_count == 0`): `revocation_root` must be
+///   `[0u8;32]`; both `left` and `right` must be absent.
 /// - **Left boundary only**: `left.stamp < stamp` and `left` is the rightmost
-///   leaf (`left.proof.leaf_index == total_revoked - 1`).
+///   leaf (`left.proof.leaf_index == expected_revocation_count - 1`).
 /// - **Right boundary only**: `right.stamp > stamp` and `right` is the leftmost
 ///   leaf (`right.proof.leaf_index == 0`).
-/// - **Both boundaries**: `left.stamp < stamp < right.stamp` and the two leaves
-///   are adjacent (`left.proof.leaf_index + 1 == right.proof.leaf_index`).
+/// - **Both boundaries**: `left.stamp < stamp < right.stamp` and adjacent
+///   (`left.proof.leaf_index + 1 == right.proof.leaf_index`).
 pub fn verify_non_revocation(
     witness: &NonRevocationWitness,
     revocation_root: &[u8; 32],
+    expected_revocation_count: u64,
 ) -> Result<(), ArcError> {
+    // Verify witness.total_revoked against the authenticated count from state.
+    if witness.total_revoked != expected_revocation_count {
+        return Err(ArcError::InvalidCapability(
+            "non-revocation witness total_revoked does not match authority revocation_count",
+        ));
+    }
+
     if witness.total_revoked == 0 {
         if revocation_root != &[0u8; 32] {
             return Err(ArcError::InvalidCapability(
@@ -398,8 +421,10 @@ pub fn verify_non_revocation(
             ));
         }
         (Some(left), None) => {
-            // stamp > all revoked: left must be the last leaf
-            if left.proof.leaf_index != witness.total_revoked - 1 {
+            // stamp > all revoked: left must be the last leaf.
+            // Use expected_revocation_count (authenticated from AuthorityState), not
+            // witness.total_revoked, to prevent a prover from forging the tree boundary.
+            if left.proof.leaf_index != expected_revocation_count - 1 {
                 return Err(ArcError::InvalidCapability(
                     "non-revocation left boundary is not the last leaf",
                 ));
@@ -445,7 +470,26 @@ pub fn verify_capability_issuance(
     // Step 1: verify the cert chain so we know epoch_cert.epoch_pk is trusted.
     verify_epoch_cert(root_pk, &proof.epoch_cert)?;
 
-    // Step 2: verify issuance signature under the authenticated epoch key.
+    // Step 2: the issuance epoch must fall within the cert's validity window so
+    // that an expired or future epoch key certificate cannot be (re-)used.
+    let cert_epoch_end = proof.epoch_cert.epoch
+        .saturating_add(proof.epoch_cert.validity_window);
+    if epoch < proof.epoch_cert.epoch || epoch >= cert_epoch_end {
+        return Err(ArcError::InvalidCapability(
+            "capability issuance epoch is outside epoch cert validity window",
+        ));
+    }
+
+    // Step 3: the issuance epoch must lie within the capability's own declared
+    // valid epoch range, preventing issuance certs from being used outside the
+    // capability's lifetime.
+    if proof.epoch_cert.epoch < cap.epoch_start || proof.epoch_cert.epoch > cap.epoch_end {
+        return Err(ArcError::InvalidCapability(
+            "epoch cert epoch is outside capability validity range",
+        ));
+    }
+
+    // Step 4: verify issuance signature under the authenticated epoch key.
     let epoch_pk = VerifyingKey::from_bytes(&proof.epoch_cert.epoch_pk)
         .map_err(|_| ArcError::InvalidCapability("invalid epoch public key in issuance proof"))?;
 
@@ -476,6 +520,7 @@ mod tests {
             policy_hash: [suffix; 32],
             epoch_start: 1,
             epoch_end: 100,
+            delegation_depth: 0,
             nonce: [suffix; 16],
         }
     }
@@ -490,6 +535,8 @@ mod tests {
             epoch_signature_valid: true,
             epoch_key_cert_valid: true,
             transparency_inclusion_valid: true,
+            root_pk: [0u8; 32],
+            revocation_count: tree.revocation_count(),
         }
     }
 
@@ -742,9 +789,11 @@ mod tests {
             &root_kp.verifying_key_bytes(),
         )
         .expect_err("wrong epoch should be rejected");
+        // With validity window enforcement, the epoch-out-of-window check fires
+        // before the signature check, so the error message changed.
         assert!(matches!(
             err,
-            ArcError::InvalidCapability("capability issuance signature invalid")
+            ArcError::InvalidCapability("capability issuance epoch is outside epoch cert validity window")
         ));
     }
 
@@ -771,7 +820,7 @@ mod tests {
         assert!(witness.left.is_none());
         assert!(witness.right.is_none());
 
-        verify_non_revocation(&witness, &tree.revocation_root())
+        verify_non_revocation(&witness, &tree.revocation_root(), tree.revocation_count())
             .expect("empty-set witness must verify");
     }
 
@@ -798,7 +847,7 @@ mod tests {
         assert_eq!(witness.right.as_ref().unwrap().proof.leaf_index, 0);
 
         let rev_root = tree.revocation_root();
-        verify_non_revocation(&witness, &rev_root).expect("witness must verify");
+        verify_non_revocation(&witness, &rev_root, tree.revocation_count()).expect("witness must verify");
     }
 
     #[test]
@@ -815,7 +864,7 @@ mod tests {
             witness.total_revoked - 1
         );
 
-        verify_non_revocation(&witness, &tree.revocation_root()).expect("witness must verify");
+        verify_non_revocation(&witness, &tree.revocation_root(), tree.revocation_count()).expect("witness must verify");
     }
 
     #[test]
@@ -829,7 +878,7 @@ mod tests {
         let right = witness.right.as_ref().expect("right must exist");
         assert_eq!(left.proof.leaf_index + 1, right.proof.leaf_index, "must be adjacent");
 
-        verify_non_revocation(&witness, &tree.revocation_root()).expect("witness must verify");
+        verify_non_revocation(&witness, &tree.revocation_root(), tree.revocation_count()).expect("witness must verify");
     }
 
     #[test]
@@ -844,7 +893,7 @@ mod tests {
             let stamp = [odd; 32];
             let witness = tree.non_revocation_witness(&stamp)
                 .unwrap_or_else(|_| panic!("non-revocation witness for 0x{odd:02x} should succeed"));
-            verify_non_revocation(&witness, &rev_root)
+            verify_non_revocation(&witness, &rev_root, tree.revocation_count())
                 .unwrap_or_else(|e| panic!("witness for 0x{odd:02x} failed: {e:?}"));
         }
     }
@@ -859,7 +908,7 @@ mod tests {
         if let Some(ref mut left) = witness.left {
             left.stamp = witness.stamp; // no longer strictly less
         }
-        let err = verify_non_revocation(&witness, &tree.revocation_root())
+        let err = verify_non_revocation(&witness, &tree.revocation_root(), tree.revocation_count())
             .expect_err("tampered left stamp ordering must be rejected");
         assert!(matches!(err, ArcError::InvalidCapability(_)));
     }
@@ -871,7 +920,7 @@ mod tests {
         let witness = tree.non_revocation_witness(&stamp).unwrap();
 
         let wrong_root = [0xFFu8; 32];
-        let err = verify_non_revocation(&witness, &wrong_root)
+        let err = verify_non_revocation(&witness, &wrong_root, tree.revocation_count())
             .expect_err("wrong revocation root must be rejected");
         assert!(matches!(err, ArcError::InvalidCapability(_)));
     }

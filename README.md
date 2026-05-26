@@ -1,49 +1,28 @@
-# ARC: Authority-Rooted Cryptography
+# ARC: Authenticated Routing Chain
 
-ARC is an encryption scheme where opening ciphertext requires both:
 
-- correct key material
-- a valid, non-revoked authority capability proof
+<p align="center"><em>Capability routed Encryption</em></p>
 
-This repository currently contains the draft formal specification in:
+<p align="center">
 
-- `docs/ARC-Spec-v0.1.md`
+  <img src="ARCLogoRectangular.png" alt="The ARC logo">
 
-Practical developer usage documentation:
+</p>
 
-- `USAGE.md`
+ARC is an encryption scheme where opening ciphertext requires these two things to be true in order to safely decrypt:
 
-## One-line definition
+a) correct key material  
+b) valid, non-revoked authority capability proof
+
 
 ARC seals bytes to an authority state (root, policy, rights, object, epoch, revocation), so decryption succeeds only when key possession and current authority are both cryptographically true.
 
 ## Core property
 
-Traditional encryption:
+Traditional encryption works by decrypting if the key is valid. Whereas ARC in the core of the encryption mechanism will only decrypt if the key is valid AND capability proof is valid for this exact authority context
 
-- decrypt if key is valid
 
-ARC:
-
-- decrypt if key is valid AND capability proof is valid for this exact authority context
-
-## Hardening update
-
-This draft now explicitly addresses three critical design gaps:
-
-1. Authority-root compromise containment:
-	- epoch-scoped authority signing keys
-	- offline root certification of epoch keys
-	- threshold signing for authority roots
-	- append-only transparency logging for root publication
-	- compromise recovery and signer revocation flow
-2. Formal adversarial modeling:
-	- separate games for confidentiality, authority forgery, cross-context misuse, and stale replay
-3. Epoch and archival usability:
-	- temporal open policies (Historical, Current, Window, ResealRequired)
-	- payload encryption with random DEK plus authority-bound DEK wrappers
-
-## Current architecture (important)
+## Current architecture 
 
 ARC uses a two-layer design:
 

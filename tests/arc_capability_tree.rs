@@ -16,6 +16,7 @@ fn sample_cap(tag: u8) -> Capability {
         policy_hash: [tag; 32],
         epoch_start: 1,
         epoch_end: 50,
+        delegation_depth: 0,
         nonce: [tag; 16],
     }
 }
@@ -252,8 +253,10 @@ fn issuance_proof_rejects_wrong_epoch() {
         &root_kp.verifying_key_bytes(),
     )
     .expect_err("mismatched epoch must be rejected");
+    // With validity window enforcement, the epoch-out-of-window check now
+    // fires before the signature verification step.
     assert!(matches!(
         err,
-        ArcError::InvalidCapability("capability issuance signature invalid")
+        ArcError::InvalidCapability("capability issuance epoch is outside epoch cert validity window")
     ));
 }

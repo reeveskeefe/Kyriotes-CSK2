@@ -174,6 +174,17 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
             Some(root_pk) => {
                 // Full chain: offline root → epoch cert → epoch root signature.
                 verify_epoch_cert(root_pk, &evidence.epoch_cert)?;
+
+                // Enforce that the epoch cert has not expired: the cert covers
+                // epochs [cert.epoch, cert.epoch + validity_window).
+                let cert_epoch_end = evidence.epoch_cert.epoch
+                    .saturating_add(evidence.epoch_cert.validity_window);
+                if state.epoch >= cert_epoch_end {
+                    return Err(ArcError::AuthorityState(
+                        "epoch key certificate has expired for this epoch",
+                    ));
+                }
+
                 verify_epoch_root_sig(
                     &evidence.epoch_cert.epoch_pk,
                     &state.authority_root,
@@ -259,6 +270,8 @@ mod tests {
             epoch_signature_valid: true,
             epoch_key_cert_valid: true,
             transparency_inclusion_valid: true,
+            root_pk: [0u8; 32],
+            revocation_count: 0,
         };
         state.transparency_root = transparency_leaf_hash(&state);
         state

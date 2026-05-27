@@ -4,12 +4,16 @@ pub mod encoding;
 
 pub use arc::engine::{
     add_epoch_wrapper,
+    add_epoch_wrapper_and_commit,
     add_epoch_wrapper_with_verifier,
     check_epoch_not_compromised,
+    delegate_capability,
+    EpochRotation,
     issue_capability,
     issue_capability_and_commit,
     open,
     open_and_reseal,
+    open_and_reseal_and_commit,
     open_and_reseal_with_verifier,
     open_with_verifier,
     open_with_compromise_check,
@@ -19,6 +23,7 @@ pub use arc::engine::{
     revoke_capability_and_commit_async,
     rotate_epoch,
     rotate_epoch_and_commit,
+    rotate_epoch_full,
     seal,
     seal_and_commit,
     seal_with_verifier,
@@ -29,6 +34,7 @@ pub use arc::engine::{
     verify_with_compromise_check_and_verifier,
 };
 pub use arc::kem::{kem_encaps, kem_decaps, hybrid_secret};
+pub use arc::model::{ML_KEM_768_CT_BYTES, ML_KEM_768_DK_BYTES, ML_KEM_768_EK_BYTES};
 pub use arc::model::{
     ArcObject,
     AuthorityState,
@@ -75,7 +81,15 @@ pub use arc::verify::{
     AuthorityVerifier,
     BasicAuthorityVerifier,
     CryptoAuthorityVerifier,
+    TsigEvidence,
     authority_state_signing_message,
+};
+pub use arc::tsig::{
+    ThresholdPartialSig,
+    ThresholdSignatureSet,
+    tsig_epoch_signing_message,
+    tsig_sign,
+    tsig_verify,
 };
 pub use arc::async_transparency::AsyncTransparencyLog;
 pub use arc::transparency::{
@@ -84,6 +98,7 @@ pub use arc::transparency::{
     TransparencyStateCommit,
     hash_transparency_node,
     merkle_root,
+    transparency_log_entry_hash,
 };
 pub use core::error::ArcError;
 pub use core::rights::Rights;
@@ -96,6 +111,12 @@ pub use encoding::wire::{
     decode_arc_object,
     decode_arc_object_with_limits,
     encode_arc_object,
+    decode_capability,
+    decode_capability_with_limits,
+    encode_capability,
+    decode_threshold_signature_set,
+    decode_threshold_signature_set_with_max,
+    encode_threshold_signature_set,
 };
 
 #[cfg(test)]

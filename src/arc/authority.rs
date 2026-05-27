@@ -309,6 +309,22 @@ impl EpochSigningKeyPair {
         let msg = capability_issuance_signing_message(leaf_hash, authority_root, epoch);
         self.signing_key.sign(&msg).to_bytes()
     }
+
+    /// Sign an arbitrary message with this epoch key.
+    ///
+    /// Intended for use by the threshold co-signing protocol (spec §2 TSIG).
+    /// The caller is responsible for domain-separating the message.
+    pub fn sign_message(&self, msg: &[u8]) -> [u8; 64] {
+        self.signing_key.sign(msg).to_bytes()
+    }
+
+    /// The raw 32-byte epoch signing key bytes (test / TSIG use only).
+    ///
+    /// In production the signing key should stay in memory; this accessor
+    /// enables deterministic key construction in tests.
+    pub fn signing_key_bytes(&self) -> [u8; 32] {
+        self.signing_key.to_bytes()
+    }
 }
 
 // ---------------------------------------------------------------------------

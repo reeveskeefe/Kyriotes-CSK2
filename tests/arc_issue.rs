@@ -50,6 +50,7 @@ fn baseline_state(root_kp: &AuthorityRootKeyPair, tree: &AuthorityCapabilityTree
         transparency_inclusion_valid: true,
         root_pk: root_kp.verifying_key_bytes(),
         revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
     }
 }
 
@@ -162,6 +163,7 @@ fn issue_capability_and_commit_produces_usable_seal_state() {
         transparency_inclusion_valid: true,
         root_pk: root_kp.verifying_key_bytes(),
         revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
     };
 
     let (issuance_proof, commit) = issue_capability_and_commit(
@@ -233,6 +235,7 @@ fn issue_capability_and_commit_rejects_stale_base_state() {
         transparency_inclusion_valid: true,
         root_pk: root_kp.verifying_key_bytes(),
         revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
     };
 
     let err = issue_capability_and_commit(&mut log, &mut tree, &cap, &epoch_kp, &epoch_cert, &base_state)

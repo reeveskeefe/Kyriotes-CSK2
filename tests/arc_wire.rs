@@ -136,7 +136,7 @@ fn arc_object_decode_rejects_oversized_wrapper_count() {
     let base_wrapper = AuthorityWrapper {
         epoch: 1,
         kem_ct_classical: [9u8; 32],
-        kem_ct_pq: [8u8; 32],
+        kem_ct_pq: [8u8; 32].to_vec(),
         wrap_nonce: [7u8; 12],
         wrapped_dek: vec![6u8; 48],
         context_hash: [5u8; 32],
@@ -169,7 +169,7 @@ fn arc_object_decode_rejects_oversized_wrapped_dek_field() {
     let wrapper = AuthorityWrapper {
         epoch: 1,
         kem_ct_classical: [9u8; 32],
-        kem_ct_pq: [8u8; 32],
+        kem_ct_pq: [8u8; 32].to_vec(),
         wrap_nonce: [7u8; 12],
         wrapped_dek: vec![6u8; 4097],
         context_hash: [5u8; 32],
@@ -230,7 +230,7 @@ fn arc_object_decode_with_limits_allows_relaxed_wrapped_dek_limit() {
     let wrapper = AuthorityWrapper {
         epoch: 1,
         kem_ct_classical: [9u8; 32],
-        kem_ct_pq: [8u8; 32],
+        kem_ct_pq: [8u8; 32].to_vec(),
         wrap_nonce: [7u8; 12],
         wrapped_dek: vec![6u8; 5000],
         context_hash: [5u8; 32],
@@ -293,7 +293,7 @@ fn server_profile_allows_larger_wrapped_dek() {
     let wrapper = AuthorityWrapper {
         epoch: 1,
         kem_ct_classical: [9u8; 32],
-        kem_ct_pq: [8u8; 32],
+        kem_ct_pq: [8u8; 32].to_vec(),
         wrap_nonce: [7u8; 12],
         wrapped_dek: vec![6u8; 10 * 1024],
         context_hash: [5u8; 32],
@@ -341,7 +341,7 @@ fn arc_object_decode_rejects_transparency_proof_with_too_many_siblings() {
     let wrapper = AuthorityWrapper {
         epoch: 1,
         kem_ct_classical: [9u8; 32],
-        kem_ct_pq: [8u8; 32],
+        kem_ct_pq: [8u8; 32].to_vec(),
         wrap_nonce: [7u8; 12],
         wrapped_dek: vec![6u8; 48],
         context_hash: [5u8; 32],

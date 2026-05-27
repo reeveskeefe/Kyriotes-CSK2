@@ -10,6 +10,7 @@ use arc_core::{
 
 fn sample_cap(tag: u8) -> Capability {
     Capability {
+        version: 1,
         subject: format!("user-{tag}"),
         object_id: "secret.dat".to_string(),
         rights: Rights::READ,
@@ -17,6 +18,7 @@ fn sample_cap(tag: u8) -> Capability {
         epoch_start: 1,
         epoch_end: 50,
         delegation_depth: 0,
+        parent_stamp: [0u8; 32],
         nonce: [tag; 16],
     }
 }

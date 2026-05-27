@@ -8,12 +8,31 @@ pub trait TransparencyLog {
     fn commit_state(&mut self, state: &AuthorityState) -> Result<TransparencyStateCommit, ArcError>;
     fn proof_for_state(&self, state: &AuthorityState) -> Result<TransparencyProof, ArcError>;
     fn current_root(&self) -> [u8; 32];
+
+    /// Store the transparency chain hash `Log_e` computed by
+    /// [`transparency_log_entry_hash`] for the given `(authority_id, epoch)`.
+    ///
+    /// Called after [`commit_state`] by [`rotate_epoch_and_commit`] once
+    /// `sigma_e` is available.  Default implementation is a no-op; log
+    /// implementations that want chain-hash auditing should override this.
+    fn store_chain_hash(&mut self, _authority_id: &str, _epoch: u64, _chain_hash: [u8; 32]) {}
+
+    /// Look up the stored chain hash `Log_e` for `(authority_id, epoch)`, if any.
+    fn chain_hash_for(&self, _authority_id: &str, _epoch: u64) -> Option<[u8; 32]> {
+        None
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TransparencyStateCommit {
     pub state: AuthorityState,
     pub proof: TransparencyProof,
+    /// The transparency log chain hash `Log_e` computed from this epoch's
+    /// epoch key and root signature (spec §8 / §25i).  `[0u8; 32]` when the
+    /// commit was created via a bare [`TransparencyLog::commit_state`] call
+    /// that did not have access to `sigma_e`; populated by
+    /// [`rotate_epoch_and_commit`].
+    pub chain_hash: [u8; 32],
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -21,6 +40,9 @@ struct TransparencyEntry {
     authority_id: String,
     epoch: u64,
     leaf_hash: [u8; 32],
+    /// The `Log_e` chain hash registered via [`TransparencyLog::store_chain_hash`].
+    /// `[0u8; 32]` until explicitly set.
+    chain_hash: [u8; 32],
 }
 
 #[derive(Clone, Debug, Default)]
@@ -78,6 +100,7 @@ impl TransparencyLog for InMemoryTransparencyLog {
                 authority_id: state.authority_id.clone(),
                 epoch: state.epoch,
                 leaf_hash,
+                chain_hash: [0u8; 32],
             });
             self.entries.len() - 1
         };
@@ -91,6 +114,7 @@ impl TransparencyLog for InMemoryTransparencyLog {
         Ok(TransparencyStateCommit {
             state: committed_state,
             proof,
+            chain_hash: [0u8; 32],
         })
     }
 
@@ -115,6 +139,16 @@ impl TransparencyLog for InMemoryTransparencyLog {
         let leaves = self.leaf_hashes();
         merkle_root(&leaves)
     }
+
+    fn store_chain_hash(&mut self, authority_id: &str, epoch: u64, chain_hash: [u8; 32]) {
+        if let Some(idx) = self.find_index(authority_id, epoch) {
+            self.entries[idx].chain_hash = chain_hash;
+        }
+    }
+
+    fn chain_hash_for(&self, authority_id: &str, epoch: u64) -> Option<[u8; 32]> {
+        self.find_index(authority_id, epoch).map(|idx| self.entries[idx].chain_hash)
+    }
 }
 
 pub fn hash_transparency_node(left: [u8; 32], right: [u8; 32]) -> [u8; 32] {
@@ -122,6 +156,37 @@ pub fn hash_transparency_node(left: [u8; 32], right: [u8; 32]) -> [u8; 32] {
     hasher.update(b"ARC-TRANSPARENCY-NODE-v1");
     hasher.update(left);
     hasher.update(right);
+    hasher.finalize().into()
+}
+
+/// Compute the transparency log chain hash `Log_e` per spec §8 / §25i.
+///
+/// For the genesis epoch (`epoch == 0`) the domain separator
+/// `"ARC-LOG-GENESIS-v1"` replaces `prev_hash` in the input; for all
+/// subsequent epochs the raw `prev_hash` bytes (`Log_{e-1}`) are used.
+///
+/// The returned value should be stored as `prev_epoch_hash` in the *next*
+/// epoch's [`AuthorityState`] and passed as `prev_epoch_hash` when signing
+/// that epoch's root signature.
+pub fn transparency_log_entry_hash(
+    prev_hash: &[u8; 32],
+    authority_root: &[u8; 32],
+    revocation_root: &[u8; 32],
+    epoch: u64,
+    epoch_pk: &[u8; 32],
+    epoch_root_sig: &[u8; 64],
+) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    if epoch == 0 {
+        hasher.update(b"ARC-LOG-GENESIS-v1");
+    } else {
+        hasher.update(prev_hash);
+    }
+    hasher.update(authority_root);
+    hasher.update(revocation_root);
+    hasher.update(epoch.to_le_bytes());
+    hasher.update(epoch_pk);
+    hasher.update(epoch_root_sig);
     hasher.finalize().into()
 }
 
@@ -200,6 +265,7 @@ mod tests {
             transparency_inclusion_valid: true,
             root_pk: [0u8; 32],
             revocation_count: 0,
+            prev_epoch_hash: [0u8; 32],
         }
     }
 

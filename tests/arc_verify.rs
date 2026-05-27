@@ -167,7 +167,7 @@ fn verify_rejects_invalid_epoch_cert_flag() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn verify_rejects_delegation_depth_nonzero() {
+fn verify_rejects_delegated_cap_with_zero_parent_stamp() {
     let s = Scenario::baseline("verify-delegation", 42).with_message(b"delegated");
 
     let object = seal(
@@ -182,10 +182,12 @@ fn verify_rejects_delegation_depth_nonzero() {
     )
     .expect("seal");
 
-    // Construct a cap with delegation_depth = 1 (same leaf data except delegation_depth).
+    // Construct a cap with delegation_depth = 1 but parent_stamp still zero —
+    // must be rejected because spec §5 requires a non-zero parent_stamp for
+    // delegation_depth > 0.
     let delegated_cap = Capability {
         delegation_depth: 1,
-        ..s.cap.clone()
+        ..s.cap.clone()  // inherits parent_stamp: [0u8; 32]
     };
 
     let err = verify(
@@ -195,7 +197,7 @@ fn verify_rejects_delegation_depth_nonzero() {
         &s.seal_state,
         &s.seal_transparency_proof,
     )
-    .expect_err("should reject delegation_depth > 0");
+    .expect_err("delegated cap with zero parent_stamp must be rejected");
     assert!(matches!(err, ArcError::InvalidCapability(_)), "{err:?}");
 }
 
@@ -347,4 +349,121 @@ fn verify_with_crypto_verifier_rejects_missing_evidence() {
     )
     .expect_err("should fail without evidence");
     assert!(matches!(err, ArcError::AuthorityState(_)), "{err:?}");
+}
+
+// ---------------------------------------------------------------------------
+// Transparency inclusion flag
+// ---------------------------------------------------------------------------
+
+/// Spec §2 step 3: transparency inclusion proof must pass.
+/// `AuthorityState::transparency_inclusion_valid = false` signals a failed
+/// inclusion check and must cause verify to reject.
+#[test]
+fn verify_rejects_invalid_transparency_flag() {
+    let s = Scenario::baseline("verify-tp-flag", 42).with_message(b"data");
+
+    let object = seal(
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
+        s.temporal_policy.clone(),
+    )
+    .expect("seal");
+
+    let mut bad_state = s.seal_state.clone();
+    bad_state.transparency_inclusion_valid = false;
+
+    let err = verify(&object, &s.cap, &s.proof, &bad_state, &s.seal_transparency_proof)
+        .expect_err("should reject when transparency inclusion flag is false");
+    assert!(matches!(err, ArcError::AuthorityState(_)), "{err:?}");
+}
+
+// ---------------------------------------------------------------------------
+// Capability epoch window expiry
+// ---------------------------------------------------------------------------
+
+/// Spec §2 step 5 → ValidCap §9 check 6: e_req must fall within
+/// [cap.epoch_start, cap.epoch_end].  If the capability's validity window
+/// has ended before the open epoch, verify must reject.
+#[test]
+fn verify_rejects_cap_epoch_window_expired() {
+    // Seal at epoch 42.  Cap covers epochs [40, 44].  Then try to verify
+    // at epoch 50 (past cap.epoch_end) — ValidCap check 6 must reject.
+    use arc_core::{AuthorityState, InMemoryTransparencyLog};
+
+    let s = Scenario::baseline("verify-epoch-expired", 42).with_message(b"payload");
+
+    let object = seal(
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
+        TemporalPolicy::Window { start: 40, end: 60 }, // wide window so TemporalAccept passes
+    )
+    .expect("seal");
+
+    // Build an authority state at epoch 50 — past cap.epoch_end (44).
+    let mut late_seed = s.seal_state.clone();
+    late_seed.epoch = 50;
+    let mut log = InMemoryTransparencyLog::new();
+    let (late_state, late_proof) = commit_state(&mut log, &late_seed).expect("commit");
+
+    let err = verify(&object, &s.cap, &s.proof, &late_state, &late_proof)
+        .expect_err("cap epoch window expired — should reject");
+    assert!(
+        matches!(err, ArcError::InvalidCapability(_)) || matches!(err, ArcError::AuthorityState(_)),
+        "unexpected error variant: {err:?}",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Verify / Open consistency
+// ---------------------------------------------------------------------------
+
+/// If verify passes, open with the same arguments must also succeed and return
+/// the correct plaintext.  This confirms the two entry points are consistent.
+#[test]
+fn verify_and_open_agree_on_valid_object() {
+    let s = Scenario::baseline("verify-open-agree", 42).with_message(b"consistency check");
+
+    let object = seal(
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
+        s.temporal_policy.clone(),
+    )
+    .expect("seal");
+
+    // verify must pass first.
+    verify(
+        &object,
+        &s.cap,
+        &s.proof,
+        &s.open_state,
+        &s.open_transparency_proof,
+    )
+    .expect("verify should succeed");
+
+    // open with the same state must also succeed and produce the same plaintext.
+    let plaintext = open(
+        &s.keypair.secret,
+        &object,
+        &s.cap,
+        &s.proof,
+        &s.open_state,
+    )
+    .expect("open should succeed when verify passes");
+
+    assert_eq!(plaintext, s.message);
 }

@@ -1,7 +1,7 @@
 use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use hkdf::Hkdf;
-use rand::RngCore;
+use rand::{CryptoRng, RngCore};
 use sha2::{Digest, Sha256};
 
 use crate::core::error::ArcError;
@@ -24,6 +24,7 @@ use super::model::{
     capability_stamp,
     context_hash,
 };
+use crate::core::rights::Rights;
 use super::capability_tree::{
     AuthorityCapabilityTree,
     CapabilityIssuanceProof,
@@ -32,9 +33,9 @@ use super::capability_tree::{
     verify_non_revocation,
 };
 use super::authority::{AuthorityRootKeyPair, EpochKeyCert, EpochSigningKeyPair, verify_compromise_notice};
-use super::transparency::{TransparencyLog, TransparencyStateCommit};
+use super::transparency::{TransparencyLog, TransparencyStateCommit, transparency_log_entry_hash};
 use super::async_transparency::AsyncTransparencyLog;
-use super::verify::{AuthorityVerifier, BasicAuthorityVerifier};
+use super::verify::{AuthorityVerifier, BasicAuthorityVerifier, CryptoAuthorityVerifier};
 
 pub fn validate_capability(
     cap: &Capability,
@@ -42,11 +43,16 @@ pub fn validate_capability(
     state: &AuthorityState,
     req: &OpenRequest,
 ) -> Result<(), ArcError> {
-    // Spec §2 Delegate: implementations must reject delegation_depth > 0 until Delegate
-    // is formally specified.
-    if cap.delegation_depth > 0 {
+    // Spec §5: delegated capabilities (delegation_depth > 0) must carry a non-zero
+    // parent_stamp; directly-issued capabilities must have parent_stamp == [0u8;32].
+    if cap.delegation_depth > 0 && cap.parent_stamp == [0u8; 32] {
         return Err(ArcError::InvalidCapability(
-            "delegation_depth > 0 is not supported in this version",
+            "delegated capability must have non-zero parent_stamp",
+        ));
+    }
+    if cap.delegation_depth == 0 && cap.parent_stamp != [0u8; 32] {
+        return Err(ArcError::InvalidCapability(
+            "directly-issued capability must have zero parent_stamp",
         ));
     }
 
@@ -85,6 +91,66 @@ pub fn validate_capability(
         return Err(ArcError::InvalidCapability("request epoch does not match authority state"));
     }
     Ok(())
+}
+
+/// Derive a delegated capability from `parent_cap` for a new subject (spec §2, §5).
+///
+/// # Delegation rules
+/// - `parent_cap` must carry [`Rights::DELEGATE`].
+/// - `new_rights` must be a subset of `parent_cap.rights` (no rights escalation).
+/// - `[new_epoch_start, new_epoch_end]` must be contained within
+///   `[parent_cap.epoch_start, parent_cap.epoch_end]` (no epoch window expansion).
+/// - The returned capability has `delegation_depth = parent_cap.delegation_depth + 1`
+///   and `parent_stamp = capability_stamp(parent_cap, state)`.
+///
+/// After calling this function the issuing authority must:
+/// 1. Add the capability to its [`AuthorityCapabilityTree`] via `add_capability`.
+/// 2. Sign it with [`EpochSigningKeyPair::sign_capability_issuance`] to produce a
+///    [`CapabilityIssuanceProof`] and deliver both to the delegatee.
+pub fn delegate_capability(
+    parent_cap: &Capability,
+    state: &AuthorityState,
+    new_subject: &str,
+    new_rights: Rights,
+    new_epoch_start: u64,
+    new_epoch_end: u64,
+    rng: &mut (impl RngCore + CryptoRng),
+) -> Result<Capability, ArcError> {
+    if !parent_cap.rights.contains_all(Rights::DELEGATE) {
+        return Err(ArcError::InvalidCapability(
+            "parent capability does not carry Rights::DELEGATE",
+        ));
+    }
+    if !parent_cap.rights.contains_all(new_rights) {
+        return Err(ArcError::InvalidCapability(
+            "delegated rights exceed parent capability rights",
+        ));
+    }
+    if new_epoch_start < parent_cap.epoch_start || new_epoch_end > parent_cap.epoch_end {
+        return Err(ArcError::InvalidCapability(
+            "delegated epoch window exceeds parent capability epoch window",
+        ));
+    }
+    if new_epoch_start > new_epoch_end {
+        return Err(ArcError::InvalidCapability(
+            "delegated epoch_start exceeds epoch_end",
+        ));
+    }
+    let parent_stamp = capability_stamp(parent_cap, state);
+    let mut nonce = [0u8; 16];
+    rng.fill_bytes(&mut nonce);
+    Ok(Capability {
+        version: parent_cap.version,
+        subject: new_subject.to_string(),
+        object_id: parent_cap.object_id.clone(),
+        rights: new_rights,
+        policy_hash: parent_cap.policy_hash,
+        epoch_start: new_epoch_start,
+        epoch_end: new_epoch_end,
+        delegation_depth: parent_cap.delegation_depth + 1,
+        parent_stamp,
+        nonce,
+    })
 }
 
 fn authority_digest(state: &AuthorityState, policy_hash: [u8; 32]) -> [u8; 32] {
@@ -169,7 +235,7 @@ fn payload_decrypt(dek: [u8; 32], nonce: [u8; 12], ciphertext: &[u8], aad: &[u8]
         .map_err(|_| ArcError::Crypto("payload decryption failed"))
 }
 
-fn authority_aad(object: &ArcObject, state: &AuthorityState, ctx: [u8; 32], kem_ct_pq: [u8; 32]) -> Vec<u8> {
+fn authority_aad(object: &ArcObject, state: &AuthorityState, ctx: [u8; 32], kem_ct_pq: &[u8]) -> Vec<u8> {
     let mut aad = Vec::new();
     aad.extend_from_slice(b"ARC-AUTHORITY-AAD-v1");
     put_str(&mut aad, &object.object_id);
@@ -246,9 +312,8 @@ pub fn seal_with_verifier<V: AuthorityVerifier>(
     rng.fill_bytes(&mut wrap_nonce);
     rng.fill_bytes(&mut dek);
 
-    let (kem_ct_classical, ss_c) = kem_encaps(recipient_pk, &mut rng);
-    let kem_ct_pq = [0u8; 32]; // Phase 2: ML-KEM
-    let ss_h = hybrid_secret(&ss_c);
+    let (kem_ct_classical, ss_c, kem_ct_pq, ss_pq) = kem_encaps(recipient_pk, &mut rng);
+    let ss_h = hybrid_secret(&ss_c, &ss_pq);
 
     let cap_stamp = capability_stamp(cap, state);
 
@@ -280,7 +345,7 @@ pub fn seal_with_verifier<V: AuthorityVerifier>(
     );
 
     let kek = derive_kek(&ss_h, state, ctx, object.policy_hash);
-    let aad_auth = authority_aad(&object, state, ctx, kem_ct_pq);
+    let aad_auth = authority_aad(&object, state, ctx, &kem_ct_pq);
     let wrapped_dek = wrap_dek(kek, wrap_nonce, dek, &aad_auth)?;;
 
     object.wrappers.push(AuthorityWrapper {
@@ -369,10 +434,10 @@ fn unwrap_dek_for_epoch(
         return Err(ArcError::AuthorityState("context hash mismatch"));
     }
 
-    let ss_c = kem_decaps(recipient_sk, &wrapper.kem_ct_classical);
-    let ss_h = hybrid_secret(&ss_c);
+    let (ss_c, ss_pq) = kem_decaps(recipient_sk, &wrapper.kem_ct_classical, &wrapper.kem_ct_pq);
+    let ss_h = hybrid_secret(&ss_c, &ss_pq);
     let kek = derive_kek(&ss_h, state, ctx, object.policy_hash);
-    let aad = authority_aad(object, state, ctx, wrapper.kem_ct_pq);
+    let aad = authority_aad(object, state, ctx, &wrapper.kem_ct_pq);
     unwrap_dek(kek, wrapper.wrap_nonce, &wrapper.wrapped_dek, &aad)
 }
 
@@ -483,9 +548,16 @@ pub fn add_epoch_wrapper_with_verifier<V: AuthorityVerifier>(
 
     let dek = unwrap_dek_for_epoch(recipient_sk, object, cap, from_state, from_wrapper)?;
 
-    // Verify the capability is valid for to_state's epoch range (no full proof re-check;
-    // proof is epoch-specific to from_state).
-    if from_state.epoch < cap.epoch_start || to_state.epoch > cap.epoch_end {
+    // Spec §15 precondition: A_to.epoch > A_from.epoch.
+    if to_state.epoch <= from_state.epoch {
+        return Err(ArcError::InvalidCapability(
+            "rewrap target epoch must be strictly later than source epoch",
+        ));
+    }
+
+    // Verify the capability's validity window covers to_state.epoch.
+    // (from_state epoch validity is checked inside validate_capability above.)
+    if to_state.epoch < cap.epoch_start || to_state.epoch > cap.epoch_end {
         return Err(ArcError::InvalidCapability("epoch outside capability validity"));
     }
 
@@ -502,11 +574,10 @@ pub fn add_epoch_wrapper_with_verifier<V: AuthorityVerifier>(
     let mut wrap_nonce = [0u8; 12];
     let mut rng = rand::rngs::OsRng;
     rng.fill_bytes(&mut wrap_nonce);
-    let (kem_ct_classical, ss_c) = kem_encaps(recipient_pk, &mut rng);
-    let kem_ct_pq = [0u8; 32]; // Phase 2: ML-KEM
-    let ss_h = hybrid_secret(&ss_c);
+    let (kem_ct_classical, ss_c, kem_ct_pq, ss_pq) = kem_encaps(recipient_pk, &mut rng);
+    let ss_h = hybrid_secret(&ss_c, &ss_pq);
     let kek = derive_kek(&ss_h, to_state, ctx, object.policy_hash);
-    let aad = authority_aad(object, to_state, ctx, kem_ct_pq);
+    let aad = authority_aad(object, to_state, ctx, &kem_ct_pq);
 
     let wrapped_dek = wrap_dek(kek, wrap_nonce, dek, &aad)?;
 
@@ -536,6 +607,38 @@ pub fn add_epoch_wrapper_with_verifier<V: AuthorityVerifier>(
     });
 
     Ok(())
+}
+
+/// Commit `to_state` to the transparency log then add an epoch re-wrap wrapper
+/// to `object` in a single atomic step.
+///
+/// Combines [`TransparencyLog::commit_state`] with
+/// [`add_epoch_wrapper_with_verifier`] so callers get a consistent
+/// `TransparencyStateCommit` whose proof is baked into the wrapper.
+pub fn add_epoch_wrapper_and_commit<V: AuthorityVerifier, L: TransparencyLog>(
+    log: &mut L,
+    verifier: &V,
+    recipient_sk: &RecipientSecretKey,
+    recipient_pk: &RecipientPublicKey,
+    object: &mut ArcObject,
+    cap: &Capability,
+    proof: &CapabilityProof,
+    from_state: &AuthorityState,
+    to_state: &AuthorityState,
+) -> Result<TransparencyStateCommit, ArcError> {
+    let commit = log.commit_state(to_state)?;
+    add_epoch_wrapper_with_verifier(
+        verifier,
+        recipient_sk,
+        recipient_pk,
+        object,
+        cap,
+        proof,
+        from_state,
+        &commit.state,
+        &commit.proof,
+    )?;
+    Ok(commit)
 }
 
 /// Revoke a capability in the authority tree and produce the next authority state.
@@ -737,6 +840,48 @@ pub fn open_and_reseal_with_verifier<V: AuthorityVerifier>(
         seal_req,
         new_temporal_policy,
     )
+}
+
+/// Reseal an ARC object and atomically commit the new seal state to the
+/// transparency log — spec §15 Reseal.
+///
+/// Combines [`open_and_reseal_with_verifier`] with a transparency commit so
+/// callers receive a sealed object whose wrapper is bound to the committed
+/// (real) `transparency_root`.  Useful when the seal state has not yet been
+/// committed, e.g. after `rotate_epoch` without a prior `commit_state`.
+///
+/// The `open_state` must already be committed (so `open_with_verifier` can
+/// find a valid wrapper).  The `seal_state` is committed by this function.
+pub fn open_and_reseal_and_commit<V: AuthorityVerifier, L: TransparencyLog>(
+    log: &mut L,
+    verifier: &V,
+    recipient_sk: &RecipientSecretKey,
+    recipient_pk_new: &RecipientPublicKey,
+    object: &ArcObject,
+    cap: &Capability,
+    open_proof: &CapabilityProof,
+    open_state: &AuthorityState,
+    seal_proof: &CapabilityProof,
+    seal_state: &AuthorityState,
+    seal_req: &OpenRequest,
+    new_temporal_policy: TemporalPolicy,
+) -> Result<(ArcObject, TransparencyStateCommit), ArcError> {
+    let seal_commit = log.commit_state(seal_state)?;
+    let new_object = open_and_reseal_with_verifier(
+        verifier,
+        recipient_sk,
+        recipient_pk_new,
+        object,
+        cap,
+        open_proof,
+        open_state,
+        seal_proof,
+        &seal_commit.proof,
+        &seal_commit.state,
+        seal_req,
+        new_temporal_policy,
+    )?;
+    Ok((new_object, seal_commit))
 }
 
 /// Check that `epoch_pk` has not been declared compromised for `epoch`.
@@ -973,7 +1118,8 @@ pub fn rotate_epoch(
     base_state: &AuthorityState,
     new_epoch: u64,
     validity_window: u64,
-) -> (EpochSigningKeyPair, EpochKeyCert, AuthorityState) {
+    prev_epoch_hash: &[u8; 32],
+) -> (EpochSigningKeyPair, EpochKeyCert, AuthorityState, [u8; 64]) {
     let epoch_kp = EpochSigningKeyPair::generate(&mut rand::rngs::OsRng);
     let epoch_cert =
         root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), new_epoch, validity_window);
@@ -988,8 +1134,15 @@ pub fn rotate_epoch(
         transparency_inclusion_valid: true,
         root_pk: base_state.root_pk,
         revocation_count: base_state.revocation_count,
+        prev_epoch_hash: *prev_epoch_hash,
     };
-    (epoch_kp, epoch_cert, new_state)
+    let sigma_e = epoch_kp.sign_epoch_root(
+        &new_state.authority_root,
+        &new_state.revocation_root,
+        new_epoch,
+        prev_epoch_hash,
+    );
+    (epoch_kp, epoch_cert, new_state, sigma_e)
 }
 
 /// Rotate to a new epoch and atomically commit the new state to the
@@ -1009,10 +1162,126 @@ pub fn rotate_epoch_and_commit<L: TransparencyLog>(
     base_state: &AuthorityState,
     new_epoch: u64,
     validity_window: u64,
+    prev_epoch_hash: &[u8; 32],
 ) -> Result<(EpochSigningKeyPair, EpochKeyCert, TransparencyStateCommit), ArcError> {
-    let (epoch_kp, epoch_cert, new_state) =
-        rotate_epoch(root_kp, base_state, new_epoch, validity_window);
-    let commit = log.commit_state(&new_state)?;
+    let (epoch_kp, epoch_cert, new_state, sigma_e) =
+        rotate_epoch(root_kp, base_state, new_epoch, validity_window, prev_epoch_hash);
+    let mut commit = log.commit_state(&new_state)?;
+
+    // Compute Log_e = transparency_log_entry_hash(Log_{e-1}, R_e, Rev_e, e, pk_A_e, sigma_e)
+    // and register it in the log so it can be used as prev_epoch_hash for the next rotation.
+    let chain_hash = transparency_log_entry_hash(
+        prev_epoch_hash,
+        &commit.state.authority_root,
+        &commit.state.revocation_root,
+        commit.state.epoch,
+        &epoch_kp.verifying_key_bytes(),
+        &sigma_e,
+    );
+    commit.chain_hash = chain_hash;
+    log.store_chain_hash(&commit.state.authority_id, commit.state.epoch, chain_hash);
+
     Ok((epoch_kp, epoch_cert, commit))
 }
 
+/// Bundled result of a full epoch rotation.
+///
+/// Contains every output needed to immediately start sealing and verifying
+/// under the new epoch — including `sigma_e`, which is required to populate
+/// a [`CryptoAuthorityVerifier`] but is not returned by
+/// [`rotate_epoch_and_commit`].
+///
+/// Obtain via [`rotate_epoch_full`].
+pub struct EpochRotation {
+    /// Fresh epoch online signing keypair.  Keep this secret.
+    pub epoch_kp: EpochSigningKeyPair,
+    /// Epoch key certificate issued by the offline root.
+    pub epoch_cert: EpochKeyCert,
+    /// Epoch online public key (32-byte Ed25519 verifying key).
+    pub epoch_pk: [u8; 32],
+    /// Epoch root signature: `Sign(sk_A_e, "ARC-EPOCH-ROOT-v1" || …)` (§7).
+    pub sigma_e: [u8; 64],
+    /// Committed authority state with real `transparency_root`.
+    pub state: AuthorityState,
+    /// Transparency inclusion proof for `state`.
+    pub transparency_proof: TransparencyProof,
+    /// Chain hash for this epoch — pass as `prev_epoch_hash` for the next
+    /// call to [`rotate_epoch_full`] or [`rotate_epoch_and_commit`].
+    pub chain_hash: [u8; 32],
+}
+
+impl EpochRotation {
+    /// Build a [`CryptoAuthorityVerifier`] with this epoch's evidence
+    /// pre-registered and ready for use.
+    ///
+    /// The returned verifier can be passed directly to
+    /// [`seal_with_verifier`], [`open_with_verifier`], or
+    /// [`verify_with_verifier`] without any further setup.
+    pub fn into_verifier(&self) -> CryptoAuthorityVerifier {
+        let mut v = CryptoAuthorityVerifier::with_root_pk(self.state.root_pk);
+        v.add_evidence(
+            &self.state.authority_id,
+            self.state.epoch,
+            self.epoch_pk,
+            self.sigma_e,
+            self.epoch_cert.clone(),
+        );
+        v
+    }
+}
+
+/// Rotate to a new epoch and receive all outputs bundled in an [`EpochRotation`].
+///
+/// This is the ergonomic single-call alternative to [`rotate_epoch_and_commit`].
+/// In addition to generating the fresh epoch keypair, issuing the cert, signing
+/// the epoch root, and committing to the transparency log, it also surfaces
+/// `sigma_e` and pre-computes `epoch_pk` — the two pieces that
+/// [`rotate_epoch_and_commit`] discards and that are required to populate a
+/// [`CryptoAuthorityVerifier`].
+///
+/// Typical usage:
+///
+/// ```ignore
+/// let rot = rotate_epoch_full(&mut log, &root_kp, &base_state, 2, 100, &prev_hash)?;
+/// let verifier = rot.into_verifier(); // CryptoAuthorityVerifier, ready to use
+/// let obj = seal_with_verifier(&verifier, &pk_b, msg, &cap, &proof,
+///                              &rot.transparency_proof, &rot.state, &req, policy)?;
+/// ```
+///
+/// # Errors
+///
+/// Returns `Err` if the transparency log rejects the commit.
+pub fn rotate_epoch_full<L: TransparencyLog>(
+    log: &mut L,
+    root_kp: &AuthorityRootKeyPair,
+    base_state: &AuthorityState,
+    new_epoch: u64,
+    validity_window: u64,
+    prev_epoch_hash: &[u8; 32],
+) -> Result<EpochRotation, ArcError> {
+    let (epoch_kp, epoch_cert, new_state, sigma_e) =
+        rotate_epoch(root_kp, base_state, new_epoch, validity_window, prev_epoch_hash);
+    let epoch_pk = epoch_kp.verifying_key_bytes();
+
+    let mut commit = log.commit_state(&new_state)?;
+    let chain_hash = transparency_log_entry_hash(
+        prev_epoch_hash,
+        &commit.state.authority_root,
+        &commit.state.revocation_root,
+        commit.state.epoch,
+        &epoch_pk,
+        &sigma_e,
+    );
+    commit.chain_hash = chain_hash;
+    log.store_chain_hash(&commit.state.authority_id, commit.state.epoch, chain_hash);
+
+    Ok(EpochRotation {
+        epoch_kp,
+        epoch_cert,
+        epoch_pk,
+        sigma_e,
+        state: commit.state,
+        transparency_proof: commit.proof,
+        chain_hash,
+    })
+}

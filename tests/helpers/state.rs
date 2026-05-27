@@ -12,5 +12,6 @@ pub fn sample_state(epoch: u64) -> AuthorityState {
         transparency_inclusion_valid: true,
         root_pk: [0u8; 32],
         revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
     }
 }

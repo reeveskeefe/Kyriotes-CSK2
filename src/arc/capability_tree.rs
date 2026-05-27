@@ -514,6 +514,7 @@ mod tests {
 
     fn sample_cap(suffix: u8) -> Capability {
         Capability {
+            version: 1,
             subject: format!("subject-{suffix}"),
             object_id: "doc.pdf".to_string(),
             rights: Rights::READ,
@@ -521,6 +522,7 @@ mod tests {
             epoch_start: 1,
             epoch_end: 100,
             delegation_depth: 0,
+            parent_stamp: [0u8; 32],
             nonce: [suffix; 16],
         }
     }
@@ -537,6 +539,7 @@ mod tests {
             transparency_inclusion_valid: true,
             root_pk: [0u8; 32],
             revocation_count: tree.revocation_count(),
+            prev_epoch_hash: [0u8; 32],
         }
     }
 

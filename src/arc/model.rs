@@ -1,20 +1,35 @@
 use sha2::{Digest, Sha256};
 use rand::{CryptoRng, RngCore};
 use x25519_dalek::{PublicKey as X25519PublicKey, StaticSecret};
+use ml_kem::{MlKem768, Seed};
+use ml_kem::kem::{KeyExport, FromSeed};
 
 use crate::core::rights::Rights;
 use crate::core::temporal::TemporalPolicy;
 use crate::encoding::codec::{put_bytes, put_rights, put_str, put_temporal_policy, put_u64};
 
-/// Recipient public key (classical X25519; PQ slot reserved for Phase 2).
+/// ML-KEM-768 encapsulation key byte length.
+pub const ML_KEM_768_EK_BYTES: usize = 1184;
+/// ML-KEM-768 decapsulation key seed byte length.
+pub const ML_KEM_768_DK_BYTES: usize = 64;
+/// ML-KEM-768 ciphertext byte length.
+pub const ML_KEM_768_CT_BYTES: usize = 1088;
+
+/// Recipient public key: X25519 (classical) + ML-KEM-768 (post-quantum).
 #[derive(Clone, Debug)]
 pub struct RecipientPublicKey {
     pub classical: X25519PublicKey,
+    /// ML-KEM-768 encapsulation key bytes (1184 bytes).
+    /// `None` for classical-only recipients.
+    pub pq: Option<Box<[u8; ML_KEM_768_EK_BYTES]>>,
 }
 
-/// Recipient secret key (classical X25519; PQ slot reserved for Phase 2).
+/// Recipient secret key: X25519 (classical) + ML-KEM-768 (post-quantum).
 pub struct RecipientSecretKey {
     pub classical: StaticSecret,
+    /// ML-KEM-768 decapsulation key seed bytes (64 bytes).
+    /// `None` for classical-only recipients.
+    pub pq: Option<Box<[u8; ML_KEM_768_DK_BYTES]>>,
 }
 
 /// A matched public/secret keypair for an ARC recipient.
@@ -25,27 +40,43 @@ pub struct RecipientKeyPair {
 
 impl RecipientKeyPair {
     pub fn generate(rng: &mut (impl RngCore + CryptoRng)) -> Self {
-        let secret = StaticSecret::random_from_rng(rng);
+        let secret = StaticSecret::random_from_rng(&mut *rng);
         let public = X25519PublicKey::from(&secret);
+        // Generate ML-KEM-768 key pair seeded from caller's rng (avoids rand_core version conflict).
+        let mut seed_bytes = [0u8; ML_KEM_768_DK_BYTES];
+        rng.fill_bytes(&mut seed_bytes);
+        let seed: Seed = Seed::from(seed_bytes);
+        let (_dk, ek) = MlKem768::from_seed(&seed);
+        let ek_key = ek.to_bytes();
+        let ek_arr: [u8; ML_KEM_768_EK_BYTES] = ek_key.as_slice()
+            .try_into()
+            .expect("ML-KEM-768 ek is 1184 bytes");
+        let ek_bytes: Box<[u8; ML_KEM_768_EK_BYTES]> = Box::new(ek_arr);
+        let dk_bytes: Box<[u8; ML_KEM_768_DK_BYTES]> = Box::new(seed_bytes);
         Self {
-            public: RecipientPublicKey { classical: public },
-            secret: RecipientSecretKey { classical: secret },
+            public: RecipientPublicKey { classical: public, pq: Some(ek_bytes) },
+            secret: RecipientSecretKey { classical: secret, pq: Some(dk_bytes) },
         }
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Capability {
+    /// Capability format version (spec §5). Must be 1 for ARC v0.1.
+    pub version: u16,
     pub subject: String,
     pub object_id: String,
     pub rights: Rights,
     pub policy_hash: [u8; 32],
     pub epoch_start: u64,
     pub epoch_end: u64,
-    /// Delegation depth (0 = leaf / directly issued, >0 reserved for future delegated issuance).
-    /// Conformant implementations must reject any capability with `delegation_depth > 0`
-    /// until the Delegate algorithm is formally specified (spec §2).
+    /// Delegation depth: 0 for directly-issued capabilities, N+1 for a capability
+    /// derived from a parent at depth N via `delegate_capability` (spec §2 Delegate).
     pub delegation_depth: u64,
+    /// Stamp of the parent capability for delegated capabilities (spec §5).
+    /// Must be `[0u8; 32]` for directly-issued capabilities (`delegation_depth == 0`).
+    /// Must be non-zero for delegated capabilities (`delegation_depth > 0`).
+    pub parent_stamp: [u8; 32],
     pub nonce: [u8; 16],
 }
 
@@ -80,6 +111,13 @@ pub struct AuthorityState {
     /// non-revocation witnesses cannot lie about the tree size to bypass the
     /// sorted-boundary position check.
     pub revocation_count: u64,
+    /// The transparency log chain hash `Log_{e-1}` that was used as
+    /// `prev_epoch_hash` when signing the epoch root signature `sigma_e`
+    /// (spec §7, §25f, §25i).  `[0u8; 32]` for the genesis epoch.
+    ///
+    /// Verifiers use this field to check `sigma_e` correctly; callers
+    /// compute `Log_e` on demand via `transparency_log_entry_hash`.
+    pub prev_epoch_hash: [u8; 32],
 }
 
 /// Signed compromise declaration from the offline authority root (spec §16).
@@ -107,7 +145,8 @@ pub struct OpenRequest {
 pub struct AuthorityWrapper {
     pub epoch: u64,
     pub kem_ct_classical: [u8; 32],
-    pub kem_ct_pq: [u8; 32],
+    /// ML-KEM-768 ciphertext (1088 bytes) or empty for classical-only objects.
+    pub kem_ct_pq: Vec<u8>,
     pub wrap_nonce: [u8; 12],
     pub wrapped_dek: Vec<u8>,
     pub context_hash: [u8; 32],
@@ -140,6 +179,7 @@ pub fn hash_policy(policy: &str) -> [u8; 32] {
 
 pub fn capability_leaf_hash(cap: &Capability) -> [u8; 32] {
     let mut enc = Vec::new();
+    put_u64(&mut enc, cap.version as u64);
     put_str(&mut enc, &cap.subject);
     put_str(&mut enc, &cap.object_id);
     put_rights(&mut enc, cap.rights);
@@ -147,6 +187,7 @@ pub fn capability_leaf_hash(cap: &Capability) -> [u8; 32] {
     put_u64(&mut enc, cap.epoch_start);
     put_u64(&mut enc, cap.epoch_end);
     put_u64(&mut enc, cap.delegation_depth);
+    put_bytes(&mut enc, &cap.parent_stamp);
     put_bytes(&mut enc, &cap.nonce);
 
     let mut hasher = Sha256::new();

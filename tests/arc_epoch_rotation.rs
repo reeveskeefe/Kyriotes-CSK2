@@ -10,19 +10,25 @@ use arc_core::{
     Capability,
     CapabilityIssuanceProof,
     CapabilityProof,
+    EpochRotation,
     EpochSigningKeyPair,
     AuthorityRootKeyPair,
     InMemoryTransparencyLog,
     RecipientKeyPair,
     TemporalPolicy,
     TransparencyLog,
+    capability_leaf_hash,
     capability_stamp,
     issue_capability,
     open,
+    open_with_verifier,
     rotate_epoch,
     rotate_epoch_and_commit,
+    rotate_epoch_full,
     seal_and_commit,
+    seal_with_verifier,
     verify_epoch_cert,
+    verify_with_verifier,
 };
 use helpers::{
     capability::sample_cap,
@@ -64,6 +70,7 @@ impl Authority {
             transparency_inclusion_valid: true,
             root_pk: root_kp.verifying_key_bytes(),
             revocation_count: tree.revocation_count(),
+            prev_epoch_hash: [0u8; 32],
         };
         Self { root_kp, cap, tree, base_state, issuance_proof }
     }
@@ -105,8 +112,8 @@ impl Authority {
 fn rotate_epoch_advances_epoch_and_preserves_roots() {
     let a = Authority::new("re-preserve");
 
-    let (_epoch_kp, _epoch_cert, new_state) =
-        rotate_epoch(&a.root_kp, &a.base_state, 50, 10);
+    let (_epoch_kp, _epoch_cert, new_state, _sigma_e) =
+        rotate_epoch(&a.root_kp, &a.base_state, 50, 10, &[0u8; 32]);
 
     assert_eq!(new_state.epoch, 50, "epoch must be advanced to 50");
     assert_eq!(
@@ -137,8 +144,8 @@ fn rotate_epoch_advances_epoch_and_preserves_roots() {
 fn rotate_epoch_produces_valid_epoch_cert() {
     let a = Authority::new("re-cert");
 
-    let (_epoch_kp, epoch_cert, _new_state) =
-        rotate_epoch(&a.root_kp, &a.base_state, 55, 10);
+    let (_epoch_kp, epoch_cert, _new_state, _sigma_e) =
+        rotate_epoch(&a.root_kp, &a.base_state, 55, 10, &[0u8; 32]);
 
     verify_epoch_cert(&a.root_kp.verifying_key_bytes(), &epoch_cert)
         .expect("epoch cert produced by rotate_epoch must verify under root key");
@@ -151,8 +158,8 @@ fn rotate_epoch_produces_valid_epoch_cert() {
 fn rotate_epoch_cert_pk_matches_signing_keypair() {
     let a = Authority::new("re-pk-match");
 
-    let (epoch_kp, epoch_cert, _new_state) =
-        rotate_epoch(&a.root_kp, &a.base_state, 60, 10);
+    let (epoch_kp, epoch_cert, _new_state, _sigma_e) =
+        rotate_epoch(&a.root_kp, &a.base_state, 60, 10, &[0u8; 32]);
 
     assert_eq!(
         epoch_cert.epoch_pk,
@@ -166,8 +173,8 @@ fn rotate_epoch_cert_pk_matches_signing_keypair() {
 fn rotate_epoch_successive_rotations_have_distinct_keys() {
     let a = Authority::new("re-distinct");
 
-    let (kp1, cert1, _) = rotate_epoch(&a.root_kp, &a.base_state, 50, 10);
-    let (kp2, cert2, _) = rotate_epoch(&a.root_kp, &a.base_state, 51, 10);
+    let (kp1, cert1, _, _) = rotate_epoch(&a.root_kp, &a.base_state, 50, 10, &[0u8; 32]);
+    let (kp2, cert2, _, _) = rotate_epoch(&a.root_kp, &a.base_state, 51, 10, &[0u8; 32]);
 
     assert_ne!(
         kp1.verifying_key_bytes(),
@@ -191,7 +198,7 @@ fn rotate_epoch_and_commit_produces_transparency_root() {
     let mut log = InMemoryTransparencyLog::new();
 
     let (_epoch_kp, _epoch_cert, commit) =
-        rotate_epoch_and_commit(&mut log, &a.root_kp, &a.base_state, 50, 10)
+        rotate_epoch_and_commit(&mut log, &a.root_kp, &a.base_state, 50, 10, &[0u8; 32])
             .expect("rotate_epoch_and_commit should succeed");
 
     assert_ne!(
@@ -213,7 +220,7 @@ fn rotate_epoch_and_commit_enables_seal_open_roundtrip() {
 
     // Rotate to epoch 50.
     let (epoch_kp50, epoch_cert50, commit50) =
-        rotate_epoch_and_commit(&mut log, &a.root_kp, &a.base_state, 50, 10)
+        rotate_epoch_and_commit(&mut log, &a.root_kp, &a.base_state, 50, 10, &[0u8; 32])
             .expect("rotate to epoch 50 should succeed");
 
     // Re-issue the capability proof under epoch 50's key.
@@ -260,12 +267,12 @@ fn rotate_epoch_chained_rotation_seal_open() {
 
     // First rotation: epoch 42 → 50
     let (epoch_kp50, epoch_cert50, commit50) =
-        rotate_epoch_and_commit(&mut log, &a.root_kp, &a.base_state, 50, 10)
+        rotate_epoch_and_commit(&mut log, &a.root_kp, &a.base_state, 50, 10, &[0u8; 32])
             .expect("rotate to 50");
 
     // Second rotation: epoch 50 → 60
     let (epoch_kp60, epoch_cert60, commit60) =
-        rotate_epoch_and_commit(&mut log, &a.root_kp, &commit50.state, 60, 10)
+        rotate_epoch_and_commit(&mut log, &a.root_kp, &commit50.state, 60, 10, &[0u8; 32])
             .expect("rotate to 60");
 
     assert_eq!(commit60.state.epoch, 60);
@@ -312,7 +319,7 @@ fn rotate_epoch_and_commit_rejects_conflicting_state() {
     let mut log = InMemoryTransparencyLog::new();
 
     // First rotation to epoch 50 succeeds.
-    rotate_epoch_and_commit(&mut log, &a.root_kp, &a.base_state, 50, 10)
+    rotate_epoch_and_commit(&mut log, &a.root_kp, &a.base_state, 50, 10, &[0u8; 32])
         .expect("first rotate to epoch 50 should succeed");
 
     // Manually commit a *different* state for the same (authority_id, epoch=50).
@@ -333,4 +340,190 @@ fn rotate_epoch_and_commit_rejects_conflicting_state() {
         }
         other => panic!("expected AuthorityState error, got: {other:?}"),
     }
+}
+
+// ---------------------------------------------------------------------------
+// rotate_epoch_full — ergonomic API (spec §7)
+// ---------------------------------------------------------------------------
+
+fn base_setup_full(authority_id: &str, epoch: u64) -> (
+    AuthorityRootKeyPair,
+    AuthorityState,
+    InMemoryTransparencyLog,
+) {
+    use helpers::transparency::commit_state;
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let seed = AuthorityState {
+        authority_root: [0u8; 32],
+        revocation_root: [0u8; 32],
+        transparency_root: [0u8; 32],
+        epoch,
+        authority_id: authority_id.to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
+    };
+    let mut log = InMemoryTransparencyLog::new();
+    let (state, _) = commit_state(&mut log, &seed).unwrap();
+    (root_kp, state, log)
+}
+
+#[test]
+fn rotate_epoch_full_returns_correct_epoch_number() {
+    let (root_kp, base_state, mut log) = base_setup_full("auth-full-basic", 1);
+    let rot = rotate_epoch_full(&mut log, &root_kp, &base_state, 2, 100, &[0u8; 32])
+        .expect("rotation should succeed");
+    assert_eq!(rot.state.epoch, 2);
+}
+
+#[test]
+fn rotate_epoch_full_epoch_pk_matches_keypair() {
+    let (root_kp, base_state, mut log) = base_setup_full("auth-full-pk", 1);
+    let rot = rotate_epoch_full(&mut log, &root_kp, &base_state, 2, 100, &[0u8; 32])
+        .expect("rotation");
+    assert_eq!(rot.epoch_pk, rot.epoch_kp.verifying_key_bytes());
+}
+
+#[test]
+fn rotate_epoch_full_sigma_e_is_nonzero() {
+    let (root_kp, base_state, mut log) = base_setup_full("auth-full-sigma", 1);
+    let rot = rotate_epoch_full(&mut log, &root_kp, &base_state, 2, 100, &[0u8; 32])
+        .expect("rotation");
+    assert_ne!(rot.sigma_e, [0u8; 64], "sigma_e must be a real signature");
+}
+
+#[test]
+fn rotate_epoch_full_chain_hash_is_nonzero() {
+    let (root_kp, base_state, mut log) = base_setup_full("auth-full-chain", 1);
+    let rot = rotate_epoch_full(&mut log, &root_kp, &base_state, 2, 100, &[0u8; 32])
+        .expect("rotation");
+    assert_ne!(rot.chain_hash, [0u8; 32], "chain_hash must be set");
+}
+
+#[test]
+fn rotate_epoch_full_into_verifier_seal_open_roundtrip() {
+    let p = policy_hash("full-seal-open");
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+
+    let cap = sample_cap(1, 10, p);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+
+    let seed = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch: 1,
+        authority_id: "auth-full-roundtrip".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
+    };
+    let mut log = InMemoryTransparencyLog::new();
+    let (base_state, _) = { use helpers::transparency::commit_state; commit_state(&mut log, &seed).unwrap() };
+
+    let rot = rotate_epoch_full(&mut log, &root_kp, &base_state, 2, 100, &[0u8; 32])
+        .expect("rotation");
+    let verifier = rot.into_verifier();
+
+    let inclusion = tree.inclusion_proof(&cap).unwrap();
+    let stamp = capability_stamp(&cap, &rot.state);
+    let non_rev = tree.non_revocation_witness(&stamp).unwrap();
+    let leaf = capability_leaf_hash(&cap);
+    let sig = rot.epoch_kp.sign_capability_issuance(&leaf, &rot.state.authority_root, 2);
+    let proof = CapabilityProof {
+        inclusion,
+        non_revocation: non_rev,
+        issuance: CapabilityIssuanceProof { sig, epoch_cert: rot.epoch_cert.clone() },
+    };
+
+    let keypair = RecipientKeyPair::generate(&mut rng);
+    let req = sample_req(2, p);
+
+    let obj = seal_with_verifier(
+        &verifier, &keypair.public, b"ergonomic api",
+        &cap, &proof, &rot.transparency_proof, &rot.state, &req,
+        TemporalPolicy::Historical(2),
+    ).expect("seal");
+
+    let pt = open_with_verifier(&verifier, &keypair.secret, &obj, &cap, &proof, &rot.state)
+        .expect("open");
+
+    assert_eq!(pt, b"ergonomic api");
+}
+
+#[test]
+fn rotate_epoch_full_into_verifier_verify_path() {
+    let p = policy_hash("full-verify-path");
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+
+    let cap = sample_cap(1, 10, p);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+
+    let seed = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch: 1,
+        authority_id: "auth-full-verify".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
+    };
+    let mut log = InMemoryTransparencyLog::new();
+    let (base_state, _) = { use helpers::transparency::commit_state; commit_state(&mut log, &seed).unwrap() };
+
+    let rot = rotate_epoch_full(&mut log, &root_kp, &base_state, 2, 100, &[0u8; 32])
+        .expect("rotation");
+    let verifier = rot.into_verifier();
+
+    let inclusion = tree.inclusion_proof(&cap).unwrap();
+    let stamp = capability_stamp(&cap, &rot.state);
+    let non_rev = tree.non_revocation_witness(&stamp).unwrap();
+    let leaf = capability_leaf_hash(&cap);
+    let sig = rot.epoch_kp.sign_capability_issuance(&leaf, &rot.state.authority_root, 2);
+    let proof = CapabilityProof {
+        inclusion,
+        non_revocation: non_rev,
+        issuance: CapabilityIssuanceProof { sig, epoch_cert: rot.epoch_cert.clone() },
+    };
+
+    let keypair = RecipientKeyPair::generate(&mut rng);
+    let req = sample_req(2, p);
+
+    let obj = seal_with_verifier(
+        &verifier, &keypair.public, b"verify me",
+        &cap, &proof, &rot.transparency_proof, &rot.state, &req,
+        TemporalPolicy::Historical(2),
+    ).expect("seal");
+
+    verify_with_verifier(&verifier, &obj, &cap, &proof, &rot.state, &rot.transparency_proof)
+        .expect("verify_with_verifier via into_verifier must succeed");
+}
+
+#[test]
+fn chained_rotations_chain_hash_differs() {
+    let (root_kp, base_state, mut log) = base_setup_full("auth-chained", 1);
+
+    let rot1 = rotate_epoch_full(&mut log, &root_kp, &base_state, 2, 100, &[0u8; 32])
+        .expect("first rotation");
+    let rot2 = rotate_epoch_full(&mut log, &root_kp, &rot1.state, 3, 100, &rot1.chain_hash)
+        .expect("second rotation");
+
+    assert_eq!(rot1.state.epoch, 2);
+    assert_eq!(rot2.state.epoch, 3);
+    assert_ne!(rot1.chain_hash, rot2.chain_hash, "chain hashes must differ across epochs");
 }

@@ -6,6 +6,7 @@ use ed25519_dalek::{Signature, VerifyingKey};
 use super::authority::{EpochKeyCert, verify_epoch_cert, verify_epoch_root_sig};
 use super::model::{AuthorityState, TransparencyProof, transparency_leaf_hash};
 use super::transparency::hash_transparency_node;
+use super::tsig::{ThresholdSignatureSet, tsig_verify};
 
 pub trait AuthorityVerifier {
     fn verify_state(
@@ -37,6 +38,20 @@ impl AuthorityVerifier for BasicAuthorityVerifier {
     }
 }
 
+/// TSIG evidence for a threshold epoch root signature.
+///
+/// When registered via [`CryptoAuthorityVerifier::add_evidence_tsig`] the
+/// full-chain verifier calls [`tsig_verify`] instead of the single-signer
+/// [`verify_epoch_root_sig`] path.
+#[derive(Clone, Debug)]
+pub struct TsigEvidence {
+    /// The `n` authorized epoch-online verifying keys (0-based, matching
+    /// `signer_index` in each [`ThresholdPartialSig`]).
+    pub authorized_keys: Vec<[u8; 32]>,
+    /// Collected partial signatures that must meet the threshold.
+    pub set: ThresholdSignatureSet,
+}
+
 #[derive(Clone, Debug)]
 pub struct AuthorityEpochEvidence {
     pub authority_id: String,
@@ -45,10 +60,14 @@ pub struct AuthorityEpochEvidence {
     pub epoch_pk: [u8; 32],
     /// Epoch root signature over `epoch_root_signing_message(...)` produced by
     /// `sk_A_e`.  In legacy mode (no root pk configured) this is a signature
-    /// over `authority_state_signing_message(...)` instead.
+    /// over `authority_state_signing_message(...)` instead.  Ignored when
+    /// `tsig` is `Some`.
     pub epoch_root_sig: [u8; 64],
     /// Certificate from the offline root binding `epoch_pk` to this epoch.
     pub epoch_cert: EpochKeyCert,
+    /// When present, the full-chain verifier uses threshold verification
+    /// instead of the single-signer path.
+    pub tsig: Option<TsigEvidence>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -141,6 +160,44 @@ impl CryptoAuthorityVerifier {
             epoch_pk,
             epoch_root_sig,
             epoch_cert,
+            tsig: None,
+        });
+    }
+
+    /// Register TSIG evidence for `(authority_id, epoch)`.
+    ///
+    /// Use this when the epoch root signature was produced by a `t`-of-`n`
+    /// threshold signing round rather than a single epoch key.  The verifier
+    /// will call [`tsig_verify`] against `authorized_keys` and `tsig_set`
+    /// instead of the single-signer path.
+    ///
+    /// - `epoch_pk`        — any one of the epoch keys, used only to satisfy
+    ///                       the single-signer `epoch_cert` field; supply the
+    ///                       first signer's key or `[0u8; 32]` if no cert is
+    ///                       needed for the legacy path.
+    /// - `epoch_cert`      — the epoch key cert for `epoch_pk` (required for
+    ///                       the offline-root cert-chain path).
+    /// - `authorized_keys` — the ordered set of `n` epoch-online public keys.
+    /// - `tsig_set`        — the collected [`ThresholdSignatureSet`].
+    pub fn add_evidence_tsig(
+        &mut self,
+        authority_id: impl Into<String>,
+        epoch: u64,
+        epoch_pk: [u8; 32],
+        epoch_cert: EpochKeyCert,
+        authorized_keys: Vec<[u8; 32]>,
+        tsig_set: ThresholdSignatureSet,
+    ) {
+        self.evidence_registry.add(AuthorityEpochEvidence {
+            authority_id: authority_id.into(),
+            epoch,
+            epoch_pk,
+            epoch_root_sig: [0u8; 64], // unused when tsig is Some
+            epoch_cert,
+            tsig: Some(TsigEvidence {
+                authorized_keys,
+                set: tsig_set,
+            }),
         });
     }
 }
@@ -185,14 +242,32 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
                     ));
                 }
 
-                verify_epoch_root_sig(
-                    &evidence.epoch_cert.epoch_pk,
-                    &state.authority_root,
-                    &state.revocation_root,
-                    state.epoch,
-                    &[0u8; 32], // genesis prev_epoch_hash (chain not yet tracked)
-                    &evidence.epoch_root_sig,
-                )?;
+                // Dispatch: threshold or single-signature epoch root verification.
+                match &evidence.tsig {
+                    Some(tsig_ev) => {
+                        tsig_verify(
+                            &state.authority_root,
+                            &state.revocation_root,
+                            state.epoch,
+                            &state.prev_epoch_hash,
+                            &tsig_ev.set,
+                            &tsig_ev.authorized_keys,
+                        )
+                        .map_err(|_| ArcError::AuthorityState(
+                            "threshold epoch root signature failed",
+                        ))?;
+                    }
+                    None => {
+                        verify_epoch_root_sig(
+                            &evidence.epoch_cert.epoch_pk,
+                            &state.authority_root,
+                            &state.revocation_root,
+                            state.epoch,
+                            &state.prev_epoch_hash,
+                            &evidence.epoch_root_sig,
+                        )?;
+                    }
+                }
             }
             None => {
                 // Legacy path: verify epoch_root_sig over authority_state_signing_message.
@@ -272,6 +347,7 @@ mod tests {
             transparency_inclusion_valid: true,
             root_pk: [0u8; 32],
             revocation_count: 0,
+            prev_epoch_hash: [0u8; 32],
         };
         state.transparency_root = transparency_leaf_hash(&state);
         state

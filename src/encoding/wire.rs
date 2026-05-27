@@ -1,4 +1,5 @@
-use crate::arc::model::{ArcObject, AuthorityWrapper, TransparencyProof};
+use crate::arc::model::{ArcObject, AuthorityWrapper, Capability, TransparencyProof};
+use crate::arc::tsig::{ThresholdPartialSig, ThresholdSignatureSet};
 use crate::encoding::codec::{
     put_bytes,
     put_rights,
@@ -206,7 +207,7 @@ pub fn decode_arc_object_with_limits(input: &[u8], limits: DecodeLimits) -> Resu
         wrappers.push(AuthorityWrapper {
             epoch: take_u64(input, &mut cursor)?,
             kem_ct_classical: take_fixed_limited::<32>(input, &mut cursor, 32)?,
-            kem_ct_pq: take_fixed_limited::<32>(input, &mut cursor, 32)?,
+            kem_ct_pq: take_bytes_limited(input, &mut cursor, limits.max_wrapped_dek_len)?,
             wrap_nonce: take_fixed_limited::<12>(input, &mut cursor, 12)?,
             wrapped_dek: take_bytes_limited(input, &mut cursor, limits.max_wrapped_dek_len)?,
             context_hash: take_fixed_limited::<32>(input, &mut cursor, 32)?,
@@ -251,4 +252,140 @@ pub fn decode_arc_object_with_limits(input: &[u8], limits: DecodeLimits) -> Resu
         payload_ciphertext,
         wrappers,
     })
+}
+
+// ---------------------------------------------------------------------------
+// Capability encode / decode
+// ---------------------------------------------------------------------------
+
+/// Encode a [`Capability`] to a self-contained byte string.
+///
+/// Wire format (all integers little-endian):
+/// ```text
+/// version (u16-LE)
+/// subject (u32-LE length + bytes)
+/// object_id (u32-LE length + bytes)
+/// rights (u16-LE)
+/// policy_hash (u32-LE(32) + 32 bytes)
+/// epoch_start (u64-LE)
+/// epoch_end (u64-LE)
+/// delegation_depth (u64-LE)
+/// parent_stamp (u32-LE(32) + 32 bytes)
+/// nonce (u32-LE(16) + 16 bytes)
+/// ```
+pub fn encode_capability(cap: &Capability) -> Vec<u8> {
+    let mut out = Vec::new();
+    put_u16(&mut out, cap.version);
+    put_str(&mut out, &cap.subject);
+    put_str(&mut out, &cap.object_id);
+    put_rights(&mut out, cap.rights);
+    put_bytes(&mut out, &cap.policy_hash);
+    put_u64(&mut out, cap.epoch_start);
+    put_u64(&mut out, cap.epoch_end);
+    put_u64(&mut out, cap.delegation_depth);
+    put_bytes(&mut out, &cap.parent_stamp);
+    put_bytes(&mut out, &cap.nonce);
+    out
+}
+
+/// Decode a [`Capability`] using default length limits (1024 bytes for each string field).
+pub fn decode_capability(input: &[u8]) -> Result<Capability, ArcError> {
+    decode_capability_with_limits(input, 1024, 1024)
+}
+
+/// Decode a [`Capability`] with explicit length limits for the two string fields.
+pub fn decode_capability_with_limits(
+    input: &[u8],
+    max_subject_len: usize,
+    max_object_id_len: usize,
+) -> Result<Capability, ArcError> {
+    let mut cursor = 0usize;
+    let version = take_u16(input, &mut cursor)?;
+    let subject = take_str_limited(input, &mut cursor, max_subject_len)?;
+    let object_id = take_str_limited(input, &mut cursor, max_object_id_len)?;
+    let rights = take_rights(input, &mut cursor)?;
+    let policy_hash = take_fixed_limited::<32>(input, &mut cursor, 32)?;
+    let epoch_start = take_u64(input, &mut cursor)?;
+    let epoch_end = take_u64(input, &mut cursor)?;
+    let delegation_depth = take_u64(input, &mut cursor)?;
+    let parent_stamp = take_fixed_limited::<32>(input, &mut cursor, 32)?;
+    let nonce = take_fixed_limited::<16>(input, &mut cursor, 16)?;
+
+    if cursor != input.len() {
+        return Err(ArcError::Parse("trailing bytes after capability"));
+    }
+
+    Ok(Capability {
+        version,
+        subject,
+        object_id,
+        rights,
+        policy_hash,
+        epoch_start,
+        epoch_end,
+        delegation_depth,
+        parent_stamp,
+        nonce,
+    })
+}
+
+// ---------------------------------------------------------------------------
+// ThresholdSignatureSet encode / decode
+// ---------------------------------------------------------------------------
+
+/// Encode a [`ThresholdSignatureSet`] to bytes.
+///
+/// Wire format:
+/// ```text
+/// threshold (u32-LE)
+/// count (u32-LE)
+/// partials...: signer_index (u32-LE) || sig ([u8; 64] raw, no length prefix)
+/// ```
+pub fn encode_threshold_signature_set(set: &ThresholdSignatureSet) -> Vec<u8> {
+    let mut out = Vec::new();
+    put_u32(&mut out, set.threshold);
+    put_u32(
+        &mut out,
+        u32::try_from(set.partials.len()).expect("partial sig count exceeds u32::MAX"),
+    );
+    for p in &set.partials {
+        put_u32(&mut out, p.signer_index);
+        out.extend_from_slice(&p.sig);
+    }
+    out
+}
+
+/// Decode a [`ThresholdSignatureSet`] using the default max of 1024 partial signatures.
+pub fn decode_threshold_signature_set(input: &[u8]) -> Result<ThresholdSignatureSet, ArcError> {
+    decode_threshold_signature_set_with_max(input, 1024)
+}
+
+/// Decode a [`ThresholdSignatureSet`] with an explicit limit on the number of partial sigs.
+pub fn decode_threshold_signature_set_with_max(
+    input: &[u8],
+    max_partials: usize,
+) -> Result<ThresholdSignatureSet, ArcError> {
+    let mut cursor = 0usize;
+    let threshold = take_u32(input, &mut cursor)?;
+    let count = take_u32(input, &mut cursor)? as usize;
+    if count > max_partials {
+        return Err(ArcError::Parse("partial signature count exceeds maximum allowed"));
+    }
+    let mut partials = Vec::with_capacity(count);
+    for _ in 0..count {
+        let signer_index = take_u32(input, &mut cursor)?;
+        if cursor + 64 > input.len() {
+            return Err(ArcError::Parse("unexpected EOF reading partial signature bytes"));
+        }
+        let mut sig = [0u8; 64];
+        sig.copy_from_slice(&input[cursor..cursor + 64]);
+        cursor += 64;
+        partials.push(ThresholdPartialSig { signer_index, sig });
+    }
+
+    if cursor != input.len() {
+        return Err(ArcError::Parse("trailing bytes after threshold signature set"));
+    }
+
+    Ok(ThresholdSignatureSet { threshold, partials })
 }

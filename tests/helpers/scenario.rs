@@ -54,6 +54,7 @@ impl Scenario {
             transparency_inclusion_valid: true,
             root_pk: authority.root_pk(),
             revocation_count: 0,
+            prev_epoch_hash: [0u8; 32],
         };
 
         let (seal_state, seal_transparency_proof) = commit_state(&mut log, &seed_state)?;
@@ -92,6 +93,7 @@ impl Scenario {
             transparency_inclusion_valid: true,
             root_pk: self.authority.root_pk(),
             revocation_count: self.authority.tree.revocation_count(),
+            prev_epoch_hash: [0u8; 32],
         }
     }
 

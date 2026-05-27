@@ -61,6 +61,7 @@ impl TestAuthority {
 
 pub fn sample_cap(epoch_start: u64, epoch_end: u64, policy_hash: [u8; 32]) -> Capability {
     Capability {
+        version: 1,
         subject: "keefe".to_string(),
         object_id: DEFAULT_OBJECT_ID.to_string(),
         rights: Rights::READ.union(Rights::DECRYPT),
@@ -68,6 +69,7 @@ pub fn sample_cap(epoch_start: u64, epoch_end: u64, policy_hash: [u8; 32]) -> Ca
         epoch_start,
         epoch_end,
         delegation_depth: 0,
+        parent_stamp: [0u8; 32],
         nonce: [7u8; 16],
     }
 }

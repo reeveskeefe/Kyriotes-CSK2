@@ -80,6 +80,7 @@ impl Setup {
             transparency_inclusion_valid: true,
             root_pk: self.root_kp.verifying_key_bytes(),
             revocation_count: self.tree.revocation_count(),
+            prev_epoch_hash: [0u8; 32],
         }
     }
 }

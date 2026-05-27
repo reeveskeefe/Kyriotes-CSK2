@@ -18,6 +18,7 @@ const EPOCH: u64 = 42;
 
 fn make_cap(rights: Rights, p_hash: [u8; 32]) -> Capability {
     Capability {
+        version: 1,
         subject: "test-subject".to_string(),
         object_id: DEFAULT_OBJECT_ID.to_string(),
         rights,
@@ -25,6 +26,7 @@ fn make_cap(rights: Rights, p_hash: [u8; 32]) -> Capability {
         epoch_start: 40,
         epoch_end: 60,
         delegation_depth: 0,
+        parent_stamp: [0u8; 32],
         nonce: [0xABu8; 16],
     }
 }
@@ -56,6 +58,7 @@ fn setup(
         transparency_inclusion_valid: true,
         root_pk: authority.root_pk(),
         revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
     };
     let (state, tp) = commit_state(&mut log, &seed).expect("commit should succeed");
     let proof = authority.build_proof_for_state(cap, &state);

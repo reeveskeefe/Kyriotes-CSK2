@@ -1,4 +1,4 @@
-# ARC Specification v0.1 (Hardened Draft)
+# ARC Specification v0.2
 
 ## 1. Abstract
 
@@ -49,10 +49,44 @@ The caller distributes (cap, sigma_issue, cert_e) together as the issuance bundl
 
 ### Delegate
 
-Delegate is reserved for a future version.  Fields delegation_depth and
-parent_stamp in cap are allocated but not enforced in v0.1.  Conformant
-implementations must reject any cap with delegation_depth > 0 until Delegate
-is formally specified.
+Delegate(pp, sk_A_e, cert_e, parent_cap, parent_proof, A_e, new_subject, R_new,
+         e_start_new, e_end_new, rng) -> (cap_d, sigma_d) or reject
+
+1. Require ValidCap(parent_cap, parent_proof, A_e, req_parent) = 1 (§9).
+2. Require Rights::DELEGATE in parent_cap.rights.
+3. Require R_new ⊆ parent_cap.rights  (no rights escalation).
+4. Require e_start_new >= parent_cap.epoch_start and
+          e_end_new   <= parent_cap.epoch_end    (no epoch window expansion).
+5. Require e_start_new <= e_end_new.
+6. Compute parent_stamp = capability_stamp(parent_cap, A_e)  (§5).
+7. Sample nonce <- random 16 bytes from rng.
+8. Construct cap_d:
+     version         = parent_cap.version
+     subject         = new_subject
+     object_id       = parent_cap.object_id
+     rights          = R_new
+     policy_hash     = parent_cap.policy_hash
+     epoch_start     = e_start_new
+     epoch_end       = e_end_new
+     delegation_depth = parent_cap.delegation_depth + 1
+     parent_stamp    = parent_stamp  (from step 6)
+     nonce           = nonce         (from step 7)
+9. Add cap_d to L_e and recompute R_e and the revocation root.
+10. sigma_d = Sign(sk_A_e, "ARC-ISSUANCE-v1" || h_cap_d || R_e || e_le64).
+11. Return (cap_d, sigma_d).
+
+The delegating authority distributes (cap_d, sigma_d, cert_e) as the delegated
+issuance bundle to the new subject.
+
+Delegation invariants enforced at ValidCap (§9):
+
+- delegation_depth > 0  requires parent_stamp != 0^256.
+- delegation_depth = 0  requires parent_stamp  = 0^256.
+
+Delegation chains of arbitrary depth are permitted.  Each successive
+delegation may only narrow rights and epoch windows relative to its parent.
+The policy_hash and object_id are inherited unchanged from the root capability.
+No rights escalation and no epoch window expansion are enforced at each step.
 
 ### Revoke
 
@@ -599,6 +633,7 @@ Scope of current code:
 - Temporal policies and wrapper epoch selection (§10)
 - ValidCap checks 1, 2, 3, 4, 5, 6, 7 — all implemented with real cryptography (§9)
 - Rewrap path for epoch transitions — add_epoch_wrapper (§15)
+- Reseal with fresh DEK — open_and_reseal (§15)
 - Epoch key certificate chain — issue and verify, ed25519 (§7)
 - Merkle capability inclusion proofs — generate and verify (§9 check 1)
 - Sorted Merkle non-revocation witnesses — generate and verify (§9 check 2)
@@ -606,16 +641,16 @@ Scope of current code:
 - Synchronous and async transparency log trait model, InMemoryTransparencyLog (§8)
 - Synchronous and async capability revocation and transparency state commit (§16)
 - CompromiseNotice — issue, verify, and CheckCompromise enforcement (§16)
+- Delegation — delegate_capability enforcing rights/epoch/depth invariants (§2 Delegate)
 - Canonical domain-separated signing transcripts for all operations (§25)
 - Pluggable authority verifier: BasicAuthorityVerifier and CryptoAuthorityVerifier
+- Threshold signature set — TSIG issue, combine, and verify (§7)
+- Wire encoding — encode/decode Capability and ThresholdSignatureSet
 
 Out of scope for current code:
 
-- Production threshold signature stack (single-signer epoch root only; TSIG not implemented)
 - Production transparency proof verifier (Merkle path not verified by default verifier)
 - Finalized binary canonical encoding (format not yet stabilized)
-- Delegation flow (delegation_depth and parent_stamp fields reserved; depth > 0 not enforced)
-- Reseal with DEK rotation (Rewrap only; full reseal path not wired)
 - Side-channel and constant-time audit
 
 Conformance intent:

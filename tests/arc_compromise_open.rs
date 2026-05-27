@@ -143,6 +143,7 @@ fn open_with_compromise_check_rejects_when_issuance_epoch_key_is_compromised() {
         transparency_inclusion_valid: true,
         root_pk: root_kp.verifying_key_bytes(),
         revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
     };
     let mut log = InMemoryTransparencyLog::new();
     let (state, transparency_proof) = commit_state(&mut log, &seed_state).unwrap();
@@ -223,6 +224,7 @@ fn open_with_compromise_check_allows_open_before_compromise_epoch() {
         transparency_inclusion_valid: true,
         root_pk: root_kp.verifying_key_bytes(),
         revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
     };
     let mut log = InMemoryTransparencyLog::new();
     let (state, tp) = commit_state(&mut log, &seed_state).unwrap();
@@ -330,6 +332,7 @@ fn verify_with_compromise_check_rejects_compromised_epoch_key() {
         transparency_inclusion_valid: true,
         root_pk: root_kp.verifying_key_bytes(),
         revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
     };
     let mut log = InMemoryTransparencyLog::new();
     let (state, tp) = commit_state(&mut log, &seed_state).unwrap();
@@ -371,4 +374,178 @@ fn verify_with_compromise_check_rejects_compromised_epoch_key() {
     .expect_err("compromised epoch key should block verify");
 
     assert!(matches!(err, ArcError::AuthorityState(_)));
+}
+
+// ---------------------------------------------------------------------------
+// Scoping: a valid notice for a DIFFERENT epoch_pk must not block opens
+// ---------------------------------------------------------------------------
+
+/// A CompromiseNotice that is signed by the correct offline root key but names
+/// a *different* compromised epoch public key must not block an open whose
+/// issuance proof uses an unrelated (non-compromised) epoch key.
+///
+/// This guards against the enforcement being overly broad — the check must be
+/// scoped to `notice.compromised_epoch_pk == proof.issuance.epoch_cert.epoch_pk`.
+#[test]
+fn open_with_compromise_check_valid_notice_for_different_epoch_pk_does_not_block() {
+    let p = policy_hash("compromise-scope-check");
+    let mut rng = rand::rngs::OsRng;
+
+    // Build authority with a known root keypair so we can sign notices.
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let good_epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let good_epoch_pk = good_epoch_kp.verifying_key_bytes();
+    let epoch_cert = root_kp.issue_epoch_cert(&good_epoch_pk, 42, 10);
+
+    use arc_core::{
+        AuthorityCapabilityTree, AuthorityState, CapabilityProof, CapabilityIssuanceProof,
+        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, TransparencyLog,
+        capability_stamp, capability_leaf_hash,
+    };
+    use helpers::capability::sample_cap;
+    use helpers::transparency::commit_state;
+    use helpers::request_builders::sample_req;
+
+    let cap = sample_cap(40, 60, p);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+
+    let seed_state = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch: 42,
+        authority_id: "auth-main".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
+    };
+    let mut log = InMemoryTransparencyLog::new();
+    let (state, tp) = commit_state(&mut log, &seed_state).unwrap();
+
+    let inclusion = tree.inclusion_proof(&cap).unwrap();
+    let stamp = capability_stamp(&cap, &state);
+    let non_rev = tree.non_revocation_witness(&stamp).unwrap();
+    let leaf_hash = capability_leaf_hash(&cap);
+    let sig = good_epoch_kp.sign_capability_issuance(&leaf_hash, &state.authority_root, 42);
+    let proof = CapabilityProof {
+        inclusion,
+        non_revocation: non_rev,
+        issuance: CapabilityIssuanceProof { sig, epoch_cert },
+    };
+
+    let keypair = RecipientKeyPair::generate(&mut rng);
+    let obj = seal(
+        &keypair.public,
+        b"unaffected",
+        &cap,
+        &proof,
+        &tp,
+        &state,
+        &sample_req(42, p),
+        TemporalPolicy::Historical(42),
+    )
+    .unwrap();
+
+    // Issue a valid notice — signed by the correct root key — but naming a
+    // DIFFERENT (unrelated) compromised epoch pk.
+    let unrelated_epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let unrelated_pk = unrelated_epoch_kp.verifying_key_bytes();
+    // The notice is authentic (correct root sig) but targets a different key.
+    let notice = root_kp.issue_compromise_notice(&unrelated_pk, 42, [0xABu8; 32]);
+
+    // The open must succeed: `good_epoch_pk != unrelated_pk`.
+    let plaintext = open_with_compromise_check(
+        &keypair.secret,
+        &obj,
+        &cap,
+        &proof,
+        &state,
+        &[notice],
+    )
+    .expect("notice for unrelated epoch pk must not block this open");
+
+    assert_eq!(plaintext, b"unaffected");
+}
+
+/// Same scoping check for the verify path.
+#[test]
+fn verify_with_compromise_check_valid_notice_for_different_epoch_pk_does_not_block() {
+    let p = policy_hash("compromise-scope-verify");
+    let mut rng = rand::rngs::OsRng;
+
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let good_epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let good_epoch_pk = good_epoch_kp.verifying_key_bytes();
+    let epoch_cert = root_kp.issue_epoch_cert(&good_epoch_pk, 42, 10);
+
+    use arc_core::{
+        AuthorityCapabilityTree, AuthorityState, CapabilityProof, CapabilityIssuanceProof,
+        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, TransparencyLog,
+        capability_stamp, capability_leaf_hash,
+    };
+    use helpers::capability::sample_cap;
+    use helpers::transparency::commit_state;
+    use helpers::request_builders::sample_req;
+
+    let cap = sample_cap(40, 60, p);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&cap);
+
+    let seed_state = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch: 42,
+        authority_id: "auth-main".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
+    };
+    let mut log = InMemoryTransparencyLog::new();
+    let (state, tp) = commit_state(&mut log, &seed_state).unwrap();
+
+    let inclusion = tree.inclusion_proof(&cap).unwrap();
+    let stamp = capability_stamp(&cap, &state);
+    let non_rev = tree.non_revocation_witness(&stamp).unwrap();
+    let leaf_hash = capability_leaf_hash(&cap);
+    let sig = good_epoch_kp.sign_capability_issuance(&leaf_hash, &state.authority_root, 42);
+    let proof = CapabilityProof {
+        inclusion,
+        non_revocation: non_rev,
+        issuance: CapabilityIssuanceProof { sig, epoch_cert },
+    };
+
+    let keypair = RecipientKeyPair::generate(&mut rng);
+    let obj = seal(
+        &keypair.public,
+        b"verifiable",
+        &cap,
+        &proof,
+        &tp,
+        &state,
+        &sample_req(42, p),
+        TemporalPolicy::Historical(42),
+    )
+    .unwrap();
+
+    let unrelated_epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let unrelated_pk = unrelated_epoch_kp.verifying_key_bytes();
+    let notice = root_kp.issue_compromise_notice(&unrelated_pk, 42, [0xCDu8; 32]);
+
+    verify_with_compromise_check(
+        &obj,
+        &cap,
+        &proof,
+        &state,
+        &tp,
+        &[notice],
+    )
+    .expect("notice for unrelated epoch pk must not block this verify");
 }

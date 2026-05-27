@@ -5,4 +5,5 @@ pub mod engine;
 pub mod kem;
 pub mod model;
 pub mod transparency;
+pub mod tsig;
 pub mod verify;

@@ -1,0 +1,443 @@
+/// Integration tests for the Delegate algorithm (spec §2, §5).
+///
+/// Verifies that:
+/// - `delegate_capability` enforces all delegation invariants
+/// - A properly delegated capability can be used to seal and open an ARC object
+/// - The delegation chain is cryptographically bound through `parent_stamp`
+/// - Multi-level chains work (grandparent → parent → delegatee)
+mod helpers;
+
+use arc_core::{
+    ArcError, AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState,
+    Capability, CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair,
+    InMemoryTransparencyLog, Rights, TemporalPolicy,
+    capability_leaf_hash, capability_stamp, delegate_capability,
+    open, seal, seal_and_commit,
+};
+use helpers::{
+    capability::{sample_cap, TestAuthority},
+    request_builders::{policy_hash, sample_req, DEFAULT_OBJECT_ID},
+    scenario::Scenario,
+    transparency::commit_state,
+};
+
+// ---------------------------------------------------------------------------
+// Input validation
+// ---------------------------------------------------------------------------
+
+/// `delegate_capability` rejects parent capabilities that do not carry
+/// `Rights::DELEGATE`.
+#[test]
+fn delegate_rejects_parent_without_delegate_right() {
+    let s = Scenario::baseline("delg-no-right", 42);
+    // Default sample_cap has READ | DECRYPT, not DELEGATE.
+    let err = delegate_capability(
+        &s.cap,
+        &s.seal_state,
+        "delegatee",
+        Rights::READ,
+        s.cap.epoch_start,
+        s.cap.epoch_end,
+        &mut rand::rngs::OsRng,
+    )
+    .expect_err("must fail without Rights::DELEGATE");
+    assert!(matches!(err, ArcError::InvalidCapability(_)), "{err:?}");
+}
+
+/// Delegated rights must not exceed the parent's rights.
+#[test]
+fn delegate_rejects_rights_escalation() {
+    let p = policy_hash("delg-rights-esc");
+    let parent = Capability {
+        rights: Rights::READ.union(Rights::DELEGATE),
+        ..sample_cap(40, 60, p)
+    };
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 42, 10);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&parent);
+    let state = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch: 42,
+        authority_id: "auth".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
+    };
+    // WRITE is not in parent's rights.
+    let err = delegate_capability(
+        &parent,
+        &state,
+        "delegatee",
+        Rights::READ.union(Rights::WRITE),
+        42, 55,
+        &mut rand::rngs::OsRng,
+    )
+    .expect_err("must reject rights escalation");
+    assert!(matches!(err, ArcError::InvalidCapability(_)), "{err:?}");
+}
+
+/// Delegated epoch window must not extend beyond the parent's window.
+#[test]
+fn delegate_rejects_epoch_window_expansion() {
+    let p = policy_hash("delg-epoch-exp");
+    let parent = Capability {
+        rights: Rights::READ.union(Rights::DELEGATE),
+        ..sample_cap(40, 60, p)
+    };
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 42, 10);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&parent);
+    let state = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch: 42,
+        authority_id: "auth".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
+    };
+    // epoch_end 70 > parent.epoch_end 60.
+    let err = delegate_capability(
+        &parent,
+        &state,
+        "delegatee",
+        Rights::READ,
+        42, 70,
+        &mut rand::rngs::OsRng,
+    )
+    .expect_err("must reject epoch window expansion");
+    assert!(matches!(err, ArcError::InvalidCapability(_)), "{err:?}");
+}
+
+/// `epoch_start > epoch_end` is always rejected.
+#[test]
+fn delegate_rejects_inverted_epoch_window() {
+    let p = policy_hash("delg-inv-epoch");
+    let parent = Capability {
+        rights: Rights::READ.union(Rights::DELEGATE),
+        ..sample_cap(40, 60, p)
+    };
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 42, 10);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&parent);
+    let state = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch: 42,
+        authority_id: "auth".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
+    };
+    let err = delegate_capability(
+        &parent,
+        &state,
+        "delegatee",
+        Rights::READ,
+        55, 50, // start > end
+        &mut rand::rngs::OsRng,
+    )
+    .expect_err("must reject inverted epoch window");
+    assert!(matches!(err, ArcError::InvalidCapability(_)), "{err:?}");
+}
+
+// ---------------------------------------------------------------------------
+// Structural correctness
+// ---------------------------------------------------------------------------
+
+/// `delegate_capability` produces a capability whose fields obey the delegation spec.
+#[test]
+fn delegated_capability_has_correct_fields() {
+    let p = policy_hash("delg-fields");
+    let parent = Capability {
+        rights: Rights::READ.union(Rights::DECRYPT).union(Rights::DELEGATE),
+        ..sample_cap(40, 60, p)
+    };
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&parent);
+    let state = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch: 42,
+        authority_id: "auth-fields".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
+    };
+
+    let delegated = delegate_capability(
+        &parent,
+        &state,
+        "alice",
+        Rights::READ,
+        45, 55,
+        &mut rng,
+    )
+    .expect("delegation should succeed");
+
+    assert_eq!(delegated.delegation_depth, 1, "depth must be parent + 1");
+    assert_eq!(delegated.subject, "alice");
+    assert_eq!(delegated.object_id, parent.object_id);
+    assert_eq!(delegated.rights, Rights::READ);
+    assert_eq!(delegated.policy_hash, parent.policy_hash);
+    assert_eq!(delegated.epoch_start, 45);
+    assert_eq!(delegated.epoch_end, 55);
+    assert_eq!(delegated.version, parent.version);
+    // parent_stamp must be the stamp of the parent cap under the given state.
+    let expected_stamp = capability_stamp(&parent, &state);
+    assert_eq!(delegated.parent_stamp, expected_stamp, "parent_stamp must equal capability_stamp(parent, state)");
+    // parent_stamp must be non-zero (the stamp of a real cap in a real tree is non-zero).
+    assert_ne!(delegated.parent_stamp, [0u8; 32], "parent_stamp must be non-zero");
+}
+
+/// Two delegations of the same parent cap must produce different nonces.
+#[test]
+fn delegated_capability_nonces_are_distinct() {
+    let p = policy_hash("delg-nonces");
+    let parent = Capability {
+        rights: Rights::READ.union(Rights::DELEGATE),
+        ..sample_cap(40, 60, p)
+    };
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&parent);
+    let state = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch: 42,
+        authority_id: "auth".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
+    };
+
+    let d1 = delegate_capability(&parent, &state, "alice", Rights::READ, 42, 55, &mut rng).unwrap();
+    let d2 = delegate_capability(&parent, &state, "alice", Rights::READ, 42, 55, &mut rng).unwrap();
+    assert_ne!(d1.nonce, d2.nonce, "each delegation must use a fresh nonce");
+}
+
+// ---------------------------------------------------------------------------
+// End-to-end: seal / open with a delegated capability
+// ---------------------------------------------------------------------------
+
+/// Full end-to-end test: authority issues a parent cap with DELEGATE right,
+/// derives a delegated cap for a sub-delegatee, registers it in the authority
+/// tree, and the sub-delegatee successfully seals and opens an ARC object.
+#[test]
+fn delegated_cap_seal_open_e2e() {
+    let mut rng = rand::rngs::OsRng;
+    let epoch: u64 = 42;
+    let p = policy_hash("delg-e2e");
+
+    // --- Authority setup ---
+    let parent_cap = Capability {
+        rights: Rights::READ.union(Rights::DECRYPT).union(Rights::DELEGATE),
+        ..sample_cap(40, 60, p)
+    };
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), epoch, 10);
+
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&parent_cap);
+
+    // Build a state from the parent-only tree so capability_stamp uses the right root.
+    let parent_only_state = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch,
+        authority_id: "auth-e2e".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
+    };
+
+    // --- Derive delegated capability ---
+    let delegated_cap = delegate_capability(
+        &parent_cap,
+        &parent_only_state,
+        "alice",
+        Rights::READ.union(Rights::DECRYPT),
+        42, 55,
+        &mut rng,
+    )
+    .expect("delegation must succeed");
+
+    // --- Add delegated cap to tree ---
+    tree.add_capability(&delegated_cap);
+
+    // Build the final state that includes both caps in the authority root.
+    let mut log = InMemoryTransparencyLog::new();
+    let seed_state = AuthorityState {
+        authority_root: tree.authority_root(),
+        ..parent_only_state.clone()
+    };
+    let (state, transparency_proof) = commit_state(&mut log, &seed_state)
+        .expect("commit state");
+
+    // --- Build proof for delegated cap ---
+    let inclusion = tree.inclusion_proof(&delegated_cap).expect("cap must be in tree");
+    let stamp = capability_stamp(&delegated_cap, &state);
+    let non_revocation = tree.non_revocation_witness(&stamp).expect("cap must not be revoked");
+    let leaf_hash = capability_leaf_hash(&delegated_cap);
+    let sig = epoch_kp.sign_capability_issuance(&leaf_hash, &state.authority_root, epoch_cert.epoch);
+    let proof = CapabilityProof {
+        inclusion,
+        non_revocation,
+        issuance: CapabilityIssuanceProof { sig, epoch_cert: epoch_cert.clone() },
+    };
+
+    // --- Seal with delegated cap ---
+    let recipient = arc_core::RecipientKeyPair::generate(&mut rng);
+    let req = sample_req(epoch, p);
+
+    let object = seal(
+        &recipient.public,
+        b"delegated payload",
+        &delegated_cap,
+        &proof,
+        &transparency_proof,
+        &state,
+        &req,
+        TemporalPolicy::Historical(epoch),
+    )
+    .expect("seal with delegated cap must succeed");
+
+    // --- Open with delegated cap ---
+    let plaintext = open(&recipient.secret, &object, &delegated_cap, &proof, &state)
+        .expect("open with delegated cap must succeed");
+    assert_eq!(plaintext, b"delegated payload");
+}
+
+/// validate_capability rejects a directly-issued capability with a non-zero
+/// parent_stamp (structural consistency check, spec §5).
+#[test]
+fn validate_rejects_direct_cap_with_nonzero_parent_stamp() {
+    let s = Scenario::baseline("delg-direct-nz", 42).with_message(b"payload");
+
+    let object = seal(
+        &s.keypair.public, &s.message, &s.cap, &s.proof,
+        &s.seal_transparency_proof, &s.seal_state, &s.req,
+        s.temporal_policy.clone(),
+    ).expect("seal");
+
+    let bad_cap = Capability {
+        parent_stamp: [1u8; 32], // non-zero but delegation_depth == 0
+        ..s.cap.clone()
+    };
+    let err = open(&s.keypair.secret, &object, &bad_cap, &s.proof, &s.seal_state)
+        .expect_err("direct cap with non-zero parent_stamp must be rejected");
+    assert!(matches!(err, ArcError::InvalidCapability(_)), "{err:?}");
+}
+
+// ---------------------------------------------------------------------------
+// Multi-level delegation (grandparent → parent → child)
+// ---------------------------------------------------------------------------
+
+/// A two-level delegation chain (depth 0 → 1 → 2) is structurally valid:
+/// each delegated cap has the correct `delegation_depth` and `parent_stamp`.
+#[test]
+fn two_level_delegation_chain_fields_are_correct() {
+    let mut rng = rand::rngs::OsRng;
+    let p = policy_hash("delg-two-level");
+
+    let grandparent = Capability {
+        rights: Rights::READ.union(Rights::DECRYPT).union(Rights::DELEGATE),
+        ..sample_cap(40, 60, p)
+    };
+
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&grandparent);
+    let state_gp = AuthorityState {
+        authority_root: tree.authority_root(),
+        revocation_root: tree.revocation_root(),
+        transparency_root: [0u8; 32],
+        epoch: 42,
+        authority_id: "auth-chain".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: root_kp.verifying_key_bytes(),
+        revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
+    };
+
+    // Level 1: grandparent → parent
+    let parent = delegate_capability(
+        &grandparent,
+        &state_gp,
+        "parent-subject",
+        Rights::READ.union(Rights::DELEGATE),
+        42, 55,
+        &mut rng,
+    ).expect("first delegation");
+
+    assert_eq!(parent.delegation_depth, 1);
+    assert_eq!(parent.parent_stamp, capability_stamp(&grandparent, &state_gp));
+    assert_ne!(parent.parent_stamp, [0u8; 32]);
+
+    // Add parent to tree, rebuild state.
+    tree.add_capability(&parent);
+    let state_p = AuthorityState {
+        authority_root: tree.authority_root(),
+        ..state_gp.clone()
+    };
+
+    // Level 2: parent → child
+    let child = delegate_capability(
+        &parent,
+        &state_p,
+        "child-subject",
+        Rights::READ,
+        43, 53,
+        &mut rng,
+    ).expect("second delegation");
+
+    assert_eq!(child.delegation_depth, 2);
+    assert_eq!(child.parent_stamp, capability_stamp(&parent, &state_p));
+    assert_ne!(child.parent_stamp, [0u8; 32]);
+    // Child's rights are a subset of parent's rights.
+    assert!(parent.rights.contains_all(child.rights));
+    // Child's epoch window is contained within parent's.
+    assert!(child.epoch_start >= parent.epoch_start);
+    assert!(child.epoch_end <= parent.epoch_end);
+}

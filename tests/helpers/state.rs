@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use arc_core::AuthorityState;
 
 pub fn sample_state(epoch: u64) -> AuthorityState {

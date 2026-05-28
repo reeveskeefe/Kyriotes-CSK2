@@ -1,13 +1,8 @@
 mod helpers;
 
 use arc_core::{
-    ArcError,
-    AuthorityCapabilityTree,
-    InMemoryTransparencyLog,
-    TransparencyLog,
-    capability_stamp,
-    revoke_capability,
-    revoke_capability_and_commit,
+    ArcError, AuthorityCapabilityTree, AuthorityState, InMemoryTransparencyLog, TransparencyLog,
+    capability_stamp, revoke_capability, revoke_capability_and_commit,
 };
 use helpers::scenario::Scenario;
 
@@ -75,4 +70,41 @@ fn revoked_stamp_cannot_get_non_revocation_witness() {
         err,
         ArcError::InvalidCapability("capability is revoked; no non-revocation witness possible")
     ));
+}
+
+/// V7 regression: capability_stamp must be epoch-independent so that a
+/// revocation committed at epoch e_r remains detectable at every later epoch.
+/// Before the fix, stamp-v1 embedded `state.epoch` and `state.authority_root`,
+/// causing the stamp to silently change on every epoch rotation and bypass the
+/// revocation set.
+#[test]
+fn revocation_persists_after_epoch_rotation() {
+    let s = Scenario::baseline("strict", 42);
+
+    let mut tree = AuthorityCapabilityTree::new();
+    tree.add_capability(&s.cap);
+
+    // Revoke at epoch 43.
+    let revoked_state =
+        revoke_capability(&mut tree, &s.cap, &s.seal_state, 43).expect("revocation should succeed");
+
+    // Simulate epoch rotation to epoch 44: authority_root and revocation_root
+    // are carried forward unchanged (as rotate_epoch does), only epoch advances.
+    let state_44 = AuthorityState {
+        epoch: 44,
+        ..revoked_state.clone()
+    };
+
+    // The stamp at epoch 44 must equal the stamp at epoch 43 (epoch-independent)
+    // and must still be found in the revocation set.
+    let stamp_43 = capability_stamp(&s.cap, &revoked_state);
+    let stamp_44 = capability_stamp(&s.cap, &state_44);
+    assert_eq!(
+        stamp_43, stamp_44,
+        "stamp must be stable across epoch rotation"
+    );
+    assert!(
+        tree.is_revoked(&stamp_44),
+        "revocation must persist after epoch rotation"
+    );
 }

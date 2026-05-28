@@ -8,34 +8,29 @@ use crate::core::error::ArcError;
 use crate::core::temporal::TemporalPolicy;
 use crate::encoding::codec::{put_bytes, put_rights, put_str, put_temporal_policy, put_u64};
 
+use super::async_transparency::AsyncTransparencyLog;
+use super::authority::{
+    AuthorityRootKeyPair, EpochKeyCert, EpochSigningKeyPair, verify_compromise_notice,
+};
+use super::capability_tree::{
+    AuthorityCapabilityTree, CapabilityIssuanceProof, verify_capability_inclusion,
+    verify_capability_issuance, verify_non_revocation,
+};
 use super::kem::{hybrid_secret, kem_decaps, kem_encaps};
 use super::model::{
-    ArcObject,
-    AuthorityState,
-    AuthorityWrapper,
-    Capability,
-    CapabilityProof,
-    CompromiseNotice,
-    OpenRequest,
-    RecipientPublicKey,
-    RecipientSecretKey,
-    TransparencyProof,
-    capability_leaf_hash,
-    capability_stamp,
-    context_hash,
+    ArcObject, AuthorityState, AuthorityWrapper, Capability, CapabilityProof, CompromiseNotice,
+    OpenRequest, RecipientPublicKey, RecipientSecretKey, TransparencyProof, capability_leaf_hash,
+    capability_stamp, context_hash,
 };
-use crate::core::rights::Rights;
-use super::capability_tree::{
-    AuthorityCapabilityTree,
-    CapabilityIssuanceProof,
-    verify_capability_inclusion,
-    verify_capability_issuance,
-    verify_non_revocation,
-};
-use super::authority::{AuthorityRootKeyPair, EpochKeyCert, EpochSigningKeyPair, verify_compromise_notice};
 use super::transparency::{TransparencyLog, TransparencyStateCommit, transparency_log_entry_hash};
-use super::async_transparency::AsyncTransparencyLog;
 use super::verify::{AuthorityVerifier, BasicAuthorityVerifier, CryptoAuthorityVerifier};
+use crate::core::rights::Rights;
+
+/// Maximum allowed delegation depth for a capability chain.
+///
+/// Prevents integer overflow at issuance and caps chain length to a sane bound.
+/// Chains deeper than this are rejected by [`delegate_capability`].
+pub const MAX_DELEGATION_DEPTH: u64 = 255;
 
 pub fn validate_capability(
     cap: &Capability,
@@ -63,8 +58,12 @@ pub fn validate_capability(
     if proof.non_revocation.stamp != expected_stamp {
         return Err(ArcError::InvalidCapability("capability revoked"));
     }
-    verify_non_revocation(&proof.non_revocation, &state.revocation_root, state.revocation_count)
-        .map_err(|_| ArcError::InvalidCapability("capability revoked"))?;
+    verify_non_revocation(
+        &proof.non_revocation,
+        &state.revocation_root,
+        state.revocation_count,
+    )
+    .map_err(|_| ArcError::InvalidCapability("capability revoked"))?;
 
     verify_capability_issuance(
         cap,
@@ -85,10 +84,14 @@ pub fn validate_capability(
         return Err(ArcError::InvalidCapability("policy hash mismatch"));
     }
     if req.epoch < cap.epoch_start || req.epoch > cap.epoch_end {
-        return Err(ArcError::InvalidCapability("epoch outside capability validity"));
+        return Err(ArcError::InvalidCapability(
+            "epoch outside capability validity",
+        ));
     }
     if req.epoch != state.epoch {
-        return Err(ArcError::InvalidCapability("request epoch does not match authority state"));
+        return Err(ArcError::InvalidCapability(
+            "request epoch does not match authority state",
+        ));
     }
     Ok(())
 }
@@ -136,6 +139,11 @@ pub fn delegate_capability(
             "delegated epoch_start exceeds epoch_end",
         ));
     }
+    if parent_cap.delegation_depth >= MAX_DELEGATION_DEPTH {
+        return Err(ArcError::InvalidCapability(
+            "maximum delegation depth exceeded",
+        ));
+    }
     let parent_stamp = capability_stamp(parent_cap, state);
     let mut nonce = [0u8; 16];
     rng.fill_bytes(&mut nonce);
@@ -166,7 +174,12 @@ fn authority_digest(state: &AuthorityState, policy_hash: [u8; 32]) -> [u8; 32] {
     hasher.finalize().into()
 }
 
-fn derive_kek(ss_h: &[u8; 32], state: &AuthorityState, ctx: [u8; 32], policy_hash: [u8; 32]) -> [u8; 32] {
+fn derive_kek(
+    ss_h: &[u8; 32],
+    state: &AuthorityState,
+    ctx: [u8; 32],
+    policy_hash: [u8; 32],
+) -> [u8; 32] {
     let salt = authority_digest(state, policy_hash);
     let hk = Hkdf::<Sha256>::new(Some(&salt), &[ss_h.as_slice(), &ctx].concat());
     let mut out = [0u8; 32];
@@ -178,20 +191,27 @@ fn derive_kek(ss_h: &[u8; 32], state: &AuthorityState, ctx: [u8; 32], policy_has
     out
 }
 
-fn wrap_dek(kek: [u8; 32], nonce: [u8; 12], dek: [u8; 32], aad: &[u8]) -> Result<Vec<u8>, ArcError> {
+fn wrap_dek(
+    kek: [u8; 32],
+    nonce: [u8; 12],
+    dek: [u8; 32],
+    aad: &[u8],
+) -> Result<Vec<u8>, ArcError> {
     let cipher = ChaCha20Poly1305::new(Key::from_slice(&kek));
     cipher
         .encrypt(
             Nonce::from_slice(&nonce),
-            chacha20poly1305::aead::Payload {
-                msg: &dek,
-                aad,
-            },
+            chacha20poly1305::aead::Payload { msg: &dek, aad },
         )
         .map_err(|_| ArcError::Crypto("failed to wrap DEK"))
 }
 
-fn unwrap_dek(kek: [u8; 32], nonce: [u8; 12], wrapped_dek: &[u8], aad: &[u8]) -> Result<[u8; 32], ArcError> {
+fn unwrap_dek(
+    kek: [u8; 32],
+    nonce: [u8; 12],
+    wrapped_dek: &[u8],
+    aad: &[u8],
+) -> Result<[u8; 32], ArcError> {
     let cipher = ChaCha20Poly1305::new(Key::from_slice(&kek));
     let dec = cipher
         .decrypt(
@@ -212,7 +232,12 @@ fn unwrap_dek(kek: [u8; 32], nonce: [u8; 12], wrapped_dek: &[u8], aad: &[u8]) ->
     Ok(dek)
 }
 
-fn payload_encrypt(dek: [u8; 32], nonce: [u8; 12], message: &[u8], aad: &[u8]) -> Result<Vec<u8>, ArcError> {
+fn payload_encrypt(
+    dek: [u8; 32],
+    nonce: [u8; 12],
+    message: &[u8],
+    aad: &[u8],
+) -> Result<Vec<u8>, ArcError> {
     let cipher = ChaCha20Poly1305::new(Key::from_slice(&dek));
     cipher
         .encrypt(
@@ -222,7 +247,12 @@ fn payload_encrypt(dek: [u8; 32], nonce: [u8; 12], message: &[u8], aad: &[u8]) -
         .map_err(|_| ArcError::Crypto("payload encryption failed"))
 }
 
-fn payload_decrypt(dek: [u8; 32], nonce: [u8; 12], ciphertext: &[u8], aad: &[u8]) -> Result<Vec<u8>, ArcError> {
+fn payload_decrypt(
+    dek: [u8; 32],
+    nonce: [u8; 12],
+    ciphertext: &[u8],
+    aad: &[u8],
+) -> Result<Vec<u8>, ArcError> {
     let cipher = ChaCha20Poly1305::new(Key::from_slice(&dek));
     cipher
         .decrypt(
@@ -235,9 +265,18 @@ fn payload_decrypt(dek: [u8; 32], nonce: [u8; 12], ciphertext: &[u8], aad: &[u8]
         .map_err(|_| ArcError::Crypto("payload decryption failed"))
 }
 
-fn authority_aad(object: &ArcObject, state: &AuthorityState, ctx: [u8; 32], kem_ct_pq: &[u8]) -> Vec<u8> {
+fn authority_aad(
+    object: &ArcObject,
+    state: &AuthorityState,
+    ctx: [u8; 32],
+    kem_ct_classical: &[u8; 32],
+    kem_ct_pq: &[u8],
+) -> Vec<u8> {
     let mut aad = Vec::new();
-    aad.extend_from_slice(b"ARC-AUTHORITY-AAD-v1");
+    // v2: kem_ct_classical added so the AEAD tag on wrapped_dek commits to
+    // both KEM ciphertexts.  Omitting it (v1) allowed silent substitution of
+    // the classical ephemeral key by any party who knew the DEK (V8 fix).
+    aad.extend_from_slice(b"ARC-AUTHORITY-AAD-v2");
     put_str(&mut aad, &object.object_id);
     put_rights(&mut aad, object.required_rights);
     put_bytes(&mut aad, &object.policy_hash);
@@ -247,7 +286,8 @@ fn authority_aad(object: &ArcObject, state: &AuthorityState, ctx: [u8; 32], kem_
     put_bytes(&mut aad, &state.transparency_root);
     put_bytes(&mut aad, &ctx);
     put_temporal_policy(&mut aad, &object.temporal_policy);
-    put_bytes(&mut aad, &kem_ct_pq);
+    put_bytes(&mut aad, kem_ct_classical);
+    put_bytes(&mut aad, kem_ct_pq);
     aad
 }
 
@@ -265,6 +305,8 @@ fn required_epoch(policy: &TemporalPolicy, e_open: u64, e_seal: u64) -> u64 {
     policy.required_wrapper_epoch(e_open, e_seal)
 }
 
+// Keep the v0.1 public API stable until request-struct APIs are designed.
+#[allow(clippy::too_many_arguments)]
 pub fn seal(
     recipient_pk: &RecipientPublicKey,
     message: &[u8],
@@ -289,6 +331,8 @@ pub fn seal(
     )
 }
 
+// Keep the v0.1 public API stable until request-struct APIs are designed.
+#[allow(clippy::too_many_arguments)]
 pub fn seal_with_verifier<V: AuthorityVerifier>(
     verifier: &V,
     recipient_pk: &RecipientPublicKey,
@@ -313,7 +357,14 @@ pub fn seal_with_verifier<V: AuthorityVerifier>(
     rng.fill_bytes(&mut dek);
 
     let (kem_ct_classical, ss_c, kem_ct_pq, ss_pq) = kem_encaps(recipient_pk, &mut rng);
-    let ss_h = hybrid_secret(&ss_c, &ss_pq);
+    let ss_h = hybrid_secret(
+        &ss_c,
+        if kem_ct_pq.is_empty() {
+            None
+        } else {
+            Some(&ss_pq)
+        },
+    );
 
     let cap_stamp = capability_stamp(cap, state);
 
@@ -345,8 +396,8 @@ pub fn seal_with_verifier<V: AuthorityVerifier>(
     );
 
     let kek = derive_kek(&ss_h, state, ctx, object.policy_hash);
-    let aad_auth = authority_aad(&object, state, ctx, &kem_ct_pq);
-    let wrapped_dek = wrap_dek(kek, wrap_nonce, dek, &aad_auth)?;;
+    let aad_auth = authority_aad(&object, state, ctx, &kem_ct_classical, &kem_ct_pq);
+    let wrapped_dek = wrap_dek(kek, wrap_nonce, dek, &aad_auth)?;
 
     object.wrappers.push(AuthorityWrapper {
         epoch: state.epoch,
@@ -375,6 +426,8 @@ pub fn seal_with_verifier<V: AuthorityVerifier>(
 ///
 /// Returns `Err` if the state cannot be committed, if capability validation
 /// fails, or if encryption fails.
+// Keep the v0.1 public API stable until request-struct APIs are designed.
+#[allow(clippy::too_many_arguments)]
 pub fn seal_and_commit<V: AuthorityVerifier, L: TransparencyLog>(
     log: &mut L,
     verifier: &V,
@@ -435,9 +488,22 @@ fn unwrap_dek_for_epoch(
     }
 
     let (ss_c, ss_pq) = kem_decaps(recipient_sk, &wrapper.kem_ct_classical, &wrapper.kem_ct_pq);
-    let ss_h = hybrid_secret(&ss_c, &ss_pq);
+    let ss_h = hybrid_secret(
+        &ss_c,
+        if wrapper.kem_ct_pq.is_empty() {
+            None
+        } else {
+            Some(&ss_pq)
+        },
+    );
     let kek = derive_kek(&ss_h, state, ctx, object.policy_hash);
-    let aad = authority_aad(object, state, ctx, &wrapper.kem_ct_pq);
+    let aad = authority_aad(
+        object,
+        state,
+        ctx,
+        &wrapper.kem_ct_classical,
+        &wrapper.kem_ct_pq,
+    );
     unwrap_dek(kek, wrapper.wrap_nonce, &wrapper.wrapped_dek, &aad)
 }
 
@@ -490,9 +556,16 @@ pub fn open_with_verifier<V: AuthorityVerifier>(
     validate_capability(cap, proof, state, &req)?;
 
     let dek = unwrap_dek_for_epoch(recipient_sk, object, cap, state, wrapper)?;
-    payload_decrypt(dek, object.payload_nonce, &object.payload_ciphertext, &payload_aad(object))
+    payload_decrypt(
+        dek,
+        object.payload_nonce,
+        &object.payload_ciphertext,
+        &payload_aad(object),
+    )
 }
 
+// Keep the v0.1 public API stable until request-struct APIs are designed.
+#[allow(clippy::too_many_arguments)]
 pub fn add_epoch_wrapper(
     recipient_sk: &RecipientSecretKey,
     recipient_pk: &RecipientPublicKey,
@@ -517,6 +590,8 @@ pub fn add_epoch_wrapper(
     )
 }
 
+// Keep the v0.1 public API stable until request-struct APIs are designed.
+#[allow(clippy::too_many_arguments)]
 pub fn add_epoch_wrapper_with_verifier<V: AuthorityVerifier>(
     verifier: &V,
     recipient_sk: &RecipientSecretKey,
@@ -558,7 +633,9 @@ pub fn add_epoch_wrapper_with_verifier<V: AuthorityVerifier>(
     // Verify the capability's validity window covers to_state.epoch.
     // (from_state epoch validity is checked inside validate_capability above.)
     if to_state.epoch < cap.epoch_start || to_state.epoch > cap.epoch_end {
-        return Err(ArcError::InvalidCapability("epoch outside capability validity"));
+        return Err(ArcError::InvalidCapability(
+            "epoch outside capability validity",
+        ));
     }
 
     let cap_stamp = capability_stamp(cap, to_state);
@@ -575,13 +652,24 @@ pub fn add_epoch_wrapper_with_verifier<V: AuthorityVerifier>(
     let mut rng = rand::rngs::OsRng;
     rng.fill_bytes(&mut wrap_nonce);
     let (kem_ct_classical, ss_c, kem_ct_pq, ss_pq) = kem_encaps(recipient_pk, &mut rng);
-    let ss_h = hybrid_secret(&ss_c, &ss_pq);
+    let ss_h = hybrid_secret(
+        &ss_c,
+        if kem_ct_pq.is_empty() {
+            None
+        } else {
+            Some(&ss_pq)
+        },
+    );
     let kek = derive_kek(&ss_h, to_state, ctx, object.policy_hash);
-    let aad = authority_aad(object, to_state, ctx, &kem_ct_pq);
+    let aad = authority_aad(object, to_state, ctx, &kem_ct_classical, &kem_ct_pq);
 
     let wrapped_dek = wrap_dek(kek, wrap_nonce, dek, &aad)?;
 
-    if let Some(existing) = object.wrappers.iter_mut().find(|w| w.epoch == to_state.epoch) {
+    if let Some(existing) = object
+        .wrappers
+        .iter_mut()
+        .find(|w| w.epoch == to_state.epoch)
+    {
         *existing = AuthorityWrapper {
             epoch: to_state.epoch,
             kem_ct_classical,
@@ -615,6 +703,8 @@ pub fn add_epoch_wrapper_with_verifier<V: AuthorityVerifier>(
 /// Combines [`TransparencyLog::commit_state`] with
 /// [`add_epoch_wrapper_with_verifier`] so callers get a consistent
 /// `TransparencyStateCommit` whose proof is baked into the wrapper.
+// Keep the v0.1 public API stable until request-struct APIs are designed.
+#[allow(clippy::too_many_arguments)]
 pub fn add_epoch_wrapper_and_commit<V: AuthorityVerifier, L: TransparencyLog>(
     log: &mut L,
     verifier: &V,
@@ -653,15 +743,21 @@ pub fn revoke_capability(
     revoke_epoch: u64,
 ) -> Result<AuthorityState, ArcError> {
     if tree.inclusion_proof(cap).is_none() {
-        return Err(ArcError::InvalidCapability("capability not found in authority tree"));
+        return Err(ArcError::InvalidCapability(
+            "capability not found in authority tree",
+        ));
     }
 
     if tree.authority_root() != base_state.authority_root {
-        return Err(ArcError::AuthorityState("authority root does not match capability tree"));
+        return Err(ArcError::AuthorityState(
+            "authority root does not match capability tree",
+        ));
     }
 
     if tree.revocation_root() != base_state.revocation_root {
-        return Err(ArcError::AuthorityState("revocation root does not match capability tree"));
+        return Err(ArcError::AuthorityState(
+            "revocation root does not match capability tree",
+        ));
     }
 
     if revoke_epoch <= base_state.epoch {
@@ -780,6 +876,8 @@ pub fn verify_with_verifier<V: AuthorityVerifier>(
 /// `open_proof` must be valid for `open_state`; `seal_proof` must be valid
 /// for `seal_state`.  When resealing within the same authority epoch the
 /// same proof may be supplied for both arguments.
+// Keep the v0.1 public API stable until request-struct APIs are designed.
+#[allow(clippy::too_many_arguments)]
 pub fn open_and_reseal(
     recipient_sk: &RecipientSecretKey,
     recipient_pk_new: &RecipientPublicKey,
@@ -811,6 +909,8 @@ pub fn open_and_reseal(
 }
 
 /// Reseal variant that accepts a custom [`AuthorityVerifier`].
+// Keep the v0.1 public API stable until request-struct APIs are designed.
+#[allow(clippy::too_many_arguments)]
 pub fn open_and_reseal_with_verifier<V: AuthorityVerifier>(
     verifier: &V,
     recipient_sk: &RecipientSecretKey,
@@ -826,7 +926,8 @@ pub fn open_and_reseal_with_verifier<V: AuthorityVerifier>(
     new_temporal_policy: TemporalPolicy,
 ) -> Result<ArcObject, ArcError> {
     // Step 1: Open the existing object to recover M.
-    let plaintext = open_with_verifier(verifier, recipient_sk, object, cap, open_proof, open_state)?;
+    let plaintext =
+        open_with_verifier(verifier, recipient_sk, object, cap, open_proof, open_state)?;
 
     // Step 2–4: Seal M under the new state with a fresh DEK (spec §15 Reseal).
     seal_with_verifier(
@@ -852,6 +953,8 @@ pub fn open_and_reseal_with_verifier<V: AuthorityVerifier>(
 ///
 /// The `open_state` must already be committed (so `open_with_verifier` can
 /// find a valid wrapper).  The `seal_state` is committed by this function.
+// Keep the v0.1 public API stable until request-struct APIs are designed.
+#[allow(clippy::too_many_arguments)]
 pub fn open_and_reseal_and_commit<V: AuthorityVerifier, L: TransparencyLog>(
     log: &mut L,
     verifier: &V,
@@ -898,7 +1001,9 @@ pub fn check_epoch_not_compromised(
     notice: &CompromiseNotice,
 ) -> Result<(), ArcError> {
     if epoch_pk == &notice.compromised_epoch_pk && epoch >= notice.compromised_epoch {
-        return Err(ArcError::AuthorityState("epoch key has been declared compromised"));
+        return Err(ArcError::AuthorityState(
+            "epoch key has been declared compromised",
+        ));
     }
     Ok(())
 }
@@ -938,11 +1043,8 @@ pub fn issue_capability(
     tree.add_capability(cap);
 
     let leaf_hash = capability_leaf_hash(cap);
-    let sig = epoch_kp.sign_capability_issuance(
-        &leaf_hash,
-        &tree.authority_root(),
-        epoch_cert.epoch,
-    );
+    let sig =
+        epoch_kp.sign_capability_issuance(&leaf_hash, &tree.authority_root(), epoch_cert.epoch);
 
     Ok(CapabilityIssuanceProof {
         sig,
@@ -1119,7 +1221,7 @@ pub fn rotate_epoch(
     new_epoch: u64,
     validity_window: u64,
     prev_epoch_hash: &[u8; 32],
-) -> (EpochSigningKeyPair, EpochKeyCert, AuthorityState, [u8; 64]) {
+) -> (EpochSigningKeyPair, EpochKeyCert, AuthorityState) {
     let epoch_kp = EpochSigningKeyPair::generate(&mut rand::rngs::OsRng);
     let epoch_cert =
         root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), new_epoch, validity_window);
@@ -1136,13 +1238,7 @@ pub fn rotate_epoch(
         revocation_count: base_state.revocation_count,
         prev_epoch_hash: *prev_epoch_hash,
     };
-    let sigma_e = epoch_kp.sign_epoch_root(
-        &new_state.authority_root,
-        &new_state.revocation_root,
-        new_epoch,
-        prev_epoch_hash,
-    );
-    (epoch_kp, epoch_cert, new_state, sigma_e)
+    (epoch_kp, epoch_cert, new_state)
 }
 
 /// Rotate to a new epoch and atomically commit the new state to the
@@ -1164,9 +1260,23 @@ pub fn rotate_epoch_and_commit<L: TransparencyLog>(
     validity_window: u64,
     prev_epoch_hash: &[u8; 32],
 ) -> Result<(EpochSigningKeyPair, EpochKeyCert, TransparencyStateCommit), ArcError> {
-    let (epoch_kp, epoch_cert, new_state, sigma_e) =
-        rotate_epoch(root_kp, base_state, new_epoch, validity_window, prev_epoch_hash);
+    let (epoch_kp, epoch_cert, new_state) = rotate_epoch(
+        root_kp,
+        base_state,
+        new_epoch,
+        validity_window,
+        prev_epoch_hash,
+    );
     let mut commit = log.commit_state(&new_state)?;
+
+    // Sign sigma_e with the real transparency_root now that T_e is known.
+    let sigma_e = epoch_kp.sign_epoch_root(
+        &commit.state.authority_root,
+        &commit.state.revocation_root,
+        &commit.state.transparency_root,
+        new_epoch,
+        prev_epoch_hash,
+    );
 
     // Compute Log_e = transparency_log_entry_hash(Log_{e-1}, R_e, Rev_e, e, pk_A_e, sigma_e)
     // and register it in the log so it can be used as prev_epoch_hash for the next rotation.
@@ -1199,7 +1309,7 @@ pub struct EpochRotation {
     pub epoch_cert: EpochKeyCert,
     /// Epoch online public key (32-byte Ed25519 verifying key).
     pub epoch_pk: [u8; 32],
-    /// Epoch root signature: `Sign(sk_A_e, "ARC-EPOCH-ROOT-v1" || …)` (§7).
+    /// Epoch root signature: `Sign(sk_A_e, "ARC-EPOCH-ROOT-v2" || …)` (§7).
     pub sigma_e: [u8; 64],
     /// Committed authority state with real `transparency_root`.
     pub state: AuthorityState,
@@ -1259,11 +1369,26 @@ pub fn rotate_epoch_full<L: TransparencyLog>(
     validity_window: u64,
     prev_epoch_hash: &[u8; 32],
 ) -> Result<EpochRotation, ArcError> {
-    let (epoch_kp, epoch_cert, new_state, sigma_e) =
-        rotate_epoch(root_kp, base_state, new_epoch, validity_window, prev_epoch_hash);
+    let (epoch_kp, epoch_cert, new_state) = rotate_epoch(
+        root_kp,
+        base_state,
+        new_epoch,
+        validity_window,
+        prev_epoch_hash,
+    );
     let epoch_pk = epoch_kp.verifying_key_bytes();
 
     let mut commit = log.commit_state(&new_state)?;
+
+    // Sign sigma_e with the real transparency_root now that T_e is known.
+    let sigma_e = epoch_kp.sign_epoch_root(
+        &commit.state.authority_root,
+        &commit.state.revocation_root,
+        &commit.state.transparency_root,
+        new_epoch,
+        prev_epoch_hash,
+    );
+
     let chain_hash = transparency_log_entry_hash(
         prev_epoch_hash,
         &commit.state.authority_root,

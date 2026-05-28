@@ -6,13 +6,10 @@
 /// unchanged.
 mod helpers;
 
-use arc_core::{
-    ArcError, RecipientKeyPair, TemporalPolicy,
-    open, open_and_reseal, seal,
-};
+use arc_core::InMemoryTransparencyLog;
+use arc_core::{ArcError, RecipientKeyPair, TemporalPolicy, open, open_and_reseal, seal};
 use helpers::scenario::Scenario;
 use helpers::transparency::commit_state;
-use arc_core::InMemoryTransparencyLog;
 
 // ---------------------------------------------------------------------------
 // Happy-path
@@ -91,8 +88,14 @@ fn reseal_old_recipient_cannot_open_resealed_object() {
 
     // The old recipient's KEM ciphertext is for new_kp.public; decapsulation
     // with s.keypair.secret will produce wrong shared secret → AEAD decryption fail.
-    let err = open(&s.keypair.secret, &resealed, &s.cap, &s.proof, &s.seal_state)
-        .expect_err("old recipient must not open resealed object");
+    let err = open(
+        &s.keypair.secret,
+        &resealed,
+        &s.cap,
+        &s.proof,
+        &s.seal_state,
+    )
+    .expect_err("old recipient must not open resealed object");
     assert!(matches!(err, ArcError::Crypto(_)), "{err:?}");
 }
 
@@ -135,10 +138,22 @@ fn reseal_same_recipient_fresh_ciphertext() {
     );
 
     // Both original and resealed are openable by the same recipient.
-    let m1 = open(&s.keypair.secret, &original, &s.cap, &s.proof, &s.seal_state)
-        .expect("original still openable");
-    let m2 = open(&s.keypair.secret, &resealed, &s.cap, &s.proof, &s.seal_state)
-        .expect("resealed openable");
+    let m1 = open(
+        &s.keypair.secret,
+        &original,
+        &s.cap,
+        &s.proof,
+        &s.seal_state,
+    )
+    .expect("original still openable");
+    let m2 = open(
+        &s.keypair.secret,
+        &resealed,
+        &s.cap,
+        &s.proof,
+        &s.seal_state,
+    )
+    .expect("resealed openable");
     assert_eq!(m1, m2);
 }
 
@@ -184,11 +199,11 @@ fn reseal_cross_epoch_with_new_state() {
         &new_kp.public,
         &original,
         &s.cap,
-        &s.proof,       // open proof (epoch 45)
-        &s.seal_state,  // open state (epoch 45)
-        &proof48_cap,   // seal proof (epoch 48)
-        &proof48,       // seal transparency proof
-        &state48,       // seal state (epoch 48)
+        &s.proof,      // open proof (epoch 45)
+        &s.seal_state, // open state (epoch 45)
+        &proof48_cap,  // seal proof (epoch 48)
+        &proof48,      // seal transparency proof
+        &state48,      // seal state (epoch 48)
         &seal_req48,
         TemporalPolicy::Historical(48),
     )
@@ -275,7 +290,7 @@ fn reseal_rejects_wrong_recipient_secret_key() {
 
     // wrong_kp.secret cannot decapsulate a KEM ciphertext encrypted for s.keypair.public.
     let err = open_and_reseal(
-        &wrong_kp.secret,   // wrong key
+        &wrong_kp.secret, // wrong key
         &new_kp.public,
         &original,
         &s.cap,

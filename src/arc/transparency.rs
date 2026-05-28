@@ -5,7 +5,8 @@ use crate::core::error::ArcError;
 use super::model::{AuthorityState, TransparencyProof, transparency_leaf_hash};
 
 pub trait TransparencyLog {
-    fn commit_state(&mut self, state: &AuthorityState) -> Result<TransparencyStateCommit, ArcError>;
+    fn commit_state(&mut self, state: &AuthorityState)
+    -> Result<TransparencyStateCommit, ArcError>;
     fn proof_for_state(&self, state: &AuthorityState) -> Result<TransparencyProof, ArcError>;
     fn current_root(&self) -> [u8; 32];
 
@@ -52,7 +53,9 @@ pub struct InMemoryTransparencyLog {
 
 impl InMemoryTransparencyLog {
     pub fn new() -> Self {
-        Self { entries: Vec::new() }
+        Self {
+            entries: Vec::new(),
+        }
     }
 
     fn find_index(&self, authority_id: &str, epoch: u64) -> Option<usize> {
@@ -70,7 +73,9 @@ impl InMemoryTransparencyLog {
             return Err(ArcError::AuthorityState("transparency log is empty"));
         }
         if index >= self.entries.len() {
-            return Err(ArcError::AuthorityState("transparency log index out of bounds"));
+            return Err(ArcError::AuthorityState(
+                "transparency log index out of bounds",
+            ));
         }
 
         let leaves = self.leaf_hashes();
@@ -85,10 +90,14 @@ impl InMemoryTransparencyLog {
 }
 
 impl TransparencyLog for InMemoryTransparencyLog {
-    fn commit_state(&mut self, state: &AuthorityState) -> Result<TransparencyStateCommit, ArcError> {
+    fn commit_state(
+        &mut self,
+        state: &AuthorityState,
+    ) -> Result<TransparencyStateCommit, ArcError> {
         let leaf_hash = transparency_leaf_hash(state);
 
-        let index = if let Some(existing_index) = self.find_index(&state.authority_id, state.epoch) {
+        let index = if let Some(existing_index) = self.find_index(&state.authority_id, state.epoch)
+        {
             if self.entries[existing_index].leaf_hash != leaf_hash {
                 return Err(ArcError::AuthorityState(
                     "transparency log already contains different state for authority/epoch",
@@ -119,11 +128,11 @@ impl TransparencyLog for InMemoryTransparencyLog {
     }
 
     fn proof_for_state(&self, state: &AuthorityState) -> Result<TransparencyProof, ArcError> {
-        let idx = self
-            .find_index(&state.authority_id, state.epoch)
-            .ok_or(ArcError::AuthorityState(
-                "state not found in transparency log",
-            ))?;
+        let idx =
+            self.find_index(&state.authority_id, state.epoch)
+                .ok_or(ArcError::AuthorityState(
+                    "state not found in transparency log",
+                ))?;
 
         let expected_leaf = transparency_leaf_hash(state);
         if self.entries[idx].leaf_hash != expected_leaf {
@@ -147,9 +156,21 @@ impl TransparencyLog for InMemoryTransparencyLog {
     }
 
     fn chain_hash_for(&self, authority_id: &str, epoch: u64) -> Option<[u8; 32]> {
-        self.find_index(authority_id, epoch).map(|idx| self.entries[idx].chain_hash)
+        self.find_index(authority_id, epoch)
+            .map(|idx| self.entries[idx].chain_hash)
     }
 }
+
+/// Padding applied to a lone node (odd-sized level) when it has no pair.
+/// Using a fixed all-`0xFF` pattern that is distinct from `[0u8; 32]` (the
+/// empty-tree root) and from any realistic SHA-256 output, preventing the
+/// duplicate-last-leaf second-preimage attack (CVE-2012-2459 class):
+///
+/// Without this fix a 3-leaf tree and a 4-leaf tree whose 4th leaf equals
+/// its 3rd share the same root because the builder used `H(L, L)` for the
+/// lone node.  With the sentinel the lone-node parent is `H(L, 0xFF…FF)`,
+/// which is distinct from any pair result `H(L, L')` for a real L'.
+pub const LONE_NODE_SENTINEL: [u8; 32] = [0xff; 32];
 
 pub fn hash_transparency_node(left: [u8; 32], right: [u8; 32]) -> [u8; 32] {
     let mut hasher = Sha256::new();
@@ -201,7 +222,13 @@ pub fn merkle_root(leaves: &[[u8; 32]]) -> [u8; 32] {
         let mut i = 0usize;
         while i < level.len() {
             let left = level[i];
-            let right = if i + 1 < level.len() { level[i + 1] } else { level[i] };
+            // Use LONE_NODE_SENTINEL for unpaired nodes instead of
+            // self-duplication, preventing the duplicate-leaf second-preimage.
+            let right = if i + 1 < level.len() {
+                level[i + 1]
+            } else {
+                LONE_NODE_SENTINEL
+            };
             next.push(hash_transparency_node(left, right));
             i += 2;
         }
@@ -221,23 +248,27 @@ fn merkle_proof_for_index(leaves: &[[u8; 32]], index: usize) -> Vec<[u8; 32]> {
     let mut level: Vec<[u8; 32]> = leaves.to_vec();
 
     while level.len() > 1 {
-        let sibling_idx = if idx % 2 == 0 {
+        // Record the sibling used at this level.  For a lone (unpaired) node
+        // the sibling is LONE_NODE_SENTINEL, matching what merkle_root builds.
+        if idx.is_multiple_of(2) {
             if idx + 1 < level.len() {
-                idx + 1
+                siblings.push(level[idx + 1]);
             } else {
-                idx
+                siblings.push(LONE_NODE_SENTINEL);
             }
         } else {
-            idx - 1
-        };
-
-        siblings.push(level[sibling_idx]);
+            siblings.push(level[idx - 1]);
+        }
 
         let mut next = Vec::with_capacity(level.len().div_ceil(2));
         let mut i = 0usize;
         while i < level.len() {
             let left = level[i];
-            let right = if i + 1 < level.len() { level[i + 1] } else { level[i] };
+            let right = if i + 1 < level.len() {
+                level[i + 1]
+            } else {
+                LONE_NODE_SENTINEL
+            };
             next.push(hash_transparency_node(left, right));
             i += 2;
         }
@@ -278,7 +309,10 @@ mod tests {
 
         assert_ne!(commit.state.transparency_root, [0u8; 32]);
         assert_eq!(commit.proof.leaf_index, 0);
-        assert_eq!(commit.proof.leaf_hash, transparency_leaf_hash(&sample_state(42)));
+        assert_eq!(
+            commit.proof.leaf_hash,
+            transparency_leaf_hash(&sample_state(42))
+        );
     }
 
     #[test]
@@ -287,6 +321,9 @@ mod tests {
         let err = log
             .proof_for_state(&sample_state(42))
             .expect_err("missing state should fail");
-        assert!(matches!(err, ArcError::AuthorityState("state not found in transparency log")));
+        assert!(matches!(
+            err,
+            ArcError::AuthorityState("state not found in transparency log")
+        ));
     }
 }

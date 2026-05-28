@@ -4,10 +4,10 @@
 /// cap epoch-range boundary checks (ValidCap spec §9 check 6).
 mod helpers;
 
+use arc_core::InMemoryTransparencyLog;
 use arc_core::{ArcError, TemporalPolicy, add_epoch_wrapper, open, seal};
 use helpers::scenario::Scenario;
 use helpers::transparency::commit_state;
-use arc_core::InMemoryTransparencyLog;
 
 // ---------------------------------------------------------------------------
 // Window temporal policy

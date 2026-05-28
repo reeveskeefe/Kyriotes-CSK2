@@ -10,13 +10,8 @@
 mod helpers;
 
 use arc_core::{
-    ArcError, TemporalPolicy,
-    open, open_and_reseal, open_and_reseal_and_commit,
-    seal, seal_and_commit,
-    BasicAuthorityVerifier,
-    InMemoryTransparencyLog,
-    RecipientKeyPair,
-    TransparencyLog,
+    ArcError, BasicAuthorityVerifier, InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy,
+    open, open_and_reseal, open_and_reseal_and_commit, seal,
 };
 use helpers::scenario::Scenario;
 use helpers::transparency::commit_state;
@@ -153,8 +148,14 @@ fn reseal_required_full_e2e_flow() {
     let (state45, _proof45) = commit_state(&mut log, &seed45).expect("commit 45");
     let proof_for_45 = s.build_proof_for_state(&state45);
 
-    let err = open(&s.keypair.secret, &original, &s.cap, &proof_for_45, &state45)
-        .expect_err("should fail past reseal boundary");
+    let err = open(
+        &s.keypair.secret,
+        &original,
+        &s.cap,
+        &proof_for_45,
+        &state45,
+    )
+    .expect_err("should fail past reseal boundary");
     assert!(
         matches!(err, ArcError::MissingWrapper),
         "expected MissingWrapper past reseal boundary, got {err:?}"
@@ -178,12 +179,12 @@ fn reseal_required_full_e2e_flow() {
         &new_kp.public,
         &original,
         &s.cap,
-        &s.proof,           // proof for open_state (epoch 42, ≤ boundary)
-        &s.seal_state,      // open_state: epoch 42, wrapper exists here
-        &proof_for_45,      // proof for seal_state (epoch 45)
-        &state45,           // seal_state: epoch 45
+        &s.proof,      // proof for open_state (epoch 42, ≤ boundary)
+        &s.seal_state, // open_state: epoch 42, wrapper exists here
+        &proof_for_45, // proof for seal_state (epoch 45)
+        &state45,      // seal_state: epoch 45
         &req45,
-        TemporalPolicy::Current,  // new object: no reseal restriction
+        TemporalPolicy::Current, // new object: no reseal restriction
     )
     .expect("open_and_reseal_and_commit should succeed (open uses epoch-42 wrapper)");
 
@@ -242,8 +243,14 @@ fn reseal_required_old_recipient_cannot_open_resealed() {
 
     // Old recipient's key cannot derive the new DEK.
     let proof_for_commit = s.build_proof_for_state(&commit.state);
-    let err = open(&s.keypair.secret, &resealed, &s.cap, &proof_for_commit, &commit.state)
-        .expect_err("old recipient must not open resealed object");
+    let err = open(
+        &s.keypair.secret,
+        &resealed,
+        &s.cap,
+        &proof_for_commit,
+        &commit.state,
+    )
+    .expect_err("old recipient must not open resealed object");
     assert!(matches!(err, ArcError::Crypto(_)), "{err:?}");
 }
 
@@ -276,7 +283,7 @@ fn open_and_reseal_works_for_reseal_required() {
         &original,
         &s.cap,
         &s.proof,
-        &s.seal_state,   // open_state epoch 42 ≤ boundary 44 → wrapper exists
+        &s.seal_state, // open_state epoch 42 ≤ boundary 44 → wrapper exists
         &s.proof,
         &s.seal_transparency_proof,
         &s.seal_state,

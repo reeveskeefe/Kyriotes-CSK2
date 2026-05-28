@@ -6,8 +6,7 @@ use helpers::state::sample_state;
 
 #[test]
 fn rejects_cross_object_capability_misuse() {
-    let s = Scenario::baseline("strict", 42)
-        .mismatched_object("different-object.pdf");
+    let s = Scenario::baseline("strict", 42).mismatched_object("different-object.pdf");
 
     let bad_req = arc_core::OpenRequest {
         object_id: "different-object.pdf".to_string(),
@@ -28,13 +27,15 @@ fn rejects_cross_object_capability_misuse() {
     )
     .expect_err("should reject object mismatch");
 
-    assert!(matches!(err, ArcError::InvalidCapability("object mismatch")));
+    assert!(matches!(
+        err,
+        ArcError::InvalidCapability("object mismatch")
+    ));
 }
 
 #[test]
 fn rejects_when_authority_chain_checks_fail() {
-    let s = Scenario::baseline("strict", 42)
-        .invalidate_seal_epoch_signature();
+    let s = Scenario::baseline("strict", 42).invalidate_seal_epoch_signature();
 
     let err = seal(
         &s.keypair.public,
@@ -71,7 +72,10 @@ fn rejects_tampered_wrapper_context_hash() {
 
     let err = open(&s.keypair.secret, &object, &s.cap, &s.proof, &s.open_state)
         .expect_err("tampered context must be rejected");
-    assert!(matches!(err, ArcError::AuthorityState("context hash mismatch")));
+    assert!(matches!(
+        err,
+        ArcError::AuthorityState("context hash mismatch")
+    ));
 }
 
 #[test]
@@ -100,8 +104,7 @@ fn rejects_window_policy_outside_range() {
 
 #[test]
 fn rejects_revoked_proof_scenario() {
-    let s = Scenario::baseline("strict", 42)
-        .revoked_proof();
+    let s = Scenario::baseline("strict", 42).revoked_proof();
 
     let err = seal(
         &s.keypair.public,
@@ -115,13 +118,15 @@ fn rejects_revoked_proof_scenario() {
     )
     .expect_err("revoked proof should be rejected");
 
-    assert!(matches!(err, ArcError::InvalidCapability("capability revoked")));
+    assert!(matches!(
+        err,
+        ArcError::InvalidCapability("capability revoked")
+    ));
 }
 
 #[test]
 fn rejects_invalid_epoch_scenario() {
-    let s = Scenario::baseline("strict", 42)
-        .invalid_request_epoch(70);
+    let s = Scenario::baseline("strict", 42).invalid_request_epoch(70);
 
     let err = seal(
         &s.keypair.public,
@@ -135,13 +140,15 @@ fn rejects_invalid_epoch_scenario() {
     )
     .expect_err("invalid request epoch should be rejected");
 
-    assert!(matches!(err, ArcError::InvalidCapability("epoch outside capability validity")));
+    assert!(matches!(
+        err,
+        ArcError::InvalidCapability("epoch outside capability validity")
+    ));
 }
 
 #[test]
 fn rejects_mismatched_policy_scenario() {
-    let s = Scenario::baseline("strict", 42)
-        .mismatched_policy("other-policy");
+    let s = Scenario::baseline("strict", 42).mismatched_policy("other-policy");
 
     let err = seal(
         &s.keypair.public,
@@ -155,5 +162,8 @@ fn rejects_mismatched_policy_scenario() {
     )
     .expect_err("mismatched policy should be rejected");
 
-    assert!(matches!(err, ArcError::InvalidCapability("policy hash mismatch")));
+    assert!(matches!(
+        err,
+        ArcError::InvalidCapability("policy hash mismatch")
+    ));
 }

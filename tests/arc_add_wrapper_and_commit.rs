@@ -1,6 +1,5 @@
 /// Integration tests for `add_epoch_wrapper_and_commit` — atomically commits
 /// `to_state` to the transparency log and adds a re-wrap epoch wrapper.
-
 mod helpers;
 
 use arc_core::{
@@ -45,21 +44,26 @@ fn add_epoch_wrapper_and_commit_bakes_in_committed_proof() {
         &s.keypair.public,
         &mut obj,
         &s.cap,
-        &s.proof,     // proof is for from_state (epoch 42)
+        &s.proof, // proof is for from_state (epoch 42)
         &s.seal_state,
         &seed50,
     )
     .expect("add_epoch_wrapper_and_commit should succeed");
 
     // The commit must have a real (non-zero) transparency root.
-    assert_ne!(commit.state.transparency_root, [0u8; 32], "committed state must have real transparency root");
+    assert_ne!(
+        commit.state.transparency_root, [0u8; 32],
+        "committed state must have real transparency root"
+    );
 
     // The new wrapper must carry the proof returned by the commit.
-    let wrapper50 = obj.wrappers.iter().find(|w| w.epoch == 50)
+    let wrapper50 = obj
+        .wrappers
+        .iter()
+        .find(|w| w.epoch == 50)
         .expect("wrapper at epoch 50 must exist");
     assert_eq!(
-        wrapper50.transparency_proof.leaf_hash,
-        commit.proof.leaf_hash,
+        wrapper50.transparency_proof.leaf_hash, commit.proof.leaf_hash,
         "wrapper must carry the committed transparency proof"
     );
 }
@@ -99,7 +103,7 @@ fn add_epoch_wrapper_and_commit_object_is_openable_at_new_epoch() {
         &s.keypair.public,
         &mut obj,
         &s.cap,
-        &s.proof,     // proof is for from_state (epoch 42)
+        &s.proof, // proof is for from_state (epoch 42)
         &s.seal_state,
         &seed50,
     )
@@ -107,14 +111,8 @@ fn add_epoch_wrapper_and_commit_object_is_openable_at_new_epoch() {
 
     // Open using the committed state and proof.
     let proof_at_50 = s.build_proof_for_state(&commit.state);
-    let plaintext = open(
-        &s.keypair.secret,
-        &obj,
-        &s.cap,
-        &proof_at_50,
-        &commit.state,
-    )
-    .expect("open at epoch 50 should succeed");
+    let plaintext = open(&s.keypair.secret, &obj, &s.cap, &proof_at_50, &commit.state)
+        .expect("open at epoch 50 should succeed");
 
     assert_eq!(plaintext, b"secret for epoch 50");
 }
@@ -127,8 +125,7 @@ fn add_epoch_wrapper_and_commit_object_is_openable_at_new_epoch() {
 /// from-state epoch has no wrapper in the object.
 #[test]
 fn add_epoch_wrapper_and_commit_rejects_missing_from_wrapper() {
-    let s = Scenario::baseline("aewac-missing", 42)
-        .with_temporal_policy(TemporalPolicy::Current);
+    let s = Scenario::baseline("aewac-missing", 42).with_temporal_policy(TemporalPolicy::Current);
 
     let mut obj = seal(
         &s.keypair.public,
@@ -166,5 +163,8 @@ fn add_epoch_wrapper_and_commit_rejects_missing_from_wrapper() {
     )
     .expect_err("should fail with MissingWrapper");
 
-    assert!(matches!(err, ArcError::MissingWrapper), "expected MissingWrapper, got {err:?}");
+    assert!(
+        matches!(err, ArcError::MissingWrapper),
+        "expected MissingWrapper, got {err:?}"
+    );
 }

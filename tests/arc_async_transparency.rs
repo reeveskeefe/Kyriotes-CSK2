@@ -9,7 +9,10 @@ async fn async_commit_and_proof_roundtrip() {
     let mut log = InMemoryTransparencyLog::new();
     let state = sample_state(1);
 
-    let commit = log.commit_state(&state).await.expect("commit should succeed");
+    let commit = log
+        .commit_state(&state)
+        .await
+        .expect("commit should succeed");
 
     // The committed state must have a non-zero transparency root.
     assert_ne!(commit.state.transparency_root, [0u8; 32]);
@@ -31,11 +34,13 @@ async fn async_commit_and_proof_roundtrip() {
 /// proving the trait is object-safe.
 #[tokio::test]
 async fn async_trait_is_object_safe_via_boxed_dyn() {
-    let mut log: Box<dyn AsyncTransparencyLog> =
-        Box::new(InMemoryTransparencyLog::new());
+    let mut log: Box<dyn AsyncTransparencyLog> = Box::new(InMemoryTransparencyLog::new());
 
     let state = sample_state(7);
-    let commit = log.commit_state(&state).await.expect("commit via dyn should succeed");
+    let commit = log
+        .commit_state(&state)
+        .await
+        .expect("commit via dyn should succeed");
 
     let root = log.current_root().await;
     assert_eq!(root, commit.state.transparency_root);
@@ -47,7 +52,9 @@ async fn async_commit_rejects_conflicting_epoch() {
     let mut log = InMemoryTransparencyLog::new();
     let state_a = sample_state(3);
 
-    log.commit_state(&state_a).await.expect("first commit should succeed");
+    log.commit_state(&state_a)
+        .await
+        .expect("first commit should succeed");
 
     // A different state for the same authority_id + epoch must be rejected.
     let mut state_b = sample_state(3);

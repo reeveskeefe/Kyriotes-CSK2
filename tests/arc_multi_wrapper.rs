@@ -10,13 +10,12 @@
 /// - Attempting to rewrap from an epoch whose wrapper is absent returns MissingWrapper.
 mod helpers;
 
+use arc_core::InMemoryTransparencyLog;
 use arc_core::{
-    ArcError, TemporalPolicy,
-    add_epoch_wrapper, decode_arc_object, encode_arc_object, open, seal,
+    ArcError, TemporalPolicy, add_epoch_wrapper, decode_arc_object, encode_arc_object, open, seal,
 };
 use helpers::scenario::Scenario;
 use helpers::transparency::commit_state;
-use arc_core::InMemoryTransparencyLog;
 
 // ---------------------------------------------------------------------------
 // Rewrap happy-path
@@ -128,7 +127,11 @@ fn wire_roundtrip_preserves_multi_wrapper_object() {
     let decoded = decode_arc_object(&encoded).expect("decode should succeed");
 
     assert_eq!(decoded, obj, "decoded object must match original");
-    assert_eq!(decoded.wrappers.len(), 2, "decoded object must have two wrappers");
+    assert_eq!(
+        decoded.wrappers.len(),
+        2,
+        "decoded object must have two wrappers"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -160,7 +163,7 @@ fn add_epoch_wrapper_rejects_missing_from_wrapper() {
     // Attempt to rewrap FROM epoch 50, but no wrapper at epoch 50 exists.
     let mut log = InMemoryTransparencyLog::new();
     let seed50 = s.make_state_at_epoch(50);
-    let (state50, tp50) = commit_state(&mut log, &seed50).expect("commit epoch 50");
+    let (state50, _tp50) = commit_state(&mut log, &seed50).expect("commit epoch 50");
     let seed55 = s.make_state_at_epoch(55);
     let (state55, tp55) = commit_state(&mut log, &seed55).expect("commit epoch 55");
     let proof50 = s.build_proof_for_state(&state50);

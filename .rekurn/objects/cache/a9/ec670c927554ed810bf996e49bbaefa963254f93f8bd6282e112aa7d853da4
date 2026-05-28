@@ -1,0 +1,191 @@
+rekurn-blob
+6795
+//! Threshold signature scheme for ARC epoch co-signing (spec §2 TSIG).
+//!
+//! Implements a simple t-of-n multisig where each of the `n` participants
+//! holds an Ed25519 signing key pair and independently signs the canonical
+//! threshold epoch message.  Any `t` valid, non-duplicate signatures from
+//! the `n` authorized keys constitute a valid threshold signature.
+//!
+//! ## Wire layout
+//!
+//! ```text
+//! ThresholdPartialSig: signer_index (u32-LE) || sig ([u8; 64])
+//! ThresholdSignatureSet: threshold (u32-LE) || count (u32-LE) || partials…
+//! ```
+//!
+//! The signing message is domain-separated as:
+//! `"ARC-TSIG-EPOCH-v1" || authority_root || revocation_root || epoch_le64 || prev_epoch_hash`
+
+use ed25519_dalek::{Signature, VerifyingKey};
+
+use crate::core::error::ArcError;
+
+use super::authority::EpochSigningKeyPair;
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+/// A single participant's partial signature for a threshold signing round.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ThresholdPartialSig {
+    /// 0-based index of the signing participant in the authorized key set.
+    pub signer_index: u32,
+    /// Ed25519 signature by this participant over the threshold signing message.
+    pub sig: [u8; 64],
+}
+
+/// An aggregate of partial signatures for a `t`-of-`n` threshold scheme.
+///
+/// Carries both the threshold requirement and the collected partial signatures.
+/// Call [`tsig_verify`] to check whether the set meets the threshold.
+#[derive(Clone, Debug, Default)]
+pub struct ThresholdSignatureSet {
+    /// Minimum number of valid, distinct partial signatures required (`t`).
+    pub threshold: u32,
+    /// Partial signatures submitted by participating signers.
+    pub partials: Vec<ThresholdPartialSig>,
+}
+
+impl ThresholdSignatureSet {
+    /// Create an empty set for a `threshold`-of-n signing round.
+    pub fn new(threshold: u32) -> Self {
+        Self {
+            threshold,
+            partials: Vec::new(),
+        }
+    }
+
+    /// Add a partial signature to the set.
+    pub fn add(&mut self, partial: ThresholdPartialSig) {
+        self.partials.push(partial);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Canonical signing message
+// ---------------------------------------------------------------------------
+
+/// Canonical signing message for threshold epoch co-signing.
+///
+/// Domain-separated from all other ARC signing messages.
+///
+/// Format:
+/// `"ARC-TSIG-EPOCH-v2" || authority_root (32) || revocation_root (32) || transparency_root (32) || epoch (le64) || prev_epoch_hash (32)`
+pub fn tsig_epoch_signing_message(
+    authority_root: &[u8; 32],
+    revocation_root: &[u8; 32],
+    transparency_root: &[u8; 32],
+    epoch: u64,
+    prev_epoch_hash: &[u8; 32],
+) -> Vec<u8> {
+    let mut msg = Vec::with_capacity(18 + 32 + 32 + 32 + 8 + 32);
+    msg.extend_from_slice(b"ARC-TSIG-EPOCH-v2");
+    msg.extend_from_slice(authority_root);
+    msg.extend_from_slice(revocation_root);
+    msg.extend_from_slice(transparency_root);
+    msg.extend_from_slice(&epoch.to_le_bytes());
+    msg.extend_from_slice(prev_epoch_hash);
+    msg
+}
+
+// ---------------------------------------------------------------------------
+// Sign / Verify
+// ---------------------------------------------------------------------------
+
+/// Produce a partial threshold signature for an epoch state.
+///
+/// # Parameters
+/// - `authority_root`, `revocation_root`, `epoch`, `prev_epoch_hash` —
+///   the epoch state fields to co-sign.
+/// - `epoch_kp` — this participant's [`EpochSigningKeyPair`].
+/// - `signer_index` — this participant's 0-based index in the authorized key set.
+///
+/// The returned [`ThresholdPartialSig`] should be collected with the partial
+/// signatures of the other participants and passed to [`tsig_verify`].
+pub fn tsig_sign(
+    authority_root: &[u8; 32],
+    revocation_root: &[u8; 32],
+    transparency_root: &[u8; 32],
+    epoch: u64,
+    prev_epoch_hash: &[u8; 32],
+    epoch_kp: &EpochSigningKeyPair,
+    signer_index: u32,
+) -> ThresholdPartialSig {
+    let msg = tsig_epoch_signing_message(
+        authority_root,
+        revocation_root,
+        transparency_root,
+        epoch,
+        prev_epoch_hash,
+    );
+    let sig = epoch_kp.sign_message(&msg);
+    ThresholdPartialSig { signer_index, sig }
+}
+
+/// Verify a threshold signature set against an authorized key set.
+///
+/// Returns `Ok(())` when at least `set.threshold` partial signatures in
+/// `set.partials` are valid over the epoch threshold signing message
+/// computed from `(authority_root, revocation_root, epoch, prev_epoch_hash)`.
+///
+/// # Duplicate handling
+/// If multiple partial signatures claim the same `signer_index`, only the first
+/// valid one counts toward the threshold.  Out-of-range indices are silently
+/// skipped.
+///
+/// # Errors
+/// - [`ArcError::Crypto`]`("threshold must be > 0")` if `set.threshold == 0`.
+/// - [`ArcError::Crypto`]`("threshold exceeds authorized key count")` if
+///   `set.threshold > authorized_keys.len()`.
+/// - [`ArcError::Crypto`]`("threshold not met: insufficient valid signatures")`
+///   if fewer than `set.threshold` valid, distinct signatures were found.
+pub fn tsig_verify(
+    authority_root: &[u8; 32],
+    revocation_root: &[u8; 32],
+    transparency_root: &[u8; 32],
+    epoch: u64,
+    prev_epoch_hash: &[u8; 32],
+    set: &ThresholdSignatureSet,
+    authorized_keys: &[[u8; 32]],
+) -> Result<(), ArcError> {
+    if set.threshold == 0 {
+        return Err(ArcError::Crypto("threshold must be > 0"));
+    }
+    if (set.threshold as usize) > authorized_keys.len() {
+        return Err(ArcError::Crypto("threshold exceeds authorized key count"));
+    }
+    let msg = tsig_epoch_signing_message(
+        authority_root,
+        revocation_root,
+        transparency_root,
+        epoch,
+        prev_epoch_hash,
+    );
+    let mut seen = vec![false; authorized_keys.len()];
+    let mut valid_count: u32 = 0;
+    for partial in &set.partials {
+        let idx = partial.signer_index as usize;
+        if idx >= authorized_keys.len() {
+            continue; // out-of-range signer ignored
+        }
+        if seen[idx] {
+            continue; // duplicate signer ignored
+        }
+        seen[idx] = true;
+        if let Ok(pk) = VerifyingKey::from_bytes(&authorized_keys[idx]) {
+            let sig = Signature::from_bytes(&partial.sig);
+            if pk.verify_strict(&msg, &sig).is_ok() {
+                valid_count += 1;
+            }
+        }
+    }
+    if valid_count >= set.threshold {
+        Ok(())
+    } else {
+        Err(ArcError::Crypto(
+            "threshold not met: insufficient valid signatures",
+        ))
+    }
+}

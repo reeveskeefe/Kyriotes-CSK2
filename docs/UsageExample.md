@@ -1,0 +1,814 @@
+# ARC: Usage Example — Encrypting Database Transmission Pipelines
+
+## Overview
+
+This document demonstrates how ARC can be integrated into a Rust database ingestion pipeline.
+
+The original pipeline simply validated sensor data and inserted plaintext values into PostgreSQL. ARC transforms this model into an authority-bound encrypted storage system where the database never receives readable sensor values.
+
+Instead of storing plaintext records, the database stores an ARC sealed object containing:
+
+* encrypted payload ciphertext
+* wrapped encryption material
+* authority state bindings
+* capability proof material
+* transparency commitments
+* revocation context
+* temporal policy bindings
+
+The result is a cryptographically sealed object whose access depends on both valid cryptographic key material and valid authority capability context.
+
+---
+
+# Original Plaintext Database Pipeline
+
+The following Rust example shows the original plaintext ingestion model before ARC is introduced.
+
+The application:
+
+* validates sensor input
+* constructs a record
+* inserts the record directly into PostgreSQL
+
+At this stage there is no authority binding, no capability enforcement, and no encryption layer protecting the payload.
+
+```rust
+use postgres::{Client, NoTls};
+use std::env;
+use std::error::Error;
+
+#[derive(Debug)]
+struct SensorRecord {
+    device_id: String,
+    reading_type: String,
+    reading_value: f64,
+}
+
+impl SensorRecord {
+    fn new(device_id: String, reading_type: String, reading_value: f64) -> Result<Self, Box<dyn Error>> {
+        if device_id.trim().is_empty() {
+            return Err("device_id cannot be empty".into());
+        }
+
+        if reading_type.trim().is_empty() {
+            return Err("reading_type cannot be empty".into());
+        }
+
+        if !reading_value.is_finite() {
+            return Err("reading_value must be a valid finite number".into());
+        }
+
+        Ok(Self {
+            device_id,
+            reading_type,
+            reading_value,
+        })
+    }
+}
+
+fn insert_record(client: &mut Client, record: &SensorRecord) -> Result<u64, Box<dyn Error>> {
+    let rows_inserted = client.execute(
+        "
+        INSERT INTO sensor_records (
+            device_id,
+            reading_type,
+            reading_value,
+            created_at
+        )
+        VALUES ($1, $2, $3, NOW())
+        ",
+        &[
+            &record.device_id,
+            &record.reading_type,
+            &record.reading_value,
+        ],
+    )?;
+
+    Ok(rows_inserted)
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let database_url = env::var("DATABASE_URL")
+        .map_err(|_| "DATABASE_URL environment variable is not set")?;
+
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() != 4 {
+        eprintln!(
+            "Usage: {} <device_id> <reading_type> <reading_value>",
+            args[0]
+        );
+
+        eprintln!(
+            "Example: {} device-001 temperature 22.7",
+            args[0]
+        );
+
+        std::process::exit(1);
+    }
+
+    let device_id = args[1].clone();
+    let reading_type = args[2].clone();
+
+    let reading_value: f64 = args[3]
+        .parse()
+        .map_err(|_| "reading_value must be a valid number")?;
+
+    let record = SensorRecord::new(
+        device_id,
+        reading_type,
+        reading_value,
+    )?;
+
+    let mut client = Client::connect(&database_url, NoTls)?;
+
+    let rows_inserted = insert_record(&mut client, &record)?;
+
+    if rows_inserted == 1 {
+        println!("Data transmitted successfully: {:?}", record);
+    } else {
+        return Err("insert completed but no row was written".into());
+    }
+
+    Ok(())
+}
+```
+
+---
+
+# Importing ARC Into the Pipeline
+
+The next step is introducing ARC into the transmission layer.
+
+ARC adds:
+
+* authority state
+* recipient key material
+* capability proofs
+* transparency commitments
+* revocation verification
+* temporal policy binding
+* authority-bound encryption
+
+The database layer remains PostgreSQL, but the payload path changes fundamentally.
+
+Instead of storing readable application fields directly, ARC seals the payload into a cryptographically bound object before insertion occurs.
+
+```rust
+use arc_core::{
+    capability_leaf_hash,
+    capability_stamp,
+    encode_arc_object,
+    hash_policy,
+    seal,
+    ArcError,
+    AuthorityCapabilityTree,
+    AuthorityRootKeyPair,
+    AuthorityState,
+    Capability,
+    CapabilityIssuanceProof,
+    CapabilityProof,
+    InMemoryTransparencyLog,
+    OpenRequest,
+    RecipientKeyPair,
+    Rights,
+    TemporalPolicy,
+    TransparencyLog,
+};
+
+use postgres::{Client, NoTls};
+use rand::rngs::OsRng;
+use serde_json::json;
+use std::env;
+use std::error::Error;
+use std::time::{SystemTime, UNIX_EPOCH};
+```
+
+These imports introduce the core ARC primitives required for:
+
+* capability issuance
+* authority root construction
+* revocation validation
+* transparency commitment
+* temporal policy enforcement
+* payload sealing
+* encrypted object encoding
+
+---
+
+# Application Payload Preparation
+
+The database transmitter still begins with ordinary application data:
+
+* device_id
+* reading_type
+* reading_value
+
+ARC does not encrypt Rust structs directly.
+
+The payload must first be transformed into raw bytes.
+
+The validated application record is therefore serialized into JSON and then converted into a byte vector before ARC sealing occurs.
+
+At this stage the payload is still plaintext.
+
+The actual authority-bound encryption happens later when ARC seal() is executed.
+
+```rust
+impl SensorRecord {
+    fn to_payload_bytes(&self) -> Result<Vec<u8>, Box<dyn Error>> {
+        let payload = json!({
+            "device_id": self.device_id,
+            "reading_type": self.reading_type,
+            "reading_value": self.reading_value
+        });
+
+        Ok(serde_json::to_vec(&payload)?)
+    }
+}
+```
+
+The JSON representation shown above is the final readable payload form before ARC transforms it into encrypted ciphertext.
+
+---
+
+# ARC Authority Bundle
+
+ARC is not designed as a simple key-only encryption system.
+
+The payload becomes bound to a broader authority context containing:
+
+* recipient identity
+* capability rights
+* authority roots
+* revocation state
+* transparency commitments
+* temporal epoch context
+* policy identity
+
+This collection of ARC materials is grouped into a single structure named ArcAuthorityBundle.
+
+```rust
+struct ArcAuthorityBundle {
+    recipient: RecipientKeyPair,
+    state: AuthorityState,
+    capability: Capability,
+    proof: CapabilityProof,
+    request: OpenRequest,
+    temporal_policy: TemporalPolicy,
+    transparency_proof: arc_core::TransparencyProof,
+}
+```
+
+The important conceptual difference is this:
+
+> The database no longer stores plaintext sensor records.
+>
+> The database stores an authority-bound ARC sealed object.
+
+That sealed object becomes cryptographically associated with:
+
+* the recipient identity
+* the authority root
+* the revocation tree
+* the policy hash
+* the temporal epoch
+* the capability rights
+* the transparency state
+* the object identity
+
+ARC therefore shifts encryption from:
+
+> “Who possesses the key?”
+
+into:
+
+> “Who possesses valid authority under the correct cryptographic context?”
+
+---
+
+# ARC Context Construction
+
+ArcAuthorityBundle::new() constructs the complete ARC environment required for sealing a payload.
+
+In production systems these values would typically come from:
+
+* authority services
+* transparency infrastructure
+* recipient identity systems
+* capability issuers
+* revocation registries
+
+For demonstration purposes this example constructs them locally.
+
+The ARC setup process performs the following steps:
+
+1. Generate recipient key material
+2. Construct policy hashes
+3. Create authority roots
+4. Build capability trees
+5. Create authority snapshots
+6. Commit transparency state
+7. Generate inclusion proofs
+8. Generate non-revocation proofs
+9. Sign capability issuance
+10. Assemble the capability proof package
+11. Construct the opening request context
+
+---
+
+# Policy Hash Binding
+
+ARC binds objects to policy hashes rather than relying on plain text policy labels.
+
+The same policy hash must appear consistently across:
+
+* Capability
+* OpenRequest
+* Sealed Object Context
+
+If these values diverge, the authority context becomes invalid.
+
+```rust
+let policy_hash = hash_policy("sensor-record-ingest-policy");
+```
+
+This prevents silent authority-context substitution attacks.
+
+---
+
+# Recipient Key Material
+
+ARC seals the payload against a recipient public key.
+
+Only the matching recipient secret key can later participate in opening the object.
+
+```rust
+let recipient = RecipientKeyPair::generate(&mut rng);
+```
+
+This provides the cryptographic identity side of the ARC model.
+
+---
+
+# Capability Construction
+
+The capability defines the authority grant.
+
+It answers the following questions:
+
+* who may access the object
+* which object is protected
+* which rights are granted
+* which policy applies
+* which epoch window is valid
+* whether delegation exists
+
+```rust
+let capability = Capability {
+    version: 1,
+    subject: "database-ingest-worker".to_string(),
+    object_id: object_id.clone(),
+    rights: Rights::READ.union(Rights::DECRYPT),
+    policy_hash,
+    epoch_start: epoch,
+    epoch_end: epoch + 20,
+    delegation_depth: 0,
+    parent_stamp: [0u8; 32],
+    nonce: [9u8; 16],
+};
+```
+
+This is one of the primary distinctions between ARC and traditional encryption.
+
+The object is not merely encrypted to a key.
+
+It is encrypted under an authority-controlled capability context.
+
+---
+
+# Authority Root Hierarchy
+
+ARC separates root authority from epoch authority.
+
+The chain is structured as:
+
+root authority
+→ certifies epoch authority
+→ epoch authority signs capability issuance
+→ capability proof authorizes object access
+
+```rust
+let authority_root_keypair = AuthorityRootKeyPair::generate(&mut rng);
+let epoch_signing_keypair = arc_core::EpochSigningKeyPair::generate(&mut rng);
+```
+
+This separation allows epoch rotation without replacing the entire root authority.
+
+---
+
+# Capability Tree Construction
+
+Capabilities are inserted into an authority tree.
+
+This allows ARC to prove that a capability actually belongs to the authority state.
+
+```rust
+let mut capability_tree = AuthorityCapabilityTree::new();
+capability_tree.add_capability(&capability);
+```
+
+Without this step, arbitrary capability-shaped data could be fabricated.
+
+---
+
+# Authority State Snapshot
+
+AuthorityState represents the cryptographic authority snapshot bound into the sealed object.
+
+The state contains:
+
+* authority root
+* revocation root
+* transparency root
+* epoch
+* authority identity
+* root public key
+* revocation counters
+* previous epoch linkage
+
+```rust
+let seed_state = AuthorityState {
+    authority_root: capability_tree.authority_root(),
+    revocation_root: capability_tree.revocation_root(),
+    transparency_root: [0u8; 32],
+    epoch,
+    authority_id: "arc-db-ingest-authority".to_string(),
+    epoch_signature_valid: true,
+    epoch_key_cert_valid: true,
+    transparency_inclusion_valid: true,
+    root_pk: authority_root_keypair.verifying_key_bytes(),
+    revocation_count: capability_tree.revocation_count(),
+    prev_epoch_hash: [0u8; 32],
+};
+```
+
+The sealed database object becomes cryptographically attached to this authority state.
+
+---
+
+# Transparency Commitment
+
+ARC commits the authority state into a transparency log.
+
+This provides evidence that the authority snapshot existed within a committed log view.
+
+```rust
+let mut transparency_log = InMemoryTransparencyLog::new();
+let committed = transparency_log.commit_state(&seed_state)?;
+```
+
+In production deployments this would normally be a durable external transparency system.
+
+---
+
+# Inclusion and Non-Revocation Proofs
+
+ARC must prove both:
+
+* the capability exists inside the authority tree
+* the capability has not been revoked
+
+```rust
+let inclusion = capability_tree
+    .inclusion_proof(&capability)
+    .ok_or(ArcError::Capability("capability inclusion proof could not be built"))?;
+```
+
+```rust
+let stamp = capability_stamp(&capability, &state);
+```
+
+```rust
+let non_revocation = capability_tree
+    .non_revocation_witness(&stamp)
+    .ok_or(ArcError::Capability("non-revocation witness could not be built"))?;
+```
+
+This prevents revoked or fabricated capabilities from silently authorizing access.
+
+---
+
+# Capability Issuance Signature
+
+ARC canonicalizes the capability into a leaf hash.
+
+The epoch signing authority then signs:
+
+* capability leaf hash
+* authority root
+* epoch
+
+```rust
+let leaf_hash = capability_leaf_hash(&capability);
+```
+
+```rust
+let signature = epoch_signing_keypair.sign_capability_issuance(
+    &leaf_hash,
+    &state.authority_root,
+    epoch_cert.epoch,
+);
+```
+
+This proves the capability was legitimately issued under the certified epoch authority.
+
+---
+
+# Capability Proof Assembly
+
+ARC combines all proof material into a CapabilityProof.
+
+```rust
+let proof = CapabilityProof {
+    inclusion,
+    non_revocation,
+    issuance: CapabilityIssuanceProof {
+        sig: signature,
+        epoch_cert,
+    },
+};
+```
+
+This proof package is one of the core mechanisms that transforms ARC into an authority-bound encryption system instead of a conventional key-only encryption scheme.
+
+---
+
+# Open Request Construction
+
+The OpenRequest defines the access context expected during opening.
+
+It binds:
+
+* object identity
+* required rights
+* policy hash
+* epoch
+
+```rust
+let request = OpenRequest {
+    object_id,
+    required_rights: Rights::READ,
+    policy_hash,
+    epoch,
+};
+```
+
+This ensures the sealed object remains tied to the intended authority context.
+
+---
+
+# ARC Sealing
+
+This is the point where plaintext becomes an ARC sealed object.
+
+The seal() operation produces an object containing:
+
+* encrypted ciphertext
+* wrapped key material
+* authority bindings
+* capability stamps
+* revocation context
+* policy hashes
+* temporal metadata
+* transparency commitments
+
+```rust
+fn seal_payload(&self, payload: &[u8]) -> Result<Vec<u8>, ArcError> {
+    let object = seal(
+        &self.recipient.public,
+        payload,
+        &self.capability,
+        &self.proof,
+        &self.transparency_proof,
+        &self.state,
+        &self.request,
+        self.temporal_policy.clone(),
+    )?;
+
+    Ok(encode_arc_object(&object))
+}
+```
+
+After this step the payload is no longer plaintext.
+
+The database receives only encoded ARC ciphertext objects.
+
+---
+
+# Database Storage
+
+Database insertion now stores:
+
+* object_id
+* encoded ARC sealed object
+* timestamp
+
+The original plaintext sensor values are never inserted as readable database columns.
+
+```rust
+fn insert_encrypted_record(
+    client: &mut Client,
+    object_id: &str,
+    encrypted_arc_object: &[u8],
+) -> Result<u64, Box<dyn Error>> {
+    let rows_inserted = client.execute(
+        "
+        INSERT INTO sensor_records (
+            object_id,
+            arc_ciphertext,
+            created_at
+        )
+        VALUES ($1, $2, NOW())
+        ",
+        &[&object_id, &encrypted_arc_object],
+    )?;
+
+    Ok(rows_inserted)
+}
+```
+
+The database therefore functions purely as encrypted object storage.
+
+---
+
+# Final Result
+
+The completed ARC-enabled ingestion pipeline performs the following sequence:
+
+1. Validate application data
+2. Serialize plaintext into payload bytes
+3. Construct authority context
+4. Build capability proofs
+5. Commit transparency state
+6. Generate revocation witnesses
+7. Bind object identity
+8. Seal payload into ARC object
+9. Encode ARC ciphertext
+10. Insert encrypted object into PostgreSQL
+
+The database never receives the original plaintext sensor record.
+
+Instead, it receives a cryptographically sealed authority-bound ARC object whose opening requires:
+
+* valid recipient key material
+* valid authority context
+* valid capability proof
+* valid non-revocation state
+* valid transparency state
+* valid temporal policy alignment
+* valid object identity alignment
+* valid policy hash alignment
+
+ARC therefore transforms database storage from:
+
+> plaintext application storage
+
+into:
+
+> capability-routed authority-bound encrypted object storage.
+
+---
+
+# Before ARC
+
+Before ARC is introduced, the ingestion pipeline operates as a traditional plaintext database transmitter.
+
+The application:
+
+* receives sensor input
+* validates the fields
+* inserts readable values directly into PostgreSQL
+
+The database stores:
+
+* device_id
+* reading_type
+* reading_value
+* timestamps
+
+In this model:
+
+* possession of database access reveals the raw data
+* encryption is absent
+* authority context is absent
+* revocation semantics do not exist
+* transparency proofs do not exist
+* capability enforcement does not exist
+* temporal authority semantics do not exist
+* policy-bound access control does not exist
+
+The database acts as plaintext application storage.
+
+```text
+Application
+    ↓
+Validated Plaintext Record
+    ↓
+PostgreSQL Insert
+    ↓
+Readable Database Storage
+```
+
+The security boundary is therefore largely dependent on:
+
+* database access controls
+* network isolation
+* infrastructure permissions
+* transport-layer security
+
+Once the database itself is compromised, the plaintext records become immediately readable.
+
+---
+
+# After ARC
+
+After ARC is integrated, the transmission pipeline becomes an authority-bound encrypted storage system.
+
+The application still validates sensor data, but the payload path fundamentally changes.
+
+Instead of storing readable application fields, the pipeline:
+
+* serializes the payload
+* constructs authority context
+* creates capability proofs
+* binds transparency state
+* binds revocation state
+* binds temporal policy context
+* seals the payload into an ARC object
+* inserts only encoded ciphertext into PostgreSQL
+
+The database now stores:
+
+* ARC ciphertext
+* authority-bound metadata
+* revocation-bound context
+* capability-bound wrappers
+* transparency-linked proof material
+
+In this model:
+
+* database compromise alone is insufficient for opening payloads
+* access requires both cryptographic key material and valid authority context
+* revoked capabilities become invalid
+* policy mismatches invalidate opening
+* transparency state becomes verifiable
+* epoch semantics become enforceable
+* authority substitution attacks become detectable
+
+The database no longer functions as plaintext application storage.
+
+It functions as encrypted authority-bound object storage.
+
+```text
+Application
+    ↓
+Validated Plaintext Record
+    ↓
+Payload Serialization
+    ↓
+ARC Authority Context Construction
+    ↓
+Capability Proof Assembly
+    ↓
+ARC seal()
+    ↓
+Encoded ARC Object
+    ↓
+PostgreSQL Insert
+    ↓
+Encrypted Authority-Bound Storage
+```
+
+The security boundary therefore shifts away from relying solely on infrastructure trust.
+
+The protected object now depends on:
+
+* recipient cryptographic identity
+* authority root validity
+* revocation state validity
+* transparency proof validity
+* temporal epoch validity
+* capability proof validity
+* policy hash alignment
+* object identity alignment
+
+This is the conceptual shift ARC introduces.
+
+The payload is no longer protected merely because:
+
+> “The database is secure.”
+
+The payload is protected because:
+
+> “The authority context required to open the object remains cryptographically valid.”

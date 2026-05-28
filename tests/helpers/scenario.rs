@@ -1,18 +1,11 @@
 #![allow(dead_code)]
 
 use arc_core::{
-    ArcError,
-    AuthorityState,
-    Capability,
-    CapabilityProof,
-    InMemoryTransparencyLog,
-    OpenRequest,
-    RecipientKeyPair,
-    TransparencyProof,
-    TemporalPolicy,
+    ArcError, AuthorityState, Capability, CapabilityProof, InMemoryTransparencyLog, OpenRequest,
+    RecipientKeyPair, TemporalPolicy, TransparencyProof,
 };
 
-use super::capability::{sample_cap, TestAuthority};
+use super::capability::{TestAuthority, sample_cap};
 use super::request_builders::{policy_hash, sample_req};
 use super::transparency::commit_state;
 

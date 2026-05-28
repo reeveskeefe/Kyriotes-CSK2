@@ -25,10 +25,7 @@ pub trait AsyncTransparencyLog: Send {
     ) -> Result<TransparencyStateCommit, ArcError>;
 
     /// Retrieve the Merkle inclusion proof for a previously committed state.
-    async fn proof_for_state(
-        &self,
-        state: &AuthorityState,
-    ) -> Result<TransparencyProof, ArcError>;
+    async fn proof_for_state(&self, state: &AuthorityState) -> Result<TransparencyProof, ArcError>;
 
     /// Return the current Merkle root of the log.
     async fn current_root(&self) -> [u8; 32];
@@ -48,10 +45,7 @@ impl AsyncTransparencyLog for InMemoryTransparencyLog {
         TransparencyLog::commit_state(self, state)
     }
 
-    async fn proof_for_state(
-        &self,
-        state: &AuthorityState,
-    ) -> Result<TransparencyProof, ArcError> {
+    async fn proof_for_state(&self, state: &AuthorityState) -> Result<TransparencyProof, ArcError> {
         TransparencyLog::proof_for_state(self, state)
     }
 

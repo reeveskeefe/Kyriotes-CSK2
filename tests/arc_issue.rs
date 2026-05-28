@@ -1,58 +1,16 @@
 /// Integration tests for spec §2 Issue: `issue_capability` and
 /// `issue_capability_and_commit`.
-
 mod helpers;
 
 use arc_core::{
-    ArcError,
-    AuthorityCapabilityTree,
-    AuthorityState,
-    Capability,
-    EpochKeyCert,
-    EpochSigningKeyPair,
-    AuthorityRootKeyPair,
-    InMemoryTransparencyLog,
-    Rights,
-    TransparencyLog,
-    issue_capability,
-    issue_capability_and_commit,
-    open,
-    seal,
-    verify_capability_issuance,
-    hash_policy,
+    ArcError, AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, EpochSigningKeyPair,
+    InMemoryTransparencyLog, hash_policy, issue_capability, issue_capability_and_commit, open,
+    seal, verify_capability_issuance,
 };
 use helpers::{
     capability::sample_cap,
     request_builders::{policy_hash, sample_req},
-    transparency::commit_state,
 };
-
-fn make_authority(cap: &Capability, epoch: u64) -> (AuthorityRootKeyPair, EpochSigningKeyPair, EpochKeyCert, AuthorityCapabilityTree) {
-    let mut rng = rand::rngs::OsRng;
-    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
-    let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
-    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), epoch, 10);
-    let mut tree = AuthorityCapabilityTree::new();
-    // do NOT pre-add cap here — issue_capability will do that
-    drop(cap); // used only for reference; tree starts empty
-    (root_kp, epoch_kp, epoch_cert, tree)
-}
-
-fn baseline_state(root_kp: &AuthorityRootKeyPair, tree: &AuthorityCapabilityTree, epoch: u64) -> AuthorityState {
-    AuthorityState {
-        authority_root: tree.authority_root(),
-        revocation_root: tree.revocation_root(),
-        transparency_root: [0u8; 32],
-        epoch,
-        authority_id: "auth-main".to_string(),
-        epoch_signature_valid: true,
-        epoch_key_cert_valid: true,
-        transparency_inclusion_valid: true,
-        root_pk: root_kp.verifying_key_bytes(),
-        revocation_count: tree.revocation_count(),
-        prev_epoch_hash: [0u8; 32],
-    }
-}
 
 // ---------------------------------------------------------------------------
 // issue_capability
@@ -72,7 +30,10 @@ fn issue_capability_adds_cap_to_tree_and_returns_valid_proof() {
         .expect("issue_capability should succeed");
 
     // Tree must now contain the cap.
-    assert!(tree.inclusion_proof(&cap).is_some(), "cap must be in tree after issue");
+    assert!(
+        tree.inclusion_proof(&cap).is_some(),
+        "cap must be in tree after issue"
+    );
 
     // The returned issuance proof must verify.
     verify_capability_issuance(
@@ -100,7 +61,11 @@ fn issue_capability_is_idempotent_for_same_cap() {
 
     // Issue again — tree root must be unchanged.
     issue_capability(&mut tree, &cap, &epoch_kp, &epoch_cert).unwrap();
-    assert_eq!(tree.authority_root(), root_first, "issuing the same cap twice must not change the root");
+    assert_eq!(
+        tree.authority_root(),
+        root_first,
+        "issuing the same cap twice must not change the root"
+    );
 }
 
 #[test]
@@ -178,13 +143,11 @@ fn issue_capability_and_commit_produces_usable_seal_state() {
 
     // The committed state should have the updated authority_root.
     assert_ne!(
-        commit.state.authority_root,
-        [0u8; 32],
+        commit.state.authority_root, [0u8; 32],
         "committed authority root must not be zero"
     );
     assert_ne!(
-        commit.state.transparency_root,
-        [0u8; 32],
+        commit.state.transparency_root, [0u8; 32],
         "committed transparency root must be set"
     );
 
@@ -193,18 +156,31 @@ fn issue_capability_and_commit_produces_usable_seal_state() {
     let state = &commit.state;
     let inclusion = tree.inclusion_proof(&cap).expect("cap must be in tree");
     let stamp = capability_stamp(&cap, state);
-    let non_revocation = tree.non_revocation_witness(&stamp).expect("must not be revoked");
-    let proof = CapabilityProof { inclusion, non_revocation, issuance: issuance_proof };
+    let non_revocation = tree
+        .non_revocation_witness(&stamp)
+        .expect("must not be revoked");
+    let proof = CapabilityProof {
+        inclusion,
+        non_revocation,
+        issuance: issuance_proof,
+    };
 
     let req = sample_req(42, p);
     let keypair = RecipientKeyPair::generate(&mut rng);
 
-    let obj = seal(&keypair.public, b"hello", &cap, &proof, &commit.proof, state, &req,
-        arc_core::TemporalPolicy::Historical(42))
-        .expect("seal should succeed");
+    let obj = seal(
+        &keypair.public,
+        b"hello",
+        &cap,
+        &proof,
+        &commit.proof,
+        state,
+        &req,
+        arc_core::TemporalPolicy::Historical(42),
+    )
+    .expect("seal should succeed");
 
-    let plaintext = open(&keypair.secret, &obj, &cap, &proof, state)
-        .expect("open should succeed");
+    let plaintext = open(&keypair.secret, &obj, &cap, &proof, state).expect("open should succeed");
     assert_eq!(plaintext, b"hello");
 }
 
@@ -238,7 +214,14 @@ fn issue_capability_and_commit_rejects_stale_base_state() {
         prev_epoch_hash: [0u8; 32],
     };
 
-    let err = issue_capability_and_commit(&mut log, &mut tree, &cap, &epoch_kp, &epoch_cert, &base_state)
-        .expect_err("stale base state should be rejected");
+    let err = issue_capability_and_commit(
+        &mut log,
+        &mut tree,
+        &cap,
+        &epoch_kp,
+        &epoch_cert,
+        &base_state,
+    )
+    .expect_err("stale base state should be rejected");
     assert!(matches!(err, ArcError::AuthorityState(_)));
 }

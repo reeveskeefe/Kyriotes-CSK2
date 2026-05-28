@@ -1,6 +1,6 @@
+use crate::ArcError;
 use crate::core::rights::Rights;
 use crate::core::temporal::TemporalPolicy;
-use crate::ArcError;
 
 pub fn put_u16(out: &mut Vec<u8>, v: u16) {
     out.extend_from_slice(&v.to_le_bytes());
@@ -88,7 +88,11 @@ pub fn take_bytes(input: &[u8], cursor: &mut usize) -> Result<Vec<u8>, ArcError>
     Ok(out)
 }
 
-pub fn take_bytes_limited(input: &[u8], cursor: &mut usize, max_len: usize) -> Result<Vec<u8>, ArcError> {
+pub fn take_bytes_limited(
+    input: &[u8],
+    cursor: &mut usize,
+    max_len: usize,
+) -> Result<Vec<u8>, ArcError> {
     let len = take_u32(input, cursor)? as usize;
     if len > max_len {
         return Err(ArcError::Parse("field exceeds maximum allowed length"));
@@ -130,7 +134,11 @@ pub fn take_str(input: &[u8], cursor: &mut usize) -> Result<String, ArcError> {
     String::from_utf8(bytes).map_err(|_| ArcError::Parse("invalid UTF-8 string"))
 }
 
-pub fn take_str_limited(input: &[u8], cursor: &mut usize, max_len: usize) -> Result<String, ArcError> {
+pub fn take_str_limited(
+    input: &[u8],
+    cursor: &mut usize,
+    max_len: usize,
+) -> Result<String, ArcError> {
     let bytes = take_bytes_limited(input, cursor, max_len)?;
     String::from_utf8(bytes).map_err(|_| ArcError::Parse("invalid UTF-8 string"))
 }
@@ -141,7 +149,9 @@ pub fn take_rights(input: &[u8], cursor: &mut usize) -> Result<Rights, ArcError>
 
 pub fn take_temporal_policy(input: &[u8], cursor: &mut usize) -> Result<TemporalPolicy, ArcError> {
     if input.len().saturating_sub(*cursor) < 1 {
-        return Err(ArcError::Parse("unexpected EOF while reading temporal policy tag"));
+        return Err(ArcError::Parse(
+            "unexpected EOF while reading temporal policy tag",
+        ));
     }
     let tag = input[*cursor];
     *cursor += 1;

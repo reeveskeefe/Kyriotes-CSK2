@@ -1,0 +1,16 @@
+rekurn-blob
+279
+{
+  "project": {
+    "id": "rekurn",
+    "name": "Rekurn",
+    "type": "typescript-package",
+    "license": "Apache-2.0"
+  },
+  "remote": {
+    "name": "oreulius",
+    "url": "https://oreulius.com/api/rekurn/publish",
+    "site": "https://oreulius.com",
+    "auth": "token"
+  }
+}

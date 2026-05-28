@@ -19,11 +19,9 @@ use ed25519_dalek::{Signature, VerifyingKey};
 
 use crate::core::error::ArcError;
 
-use super::authority::{
-    capability_issuance_signing_message, verify_epoch_cert, EpochKeyCert,
-};
-use super::model::{capability_leaf_hash, capability_stamp, AuthorityState, Capability};
-use super::transparency::{hash_transparency_node, merkle_root};
+use super::authority::{EpochKeyCert, capability_issuance_signing_message, verify_epoch_cert};
+use super::model::{AuthorityState, Capability, capability_leaf_hash, capability_stamp};
+use super::transparency::{LONE_NODE_SENTINEL, hash_transparency_node, merkle_root};
 
 // ---------------------------------------------------------------------------
 // Proof types
@@ -156,7 +154,9 @@ impl AuthorityCapabilityTree {
     ) -> Result<NonRevocationWitness, ArcError> {
         let pos = self.revoked_stamps.partition_point(|s| s < stamp);
         if pos < self.revoked_stamps.len() && &self.revoked_stamps[pos] == stamp {
-            return Err(ArcError::InvalidCapability("capability is revoked; no non-revocation witness possible"));
+            return Err(ArcError::InvalidCapability(
+                "capability is revoked; no non-revocation witness possible",
+            ));
         }
 
         let total_revoked = self.revoked_stamps.len() as u64;
@@ -178,13 +178,22 @@ impl AuthorityCapabilityTree {
             None
         };
 
-        Ok(NonRevocationWitness { stamp: *stamp, total_revoked, left, right })
+        Ok(NonRevocationWitness {
+            stamp: *stamp,
+            total_revoked,
+            left,
+            right,
+        })
     }
 
     fn revocation_proof_for_index(&self, index: usize) -> CapabilityInclusionProof {
         let leaf_hash = self.revoked_stamps[index];
         let sibling_hashes = merkle_proof_for_index(&self.revoked_stamps, index);
-        CapabilityInclusionProof { leaf_hash, sibling_hashes, leaf_index: index as u64 }
+        CapabilityInclusionProof {
+            leaf_hash,
+            sibling_hashes,
+            leaf_index: index as u64,
+        }
     }
 
     /// `R_e = MerkleRoot(L_e)` — authority root over active capabilities.
@@ -250,23 +259,33 @@ fn merkle_proof_for_index(leaves: &[[u8; 32]], index: usize) -> Vec<[u8; 32]> {
     let mut level: Vec<[u8; 32]> = leaves.to_vec();
 
     while level.len() > 1 {
-        let sibling_idx = if idx % 2 == 0 {
-            if idx + 1 < level.len() { idx + 1 } else { idx }
+        // Record the sibling used at this level.  For a lone (unpaired) node
+        // the sibling is LONE_NODE_SENTINEL, matching what merkle_root builds.
+        if idx.is_multiple_of(2) {
+            if idx + 1 < level.len() {
+                siblings.push(level[idx + 1]);
+            } else {
+                siblings.push(LONE_NODE_SENTINEL);
+            }
         } else {
-            idx - 1
-        };
-        siblings.push(level[sibling_idx]);
+            siblings.push(level[idx - 1]);
+        }
 
         let mut next = Vec::with_capacity(level.len().div_ceil(2));
         let mut i = 0usize;
         while i < level.len() {
             let left = level[i];
-            let right = if i + 1 < level.len() { level[i + 1] } else { level[i] };
+            let right = if i + 1 < level.len() {
+                level[i + 1]
+            } else {
+                LONE_NODE_SENTINEL
+            };
             next.push(hash_transparency_node(left, right));
             i += 2;
         }
-        level = next;
+
         idx /= 2;
+        level = next;
     }
 
     siblings
@@ -313,7 +332,12 @@ pub fn verify_capability_inclusion(
             "inclusion proof leaf hash does not match capability",
         ));
     }
-    if !verify_merkle_path(&proof.leaf_hash, &proof.sibling_hashes, proof.leaf_index, authority_root) {
+    if !verify_merkle_path(
+        &proof.leaf_hash,
+        &proof.sibling_hashes,
+        proof.leaf_index,
+        authority_root,
+    ) {
         return Err(ArcError::InvalidCapability(
             "capability Merkle inclusion proof root mismatch",
         ));
@@ -472,7 +496,9 @@ pub fn verify_capability_issuance(
 
     // Step 2: the issuance epoch must fall within the cert's validity window so
     // that an expired or future epoch key certificate cannot be (re-)used.
-    let cert_epoch_end = proof.epoch_cert.epoch
+    let cert_epoch_end = proof
+        .epoch_cert
+        .epoch
         .saturating_add(proof.epoch_cert.validity_window);
     if epoch < proof.epoch_cert.epoch || epoch >= cert_epoch_end {
         return Err(ArcError::InvalidCapability(
@@ -508,9 +534,9 @@ pub fn verify_capability_issuance(
 
 #[cfg(test)]
 mod tests {
+    use super::super::authority::{AuthorityRootKeyPair, EpochSigningKeyPair};
     use super::*;
     use crate::core::rights::Rights;
-    use super::super::authority::{AuthorityRootKeyPair, EpochSigningKeyPair};
 
     fn sample_cap(suffix: u8) -> Capability {
         Capability {
@@ -796,7 +822,9 @@ mod tests {
         // before the signature check, so the error message changed.
         assert!(matches!(
             err,
-            ArcError::InvalidCapability("capability issuance epoch is outside epoch cert validity window")
+            ArcError::InvalidCapability(
+                "capability issuance epoch is outside epoch cert validity window"
+            )
         ));
     }
 
@@ -818,7 +846,9 @@ mod tests {
     fn non_revocation_witness_empty_set() {
         let tree = AuthorityCapabilityTree::new();
         let stamp = [0x42u8; 32];
-        let witness = tree.non_revocation_witness(&stamp).expect("empty set always succeeds");
+        let witness = tree
+            .non_revocation_witness(&stamp)
+            .expect("empty set always succeeds");
         assert_eq!(witness.total_revoked, 0);
         assert!(witness.left.is_none());
         assert!(witness.right.is_none());
@@ -832,7 +862,8 @@ mod tests {
         let mut tree = AuthorityCapabilityTree::new();
         let stamp = [0x55u8; 32];
         tree.revoke_stamp(stamp);
-        let err = tree.non_revocation_witness(&stamp)
+        let err = tree
+            .non_revocation_witness(&stamp)
             .expect_err("revoked stamp must return Err");
         assert!(matches!(err, ArcError::InvalidCapability(_)));
     }
@@ -850,7 +881,8 @@ mod tests {
         assert_eq!(witness.right.as_ref().unwrap().proof.leaf_index, 0);
 
         let rev_root = tree.revocation_root();
-        verify_non_revocation(&witness, &rev_root, tree.revocation_count()).expect("witness must verify");
+        verify_non_revocation(&witness, &rev_root, tree.revocation_count())
+            .expect("witness must verify");
     }
 
     #[test]
@@ -867,7 +899,8 @@ mod tests {
             witness.total_revoked - 1
         );
 
-        verify_non_revocation(&witness, &tree.revocation_root(), tree.revocation_count()).expect("witness must verify");
+        verify_non_revocation(&witness, &tree.revocation_root(), tree.revocation_count())
+            .expect("witness must verify");
     }
 
     #[test]
@@ -879,9 +912,14 @@ mod tests {
 
         let left = witness.left.as_ref().expect("left must exist");
         let right = witness.right.as_ref().expect("right must exist");
-        assert_eq!(left.proof.leaf_index + 1, right.proof.leaf_index, "must be adjacent");
+        assert_eq!(
+            left.proof.leaf_index + 1,
+            right.proof.leaf_index,
+            "must be adjacent"
+        );
 
-        verify_non_revocation(&witness, &tree.revocation_root(), tree.revocation_count()).expect("witness must verify");
+        verify_non_revocation(&witness, &tree.revocation_root(), tree.revocation_count())
+            .expect("witness must verify");
     }
 
     #[test]
@@ -894,8 +932,9 @@ mod tests {
         // Prove non-revocation for odd stamps that fall between the revoked ones.
         for odd in [0x01u8, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x0F, 0x11] {
             let stamp = [odd; 32];
-            let witness = tree.non_revocation_witness(&stamp)
-                .unwrap_or_else(|_| panic!("non-revocation witness for 0x{odd:02x} should succeed"));
+            let witness = tree.non_revocation_witness(&stamp).unwrap_or_else(|_| {
+                panic!("non-revocation witness for 0x{odd:02x} should succeed")
+            });
             verify_non_revocation(&witness, &rev_root, tree.revocation_count())
                 .unwrap_or_else(|e| panic!("witness for 0x{odd:02x} failed: {e:?}"));
         }

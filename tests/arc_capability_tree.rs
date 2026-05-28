@@ -2,10 +2,9 @@
 //! proofs (§9 point 7).
 
 use arc_core::{
-    AuthorityCapabilityTree, AuthorityRootKeyPair, Capability, CapabilityIssuanceProof,
-    EpochSigningKeyPair, Rights,
-    capability_leaf_hash,
-    verify_capability_inclusion, verify_capability_issuance, ArcError,
+    ArcError, AuthorityCapabilityTree, AuthorityRootKeyPair, Capability, CapabilityIssuanceProof,
+    EpochSigningKeyPair, Rights, capability_leaf_hash, verify_capability_inclusion,
+    verify_capability_issuance,
 };
 
 fn sample_cap(tag: u8) -> Capability {
@@ -121,8 +120,7 @@ fn inclusion_proof_verifies_for_every_cap_in_tree() {
 
     for cap in &caps {
         let proof = tree.inclusion_proof(cap).expect("cap must be in tree");
-        verify_capability_inclusion(cap, &proof, &root)
-            .expect("each inclusion proof must verify");
+        verify_capability_inclusion(cap, &proof, &root).expect("each inclusion proof must verify");
     }
 }
 
@@ -259,6 +257,8 @@ fn issuance_proof_rejects_wrong_epoch() {
     // fires before the signature verification step.
     assert!(matches!(
         err,
-        ArcError::InvalidCapability("capability issuance epoch is outside epoch cert validity window")
+        ArcError::InvalidCapability(
+            "capability issuance epoch is outside epoch cert validity window"
+        )
     ));
 }

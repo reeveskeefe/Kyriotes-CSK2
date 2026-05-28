@@ -10,9 +10,8 @@
 mod helpers;
 
 use arc_core::{
-    ML_KEM_768_CT_BYTES, ML_KEM_768_DK_BYTES, ML_KEM_768_EK_BYTES,
-    RecipientKeyPair, TemporalPolicy, open, seal,
-    encode_arc_object, decode_arc_object,
+    ML_KEM_768_CT_BYTES, ML_KEM_768_DK_BYTES, ML_KEM_768_EK_BYTES, RecipientKeyPair,
+    decode_arc_object, encode_arc_object, open, seal,
 };
 use helpers::scenario::Scenario;
 
@@ -26,11 +25,27 @@ fn recipient_keypair_has_pq_keys() {
     let mut rng = rand::rngs::OsRng;
     let kp = RecipientKeyPair::generate(&mut rng);
 
-    let ek = kp.public.pq.as_ref().expect("public key should have PQ component");
-    assert_eq!(ek.len(), ML_KEM_768_EK_BYTES, "encapsulation key should be 1184 bytes");
+    let ek = kp
+        .public
+        .pq
+        .as_ref()
+        .expect("public key should have PQ component");
+    assert_eq!(
+        ek.len(),
+        ML_KEM_768_EK_BYTES,
+        "encapsulation key should be 1184 bytes"
+    );
 
-    let dk = kp.secret.pq.as_ref().expect("secret key should have PQ component");
-    assert_eq!(dk.len(), ML_KEM_768_DK_BYTES, "decapsulation key seed should be 64 bytes");
+    let dk = kp
+        .secret
+        .pq
+        .as_ref()
+        .expect("secret key should have PQ component");
+    assert_eq!(
+        dk.len(),
+        ML_KEM_768_DK_BYTES,
+        "decapsulation key seed should be 64 bytes"
+    );
 }
 
 /// Two key pairs generated from different rng states produce different PQ keys.
@@ -70,7 +85,8 @@ fn seal_open_with_pq_enabled_recipient() {
 
     // Wrapper must carry a 1088-byte ML-KEM-768 ciphertext.
     assert_eq!(
-        obj.wrappers.len(), 1,
+        obj.wrappers.len(),
+        1,
         "sealed object should have exactly one wrapper"
     );
     assert_eq!(
@@ -91,16 +107,28 @@ fn pq_ciphertexts_are_fresh_each_seal() {
     let s = Scenario::baseline("pq-fresh-ct", 42);
 
     let obj1 = seal(
-        &s.keypair.public, &s.message, &s.cap, &s.proof,
-        &s.seal_transparency_proof, &s.seal_state, &s.req,
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
         s.temporal_policy.clone(),
-    ).expect("first seal");
+    )
+    .expect("first seal");
 
     let obj2 = seal(
-        &s.keypair.public, &s.message, &s.cap, &s.proof,
-        &s.seal_transparency_proof, &s.seal_state, &s.req,
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
         s.temporal_policy.clone(),
-    ).expect("second seal");
+    )
+    .expect("second seal");
 
     assert_ne!(
         obj1.wrappers[0].kem_ct_pq, obj2.wrappers[0].kem_ct_pq,
@@ -115,10 +143,16 @@ fn wrong_secret_key_still_fails_with_pq() {
     let s = Scenario::baseline("pq-wrong-sk", 42).with_message(b"secret");
 
     let obj = seal(
-        &s.keypair.public, &s.message, &s.cap, &s.proof,
-        &s.seal_transparency_proof, &s.seal_state, &s.req,
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
         s.temporal_policy.clone(),
-    ).expect("seal");
+    )
+    .expect("seal");
 
     // Different key pair — both classical and PQ secrets will differ.
     let wrong_kp = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
@@ -138,18 +172,26 @@ fn wire_encode_decode_preserves_pq_ciphertext() {
     let s = Scenario::baseline("pq-wire", 42).with_message(b"pq wire test");
 
     let obj = seal(
-        &s.keypair.public, &s.message, &s.cap, &s.proof,
-        &s.seal_transparency_proof, &s.seal_state, &s.req,
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
         s.temporal_policy.clone(),
-    ).expect("seal");
+    )
+    .expect("seal");
 
     assert_eq!(obj.wrappers[0].kem_ct_pq.len(), ML_KEM_768_CT_BYTES);
 
     let encoded = encode_arc_object(&obj);
     let decoded = decode_arc_object(&encoded).expect("decode should succeed");
 
-    assert_eq!(decoded.wrappers[0].kem_ct_pq, obj.wrappers[0].kem_ct_pq,
-        "decoded kem_ct_pq must match original");
+    assert_eq!(
+        decoded.wrappers[0].kem_ct_pq, obj.wrappers[0].kem_ct_pq,
+        "decoded kem_ct_pq must match original"
+    );
 }
 
 /// After encode/decode, the object is still openable by the recipient.
@@ -158,10 +200,16 @@ fn wire_roundtrip_pq_object_is_openable() {
     let s = Scenario::baseline("pq-wire-open", 42).with_message(b"pq wire open");
 
     let obj = seal(
-        &s.keypair.public, &s.message, &s.cap, &s.proof,
-        &s.seal_transparency_proof, &s.seal_state, &s.req,
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
         s.temporal_policy.clone(),
-    ).expect("seal");
+    )
+    .expect("seal");
 
     let encoded = encode_arc_object(&obj);
     let decoded = decode_arc_object(&encoded).expect("decode");

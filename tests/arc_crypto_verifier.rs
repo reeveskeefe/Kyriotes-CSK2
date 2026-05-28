@@ -1,14 +1,8 @@
 mod helpers;
 
 use arc_core::{
-    ArcError,
-    AuthorityRootKeyPair,
-    CryptoAuthorityVerifier,
-    EpochSigningKeyPair,
-    InMemoryTransparencyLog,
-    TransparencyLog,
-    open_with_verifier,
-    seal_with_verifier,
+    ArcError, AuthorityRootKeyPair, CryptoAuthorityVerifier, EpochSigningKeyPair,
+    InMemoryTransparencyLog, TransparencyLog, open_with_verifier, seal_with_verifier,
 };
 use helpers::scenario::Scenario;
 use helpers::state::sample_state;
@@ -31,6 +25,7 @@ fn signed_verifier_for_state(
     let epoch_root_sig = epoch_kp.sign_epoch_root(
         &state.authority_root,
         &state.revocation_root,
+        &state.transparency_root,
         state.epoch,
         &[0u8; 32], // genesis prev_epoch_hash
     );
@@ -48,8 +43,7 @@ fn signed_verifier_for_state(
 
 #[test]
 fn seal_open_with_crypto_verifier_success() {
-    let s = Scenario::baseline("strict", 42)
-        .with_message(b"signed-authority-path");
+    let s = Scenario::baseline("strict", 42).with_message(b"signed-authority-path");
 
     let verifier = signed_verifier_for_state(&s.seal_state, 13, 14);
 
@@ -81,8 +75,7 @@ fn seal_open_with_crypto_verifier_success() {
 
 #[test]
 fn open_with_crypto_verifier_rejects_tampered_authority_state() {
-    let s = Scenario::baseline("strict", 42)
-        .with_message(b"tamper-test");
+    let s = Scenario::baseline("strict", 42).with_message(b"tamper-test");
 
     let verifier = signed_verifier_for_state(&s.seal_state, 21, 22);
 
@@ -112,13 +105,15 @@ fn open_with_crypto_verifier_rejects_tampered_authority_state() {
     )
     .expect_err("tampered authority state must be rejected");
 
-    assert!(matches!(err, ArcError::AuthorityState("epoch root signature invalid")));
+    assert!(matches!(
+        err,
+        ArcError::AuthorityState("epoch root signature invalid")
+    ));
 }
 
 #[test]
 fn open_with_crypto_verifier_rejects_malformed_sibling_ordering() {
-    let mut s = Scenario::baseline("strict", 42)
-        .with_message(b"malformed-proof-order");
+    let mut s = Scenario::baseline("strict", 42).with_message(b"malformed-proof-order");
 
     let mut log = InMemoryTransparencyLog::new();
     for i in 0..3u64 {
@@ -156,7 +151,10 @@ fn open_with_crypto_verifier_rejects_malformed_sibling_ordering() {
     )
     .expect("seal should succeed");
 
-    object.wrappers[0].transparency_proof.sibling_hashes.reverse();
+    object.wrappers[0]
+        .transparency_proof
+        .sibling_hashes
+        .reverse();
 
     let err = open_with_verifier(
         &verifier,

@@ -8,15 +8,14 @@
 mod helpers;
 
 use arc_core::{
-    ArcError, AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState,
-    Capability, CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair,
-    InMemoryTransparencyLog, Rights, TemporalPolicy,
-    capability_leaf_hash, capability_stamp, delegate_capability,
-    open, seal, seal_and_commit,
+    ArcError, AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, Capability,
+    CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair, InMemoryTransparencyLog,
+    MAX_DELEGATION_DEPTH, Rights, TemporalPolicy, capability_leaf_hash, capability_stamp,
+    delegate_capability, open, seal,
 };
 use helpers::{
-    capability::{sample_cap, TestAuthority},
-    request_builders::{policy_hash, sample_req, DEFAULT_OBJECT_ID},
+    capability::sample_cap,
+    request_builders::{policy_hash, sample_req},
     scenario::Scenario,
     transparency::commit_state,
 };
@@ -55,7 +54,7 @@ fn delegate_rejects_rights_escalation() {
     let mut rng = rand::rngs::OsRng;
     let root_kp = AuthorityRootKeyPair::generate(&mut rng);
     let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
-    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 42, 10);
+    let _epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 42, 10);
     let mut tree = AuthorityCapabilityTree::new();
     tree.add_capability(&parent);
     let state = AuthorityState {
@@ -77,7 +76,8 @@ fn delegate_rejects_rights_escalation() {
         &state,
         "delegatee",
         Rights::READ.union(Rights::WRITE),
-        42, 55,
+        42,
+        55,
         &mut rand::rngs::OsRng,
     )
     .expect_err("must reject rights escalation");
@@ -95,7 +95,7 @@ fn delegate_rejects_epoch_window_expansion() {
     let mut rng = rand::rngs::OsRng;
     let root_kp = AuthorityRootKeyPair::generate(&mut rng);
     let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
-    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 42, 10);
+    let _epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 42, 10);
     let mut tree = AuthorityCapabilityTree::new();
     tree.add_capability(&parent);
     let state = AuthorityState {
@@ -117,7 +117,8 @@ fn delegate_rejects_epoch_window_expansion() {
         &state,
         "delegatee",
         Rights::READ,
-        42, 70,
+        42,
+        70,
         &mut rand::rngs::OsRng,
     )
     .expect_err("must reject epoch window expansion");
@@ -135,7 +136,7 @@ fn delegate_rejects_inverted_epoch_window() {
     let mut rng = rand::rngs::OsRng;
     let root_kp = AuthorityRootKeyPair::generate(&mut rng);
     let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
-    let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 42, 10);
+    let _epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 42, 10);
     let mut tree = AuthorityCapabilityTree::new();
     tree.add_capability(&parent);
     let state = AuthorityState {
@@ -156,7 +157,8 @@ fn delegate_rejects_inverted_epoch_window() {
         &state,
         "delegatee",
         Rights::READ,
-        55, 50, // start > end
+        55,
+        50, // start > end
         &mut rand::rngs::OsRng,
     )
     .expect_err("must reject inverted epoch window");
@@ -177,7 +179,7 @@ fn delegated_capability_has_correct_fields() {
     };
     let mut rng = rand::rngs::OsRng;
     let root_kp = AuthorityRootKeyPair::generate(&mut rng);
-    let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let _epoch_kp = EpochSigningKeyPair::generate(&mut rng);
     let mut tree = AuthorityCapabilityTree::new();
     tree.add_capability(&parent);
     let state = AuthorityState {
@@ -194,15 +196,8 @@ fn delegated_capability_has_correct_fields() {
         prev_epoch_hash: [0u8; 32],
     };
 
-    let delegated = delegate_capability(
-        &parent,
-        &state,
-        "alice",
-        Rights::READ,
-        45, 55,
-        &mut rng,
-    )
-    .expect("delegation should succeed");
+    let delegated = delegate_capability(&parent, &state, "alice", Rights::READ, 45, 55, &mut rng)
+        .expect("delegation should succeed");
 
     assert_eq!(delegated.delegation_depth, 1, "depth must be parent + 1");
     assert_eq!(delegated.subject, "alice");
@@ -214,9 +209,15 @@ fn delegated_capability_has_correct_fields() {
     assert_eq!(delegated.version, parent.version);
     // parent_stamp must be the stamp of the parent cap under the given state.
     let expected_stamp = capability_stamp(&parent, &state);
-    assert_eq!(delegated.parent_stamp, expected_stamp, "parent_stamp must equal capability_stamp(parent, state)");
+    assert_eq!(
+        delegated.parent_stamp, expected_stamp,
+        "parent_stamp must equal capability_stamp(parent, state)"
+    );
     // parent_stamp must be non-zero (the stamp of a real cap in a real tree is non-zero).
-    assert_ne!(delegated.parent_stamp, [0u8; 32], "parent_stamp must be non-zero");
+    assert_ne!(
+        delegated.parent_stamp, [0u8; 32],
+        "parent_stamp must be non-zero"
+    );
 }
 
 /// Two delegations of the same parent cap must produce different nonces.
@@ -296,7 +297,8 @@ fn delegated_cap_seal_open_e2e() {
         &parent_only_state,
         "alice",
         Rights::READ.union(Rights::DECRYPT),
-        42, 55,
+        42,
+        55,
         &mut rng,
     )
     .expect("delegation must succeed");
@@ -310,19 +312,26 @@ fn delegated_cap_seal_open_e2e() {
         authority_root: tree.authority_root(),
         ..parent_only_state.clone()
     };
-    let (state, transparency_proof) = commit_state(&mut log, &seed_state)
-        .expect("commit state");
+    let (state, transparency_proof) = commit_state(&mut log, &seed_state).expect("commit state");
 
     // --- Build proof for delegated cap ---
-    let inclusion = tree.inclusion_proof(&delegated_cap).expect("cap must be in tree");
+    let inclusion = tree
+        .inclusion_proof(&delegated_cap)
+        .expect("cap must be in tree");
     let stamp = capability_stamp(&delegated_cap, &state);
-    let non_revocation = tree.non_revocation_witness(&stamp).expect("cap must not be revoked");
+    let non_revocation = tree
+        .non_revocation_witness(&stamp)
+        .expect("cap must not be revoked");
     let leaf_hash = capability_leaf_hash(&delegated_cap);
-    let sig = epoch_kp.sign_capability_issuance(&leaf_hash, &state.authority_root, epoch_cert.epoch);
+    let sig =
+        epoch_kp.sign_capability_issuance(&leaf_hash, &state.authority_root, epoch_cert.epoch);
     let proof = CapabilityProof {
         inclusion,
         non_revocation,
-        issuance: CapabilityIssuanceProof { sig, epoch_cert: epoch_cert.clone() },
+        issuance: CapabilityIssuanceProof {
+            sig,
+            epoch_cert: epoch_cert.clone(),
+        },
     };
 
     // --- Seal with delegated cap ---
@@ -354,17 +363,29 @@ fn validate_rejects_direct_cap_with_nonzero_parent_stamp() {
     let s = Scenario::baseline("delg-direct-nz", 42).with_message(b"payload");
 
     let object = seal(
-        &s.keypair.public, &s.message, &s.cap, &s.proof,
-        &s.seal_transparency_proof, &s.seal_state, &s.req,
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
         s.temporal_policy.clone(),
-    ).expect("seal");
+    )
+    .expect("seal");
 
     let bad_cap = Capability {
         parent_stamp: [1u8; 32], // non-zero but delegation_depth == 0
         ..s.cap.clone()
     };
-    let err = open(&s.keypair.secret, &object, &bad_cap, &s.proof, &s.seal_state)
-        .expect_err("direct cap with non-zero parent_stamp must be rejected");
+    let err = open(
+        &s.keypair.secret,
+        &object,
+        &bad_cap,
+        &s.proof,
+        &s.seal_state,
+    )
+    .expect_err("direct cap with non-zero parent_stamp must be rejected");
     assert!(matches!(err, ArcError::InvalidCapability(_)), "{err:?}");
 }
 
@@ -407,12 +428,17 @@ fn two_level_delegation_chain_fields_are_correct() {
         &state_gp,
         "parent-subject",
         Rights::READ.union(Rights::DELEGATE),
-        42, 55,
+        42,
+        55,
         &mut rng,
-    ).expect("first delegation");
+    )
+    .expect("first delegation");
 
     assert_eq!(parent.delegation_depth, 1);
-    assert_eq!(parent.parent_stamp, capability_stamp(&grandparent, &state_gp));
+    assert_eq!(
+        parent.parent_stamp,
+        capability_stamp(&grandparent, &state_gp)
+    );
     assert_ne!(parent.parent_stamp, [0u8; 32]);
 
     // Add parent to tree, rebuild state.
@@ -428,9 +454,11 @@ fn two_level_delegation_chain_fields_are_correct() {
         &state_p,
         "child-subject",
         Rights::READ,
-        43, 53,
+        43,
+        53,
         &mut rng,
-    ).expect("second delegation");
+    )
+    .expect("second delegation");
 
     assert_eq!(child.delegation_depth, 2);
     assert_eq!(child.parent_stamp, capability_stamp(&parent, &state_p));
@@ -440,4 +468,30 @@ fn two_level_delegation_chain_fields_are_correct() {
     // Child's epoch window is contained within parent's.
     assert!(child.epoch_start >= parent.epoch_start);
     assert!(child.epoch_end <= parent.epoch_end);
+}
+
+/// `delegate_capability` must reject a parent whose `delegation_depth` is
+/// already at `MAX_DELEGATION_DEPTH`, preventing integer overflow and
+/// unbounded delegation chains.
+#[test]
+fn delegate_rejects_at_max_depth() {
+    let s = Scenario::baseline("delg-max-depth", 42);
+    let mut at_max = s.cap.clone();
+    // Force delegation_depth to the limit and give it a non-zero parent_stamp
+    // so the depth > 0 invariant is satisfied.
+    at_max.delegation_depth = MAX_DELEGATION_DEPTH;
+    at_max.parent_stamp = [0xFFu8; 32];
+    at_max.rights = Rights::READ.union(Rights::DELEGATE);
+
+    let err = delegate_capability(
+        &at_max,
+        &s.seal_state,
+        "delegatee",
+        Rights::READ,
+        at_max.epoch_start,
+        at_max.epoch_end,
+        &mut rand::rngs::OsRng,
+    )
+    .expect_err("must reject delegation at MAX_DELEGATION_DEPTH");
+    assert!(matches!(err, ArcError::InvalidCapability(_)), "{err:?}");
 }

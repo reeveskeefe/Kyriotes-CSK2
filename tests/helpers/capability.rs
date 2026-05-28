@@ -1,13 +1,6 @@
 use arc_core::{
-    AuthorityCapabilityTree,
-    AuthorityRootKeyPair,
-    AuthorityState,
-    Capability,
-    CapabilityIssuanceProof,
-    CapabilityProof,
-    EpochSigningKeyPair,
-    Rights,
-    capability_leaf_hash,
+    AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, Capability,
+    CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair, Rights, capability_leaf_hash,
     capability_stamp,
 };
 
@@ -18,7 +11,6 @@ pub struct TestAuthority {
     pub epoch_kp: EpochSigningKeyPair,
     pub epoch_cert: arc_core::EpochKeyCert,
     pub tree: AuthorityCapabilityTree,
-    pub epoch: u64,
 }
 
 impl TestAuthority {
@@ -30,7 +22,12 @@ impl TestAuthority {
         let epoch_cert = root_kp.issue_epoch_cert(&epoch_pk, epoch, 10);
         let mut tree = AuthorityCapabilityTree::new();
         tree.add_capability(cap);
-        Self { root_kp, epoch_kp, epoch_cert, tree, epoch }
+        Self {
+            root_kp,
+            epoch_kp,
+            epoch_cert,
+            tree,
+        }
     }
 
     pub fn root_pk(&self) -> [u8; 32] {
@@ -45,16 +42,30 @@ impl TestAuthority {
         self.tree.revocation_root()
     }
 
-    pub fn build_proof_for_state(&self, cap: &Capability, state: &AuthorityState) -> CapabilityProof {
+    pub fn build_proof_for_state(
+        &self,
+        cap: &Capability,
+        state: &AuthorityState,
+    ) -> CapabilityProof {
         let inclusion = self.tree.inclusion_proof(cap).expect("cap must be in tree");
         let stamp = capability_stamp(cap, state);
-        let non_revocation = self.tree.non_revocation_witness(&stamp).expect("cap must not be revoked");
+        let non_revocation = self
+            .tree
+            .non_revocation_witness(&stamp)
+            .expect("cap must not be revoked");
         let leaf_hash = capability_leaf_hash(cap);
-        let sig = self.epoch_kp.sign_capability_issuance(&leaf_hash, &state.authority_root, self.epoch_cert.epoch);
+        let sig = self.epoch_kp.sign_capability_issuance(
+            &leaf_hash,
+            &state.authority_root,
+            self.epoch_cert.epoch,
+        );
         CapabilityProof {
             inclusion,
             non_revocation,
-            issuance: CapabilityIssuanceProof { sig, epoch_cert: self.epoch_cert.clone() },
+            issuance: CapabilityIssuanceProof {
+                sig,
+                epoch_cert: self.epoch_cert.clone(),
+            },
         }
     }
 }

@@ -49,7 +49,10 @@ pub struct ThresholdSignatureSet {
 impl ThresholdSignatureSet {
     /// Create an empty set for a `threshold`-of-n signing round.
     pub fn new(threshold: u32) -> Self {
-        Self { threshold, partials: Vec::new() }
+        Self {
+            threshold,
+            partials: Vec::new(),
+        }
     }
 
     /// Add a partial signature to the set.
@@ -67,17 +70,19 @@ impl ThresholdSignatureSet {
 /// Domain-separated from all other ARC signing messages.
 ///
 /// Format:
-/// `"ARC-TSIG-EPOCH-v1" || authority_root (32) || revocation_root (32) || epoch (le64) || prev_epoch_hash (32)`
+/// `"ARC-TSIG-EPOCH-v2" || authority_root (32) || revocation_root (32) || transparency_root (32) || epoch (le64) || prev_epoch_hash (32)`
 pub fn tsig_epoch_signing_message(
     authority_root: &[u8; 32],
     revocation_root: &[u8; 32],
+    transparency_root: &[u8; 32],
     epoch: u64,
     prev_epoch_hash: &[u8; 32],
 ) -> Vec<u8> {
-    let mut msg = Vec::with_capacity(18 + 32 + 32 + 8 + 32);
-    msg.extend_from_slice(b"ARC-TSIG-EPOCH-v1");
+    let mut msg = Vec::with_capacity(18 + 32 + 32 + 32 + 8 + 32);
+    msg.extend_from_slice(b"ARC-TSIG-EPOCH-v2");
     msg.extend_from_slice(authority_root);
     msg.extend_from_slice(revocation_root);
+    msg.extend_from_slice(transparency_root);
     msg.extend_from_slice(&epoch.to_le_bytes());
     msg.extend_from_slice(prev_epoch_hash);
     msg
@@ -100,12 +105,19 @@ pub fn tsig_epoch_signing_message(
 pub fn tsig_sign(
     authority_root: &[u8; 32],
     revocation_root: &[u8; 32],
+    transparency_root: &[u8; 32],
     epoch: u64,
     prev_epoch_hash: &[u8; 32],
     epoch_kp: &EpochSigningKeyPair,
     signer_index: u32,
 ) -> ThresholdPartialSig {
-    let msg = tsig_epoch_signing_message(authority_root, revocation_root, epoch, prev_epoch_hash);
+    let msg = tsig_epoch_signing_message(
+        authority_root,
+        revocation_root,
+        transparency_root,
+        epoch,
+        prev_epoch_hash,
+    );
     let sig = epoch_kp.sign_message(&msg);
     ThresholdPartialSig { signer_index, sig }
 }
@@ -130,6 +142,7 @@ pub fn tsig_sign(
 pub fn tsig_verify(
     authority_root: &[u8; 32],
     revocation_root: &[u8; 32],
+    transparency_root: &[u8; 32],
     epoch: u64,
     prev_epoch_hash: &[u8; 32],
     set: &ThresholdSignatureSet,
@@ -141,8 +154,13 @@ pub fn tsig_verify(
     if (set.threshold as usize) > authorized_keys.len() {
         return Err(ArcError::Crypto("threshold exceeds authorized key count"));
     }
-    let msg =
-        tsig_epoch_signing_message(authority_root, revocation_root, epoch, prev_epoch_hash);
+    let msg = tsig_epoch_signing_message(
+        authority_root,
+        revocation_root,
+        transparency_root,
+        epoch,
+        prev_epoch_hash,
+    );
     let mut seen = vec![false; authorized_keys.len()];
     let mut valid_count: u32 = 0;
     for partial in &set.partials {
@@ -164,6 +182,8 @@ pub fn tsig_verify(
     if valid_count >= set.threshold {
         Ok(())
     } else {
-        Err(ArcError::Crypto("threshold not met: insufficient valid signatures"))
+        Err(ArcError::Crypto(
+            "threshold not met: insufficient valid signatures",
+        ))
     }
 }

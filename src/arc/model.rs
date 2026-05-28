@@ -1,8 +1,9 @@
-use sha2::{Digest, Sha256};
-use rand::{CryptoRng, RngCore};
-use x25519_dalek::{PublicKey as X25519PublicKey, StaticSecret};
+use ml_kem::kem::{FromSeed, KeyExport};
 use ml_kem::{MlKem768, Seed};
-use ml_kem::kem::{KeyExport, FromSeed};
+use rand::{CryptoRng, RngCore};
+use sha2::{Digest, Sha256};
+use x25519_dalek::{PublicKey as X25519PublicKey, StaticSecret};
+use zeroize::Zeroize;
 
 use crate::core::rights::Rights;
 use crate::core::temporal::TemporalPolicy;
@@ -32,6 +33,16 @@ pub struct RecipientSecretKey {
     pub pq: Option<Box<[u8; ML_KEM_768_DK_BYTES]>>,
 }
 
+impl Drop for RecipientSecretKey {
+    fn drop(&mut self) {
+        // Zero the ML-KEM-768 seed bytes before the heap allocation is freed.
+        // `classical` (x25519-dalek `StaticSecret`) zeroes itself via its own Drop.
+        if let Some(seed) = self.pq.as_mut() {
+            seed.zeroize();
+        }
+    }
+}
+
 /// A matched public/secret keypair for an ARC recipient.
 pub struct RecipientKeyPair {
     pub public: RecipientPublicKey,
@@ -48,14 +59,21 @@ impl RecipientKeyPair {
         let seed: Seed = Seed::from(seed_bytes);
         let (_dk, ek) = MlKem768::from_seed(&seed);
         let ek_key = ek.to_bytes();
-        let ek_arr: [u8; ML_KEM_768_EK_BYTES] = ek_key.as_slice()
+        let ek_arr: [u8; ML_KEM_768_EK_BYTES] = ek_key
+            .as_slice()
             .try_into()
             .expect("ML-KEM-768 ek is 1184 bytes");
         let ek_bytes: Box<[u8; ML_KEM_768_EK_BYTES]> = Box::new(ek_arr);
         let dk_bytes: Box<[u8; ML_KEM_768_DK_BYTES]> = Box::new(seed_bytes);
         Self {
-            public: RecipientPublicKey { classical: public, pq: Some(ek_bytes) },
-            secret: RecipientSecretKey { classical: secret, pq: Some(dk_bytes) },
+            public: RecipientPublicKey {
+                classical: public,
+                pq: Some(ek_bytes),
+            },
+            secret: RecipientSecretKey {
+                classical: secret,
+                pq: Some(dk_bytes),
+            },
         }
     }
 }
@@ -199,10 +217,13 @@ pub fn capability_leaf_hash(cap: &Capability) -> [u8; 32] {
 pub fn capability_stamp(cap: &Capability, state: &AuthorityState) -> [u8; 32] {
     let leaf = capability_leaf_hash(cap);
     let mut hasher = Sha256::new();
-    hasher.update(b"ARC-CAPABILITY-STAMP-v1");
+    // v2: epoch and authority_root intentionally removed so the stamp is
+    // stable across epoch rotations.  A revocation inserted at epoch e_r
+    // must remain detectable at every subsequent epoch e_o > e_r.
+    // Including mutable state fields caused revocations to silently lapse
+    // on every epoch boundary (V7 fix).
+    hasher.update(b"ARC-CAPABILITY-STAMP-v2");
     hasher.update(leaf);
-    hasher.update(state.authority_root);
-    hasher.update(state.epoch.to_le_bytes());
     hasher.update(state.authority_id.as_bytes());
     hasher.finalize().into()
 }

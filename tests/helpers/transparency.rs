@@ -1,9 +1,4 @@
-use arc_core::{
-    ArcError,
-    AuthorityState,
-    TransparencyLog,
-    TransparencyProof,
-};
+use arc_core::{ArcError, AuthorityState, TransparencyLog, TransparencyProof};
 
 pub fn commit_state<L: TransparencyLog>(
     log: &mut L,

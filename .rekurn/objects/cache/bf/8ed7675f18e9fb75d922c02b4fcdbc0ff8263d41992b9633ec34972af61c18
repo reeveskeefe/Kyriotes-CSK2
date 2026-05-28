@@ -1,0 +1,2 @@
+rekurn-tree
+{"type":"tree","entries":[{"mode":"040000","name":"arc","hash":"592908c0f913c7db7736891106ee5808d7422159f1d77b506ee787941aebb00a"},{"mode":"040000","name":"core","hash":"102e1f331a6b634647ab95b85240c4f39947a3609517f322ed5fb0ce529ad661"},{"mode":"040000","name":"encoding","hash":"304a1e258fa066ce7314e8326ec11aca0a2b828512f599d8887adf0e379f8657"},{"mode":"100644","name":"lib.rs","hash":"04b5c435dc8c4a053573e1e1951e61a445c974a35dfc7a3fe70fe98c1340259a"}]}

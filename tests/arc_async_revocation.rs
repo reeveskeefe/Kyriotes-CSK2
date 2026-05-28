@@ -1,12 +1,8 @@
 mod helpers;
 
 use arc_core::{
-    ArcError,
-    AsyncTransparencyLog,
-    AuthorityCapabilityTree,
-    InMemoryTransparencyLog,
-    capability_stamp,
-    revoke_capability_and_commit_async,
+    ArcError, AsyncTransparencyLog, AuthorityCapabilityTree, InMemoryTransparencyLog,
+    capability_stamp, revoke_capability_and_commit_async,
 };
 use helpers::scenario::Scenario;
 
@@ -18,12 +14,13 @@ async fn async_revoke_and_commit_updates_roots_and_log() {
     tree.add_capability(&s.cap);
 
     let mut log = InMemoryTransparencyLog::new();
-    log.commit_state(&s.seal_state).await.expect("base state commit");
+    log.commit_state(&s.seal_state)
+        .await
+        .expect("base state commit");
 
-    let commit =
-        revoke_capability_and_commit_async(&mut log, &mut tree, &s.cap, &s.seal_state, 43)
-            .await
-            .expect("async revocation commit should succeed");
+    let commit = revoke_capability_and_commit_async(&mut log, &mut tree, &s.cap, &s.seal_state, 43)
+        .await
+        .expect("async revocation commit should succeed");
 
     assert_eq!(commit.state.epoch, 43);
     assert_eq!(commit.state.authority_root, s.seal_state.authority_root);
@@ -41,17 +38,14 @@ async fn async_revoke_and_commit_via_boxed_dyn_log() {
     tree.add_capability(&s.cap);
 
     let mut log: Box<dyn AsyncTransparencyLog> = Box::new(InMemoryTransparencyLog::new());
-    log.commit_state(&s.seal_state).await.expect("base state commit");
+    log.commit_state(&s.seal_state)
+        .await
+        .expect("base state commit");
 
-    let commit = revoke_capability_and_commit_async(
-        log.as_mut(),
-        &mut tree,
-        &s.cap,
-        &s.seal_state,
-        43,
-    )
-    .await
-    .expect("async revocation via boxed dyn log should succeed");
+    let commit =
+        revoke_capability_and_commit_async(log.as_mut(), &mut tree, &s.cap, &s.seal_state, 43)
+            .await
+            .expect("async revocation via boxed dyn log should succeed");
 
     assert_eq!(commit.state.epoch, 43);
     assert_ne!(commit.state.revocation_root, s.seal_state.revocation_root);

@@ -1,7 +1,29 @@
 [package]
-name = "arc_core"
+name = "ARCencryption"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.87"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/reeveskeefe/ARC"
+keywords = ["arc", "capabilities", "encryption", "cryptography"]
+categories = ["cryptography"]
+# crates.io requires a non-empty description before publish. Fill this in manually.
+description = "ARC makes encrypted data require permission, not just a key. Even if someone has the decryption key, ARC can still refuse access unless the current authority proof says they are allowed to open that exact object."
+include = [
+    "Cargo.toml",
+    "Cargo.lock",
+    "LICENSE",
+    "README.md",
+    "ARCLogoRectangular.png",
+    "ARCLogoSquare.png",
+    "docs/**/*.md",
+    "src/**/*.rs",
+    "tests/**/*.rs",
+]
+
+[lib]
+name = "arc_core"
 
 [dependencies]
 async-trait = "0.1"
@@ -14,6 +36,7 @@ rand_core = "0.10"
 sha2 = "0.10"
 thiserror = "1.0"
 x25519-dalek = { version = "2", features = ["static_secrets"] }
+zeroize = "1"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }

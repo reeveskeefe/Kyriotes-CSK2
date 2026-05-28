@@ -5,19 +5,9 @@
 mod helpers;
 
 use arc_core::{
-    AuthorityCapabilityTree,
-    AuthorityRootKeyPair,
-    AuthorityState,
-    Capability,
-    CapabilityIssuanceProof,
-    EpochSigningKeyPair,
-    InMemoryTransparencyLog,
-    TransparencyLog,
-    issue_capability,
-    rotate_epoch,
-    rotate_epoch_and_commit,
-    transparency_log_entry_hash,
-    verify_epoch_root_sig,
+    AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, Capability,
+    CapabilityIssuanceProof, EpochSigningKeyPair, InMemoryTransparencyLog, TransparencyLog,
+    issue_capability, rotate_epoch_and_commit, transparency_log_entry_hash, verify_epoch_root_sig,
 };
 use helpers::{capability::sample_cap, request_builders::policy_hash};
 
@@ -56,7 +46,13 @@ impl Auth {
             revocation_count: tree.revocation_count(),
             prev_epoch_hash: [0u8; 32],
         };
-        Self { root_kp, base_state, _tree: tree, _issuance: issuance, _cap: cap }
+        Self {
+            root_kp,
+            base_state,
+            _tree: tree,
+            _issuance: issuance,
+            _cap: cap,
+        }
     }
 }
 
@@ -76,8 +72,7 @@ fn rotate_epoch_and_commit_chain_hash_is_nonzero() {
             .expect("rotate should succeed");
 
     assert_ne!(
-        commit.chain_hash,
-        [0u8; 32],
+        commit.chain_hash, [0u8; 32],
         "chain_hash must be non-zero after rotate_epoch_and_commit"
     );
 }
@@ -98,6 +93,7 @@ fn rotate_epoch_and_commit_chain_hash_matches_manual_computation() {
     let sigma_e = epoch_kp.sign_epoch_root(
         &commit.state.authority_root,
         &commit.state.revocation_root,
+        &commit.state.transparency_root,
         commit.state.epoch,
         &prev,
     );
@@ -148,9 +144,15 @@ fn chained_rotations_produce_distinct_chain_hashes() {
         rotate_epoch_and_commit(&mut log, &a.root_kp, &a.base_state, 10, 5, &[0u8; 32])
             .expect("first rotation");
 
-    let (_kp2, _cert2, commit2) =
-        rotate_epoch_and_commit(&mut log, &a.root_kp, &commit1.state, 20, 5, &commit1.chain_hash)
-            .expect("second rotation");
+    let (_kp2, _cert2, commit2) = rotate_epoch_and_commit(
+        &mut log,
+        &a.root_kp,
+        &commit1.state,
+        20,
+        5,
+        &commit1.chain_hash,
+    )
+    .expect("second rotation");
 
     assert_ne!(
         commit1.chain_hash, commit2.chain_hash,
@@ -168,24 +170,35 @@ fn chain_hash_for_unknown_epoch_returns_none() {
     );
 }
 
-/// `rotate_epoch` itself (without commit) now also returns `sigma_e`; verify
-/// the signature is valid under the returned epoch key.
+/// `rotate_epoch_and_commit` computes sigma_e with the real transparency_root;
+/// verify the signature is valid under the returned epoch key.
 #[test]
 fn rotate_epoch_sigma_e_verifies() {
     let a = Auth::new("ch-sigma-verify");
     let prev = [42u8; 32];
+    let mut log = InMemoryTransparencyLog::new();
 
-    let (epoch_kp, _cert, state, sigma_e) =
-        rotate_epoch(&a.root_kp, &a.base_state, 77, 10, &prev);
+    let (epoch_kp, _cert, commit) =
+        rotate_epoch_and_commit(&mut log, &a.root_kp, &a.base_state, 77, 10, &prev)
+            .expect("rotate should succeed");
+
+    // Ed25519 is deterministic: re-signing with the same inputs reproduces sigma_e.
+    let sigma_e = epoch_kp.sign_epoch_root(
+        &commit.state.authority_root,
+        &commit.state.revocation_root,
+        &commit.state.transparency_root,
+        commit.state.epoch,
+        &prev,
+    );
 
     verify_epoch_root_sig(
         &epoch_kp.verifying_key_bytes(),
-        &state.authority_root,
-        &state.revocation_root,
-        state.epoch,
+        &commit.state.authority_root,
+        &commit.state.revocation_root,
+        &commit.state.transparency_root,
+        commit.state.epoch,
         &prev,
         &sigma_e,
     )
-    .expect("sigma_e returned by rotate_epoch must verify under the epoch key");
+    .expect("sigma_e signed with real T_e must verify under the epoch key");
 }
-

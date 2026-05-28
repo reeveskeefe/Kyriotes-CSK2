@@ -7,16 +7,9 @@
 ///   and multi-signer sets.
 /// - Decoders reject truncated input, trailing bytes, and oversized counts.
 use arc_core::{
-    ArcError,
-    Capability,
-    Rights,
-    ThresholdPartialSig, ThresholdSignatureSet,
-    decode_capability,
-    decode_capability_with_limits,
-    encode_capability,
-    decode_threshold_signature_set,
-    decode_threshold_signature_set_with_max,
-    encode_threshold_signature_set,
+    ArcError, Capability, Rights, ThresholdPartialSig, ThresholdSignatureSet, decode_capability,
+    decode_capability_with_limits, decode_threshold_signature_set,
+    decode_threshold_signature_set_with_max, encode_capability, encode_threshold_signature_set,
 };
 
 // ---------------------------------------------------------------------------
@@ -123,7 +116,10 @@ fn capability_decode_rejects_trailing_bytes() {
     let mut bytes = encode_capability(&direct_cap());
     bytes.push(0x00);
     let err = decode_capability(&bytes).expect_err("trailing byte must fail");
-    assert!(matches!(err, ArcError::Parse("trailing bytes after capability")));
+    assert!(matches!(
+        err,
+        ArcError::Parse("trailing bytes after capability")
+    ));
 }
 
 /// Truncated input causes rejection.
@@ -140,8 +136,8 @@ fn capability_decode_rejects_oversized_subject() {
     let mut cap = direct_cap();
     cap.subject = "x".repeat(100);
     let bytes = encode_capability(&cap);
-    let err = decode_capability_with_limits(&bytes, 10, 1024)
-        .expect_err("oversized subject must fail");
+    let err =
+        decode_capability_with_limits(&bytes, 10, 1024).expect_err("oversized subject must fail");
     assert!(matches!(err, ArcError::Parse(_)));
 }
 
@@ -150,7 +146,10 @@ fn capability_decode_rejects_oversized_subject() {
 // ---------------------------------------------------------------------------
 
 fn make_partial(index: u32, seed: u8) -> ThresholdPartialSig {
-    ThresholdPartialSig { signer_index: index, sig: [seed; 64] }
+    ThresholdPartialSig {
+        signer_index: index,
+        sig: [seed; 64],
+    }
 }
 
 /// A 2-of-3 set with 3 partials round-trips completely.
@@ -199,9 +198,11 @@ fn tsig_set_decode_rejects_trailing_bytes() {
     set.add(make_partial(0, 0x00));
     let mut bytes = encode_threshold_signature_set(&set);
     bytes.push(0xFF);
-    let err = decode_threshold_signature_set(&bytes)
-        .expect_err("trailing byte must fail");
-    assert!(matches!(err, ArcError::Parse("trailing bytes after threshold signature set")));
+    let err = decode_threshold_signature_set(&bytes).expect_err("trailing byte must fail");
+    assert!(matches!(
+        err,
+        ArcError::Parse("trailing bytes after threshold signature set")
+    ));
 }
 
 /// Truncated sig bytes (fewer than 64) cause rejection.

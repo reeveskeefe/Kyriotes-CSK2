@@ -1,0 +1,342 @@
+{
+  ".gitignore": {
+    "hash": "a0cbe078f2ed7afe3dde5b231a520395dd9efc3dd614cd8e4e4abde92940d502",
+    "mode": "100644",
+    "size": 30
+  },
+  ".rekurnignore": {
+    "hash": "dfa89671b569534c5514509baa547684cfe06f9848312f4de3ccadd428b36a1a",
+    "mode": "100644",
+    "size": 7
+  },
+  ".github/workflows/ci.yml": {
+    "hash": "d31a36640d9414272cf12467926855395102798ee9022fee39eddcb0a15b846d",
+    "mode": "100644",
+    "size": 677
+  },
+  "Cargo.toml": {
+    "hash": "c27505bdc0d76515118e92a8172febe0d673afc54065000789be29d9388430c7",
+    "mode": "100644",
+    "size": 1179
+  },
+  "Cargo.lock": {
+    "hash": "96a1693c33803fbc49d317ecb004c263aafb4549aea5fb445165f5c575ab9ed5",
+    "mode": "100644",
+    "size": 25818
+  },
+  "docs/ARC-Spec-v0.1.md": {
+    "hash": "fd4afc778bb9d44fb043bb44d6393530f87c79270f750a5b66e20a4a92791ab4",
+    "mode": "100644",
+    "size": 23188
+  },
+  "LICENSE": {
+    "hash": "be7493c3036fc54f8717e716be2e76bda494865b5fb8dacff079dfc291bac0ef",
+    "mode": "100644",
+    "size": 1069
+  },
+  "docs/UsageExample.md": {
+    "hash": "4f7baba4ff16be45df5e49f58e1bbfc062339605ccc7b49abaff9fcbd52c6664",
+    "mode": "100644",
+    "size": 19206
+  },
+  "docs/USAGE.md": {
+    "hash": "3182fc77a017befe4f132d4b84cb10fd09fde8887149c5e2909a8ced1cb50038",
+    "mode": "100644",
+    "size": 39931
+  },
+  "rekurn.config.json": {
+    "hash": "267a8253803c16668ea0a2b90c41d8fd82fcc070050ac8700399d169b543b8fe",
+    "mode": "100644",
+    "size": 279
+  },
+  "README.md": {
+    "hash": "dc8b161a16f687b7e241b7886d4ca45c146c7b6669f003d021bf356d22252722",
+    "mode": "100644",
+    "size": 4606
+  },
+  "src/arc/async_transparency.rs": {
+    "hash": "9b4f39a2f37b9fde92fecb378d402ca979df558f49785342a7aabfa2568202da",
+    "mode": "100644",
+    "size": 2131
+  },
+  "src/arc/capability_tree.rs": {
+    "hash": "cb1052c8533937f6361cb490018f753338ecdfe46ed61f653b33487ad47f98f9",
+    "mode": "100644",
+    "size": 36302
+  },
+  "src/arc/engine.rs": {
+    "hash": "7cf0be12aca1f345512a59f3c9ed38f447bf0ffa95750f41f1af1fa819fb6a72",
+    "mode": "100644",
+    "size": 48075
+  },
+  "src/arc/kem.rs": {
+    "hash": "ceaf39d1490dab6c871b06572f8a38c857390b7ad2d472fb44b98596b963daf8",
+    "mode": "100644",
+    "size": 4392
+  },
+  "src/arc/mod.rs": {
+    "hash": "80d15726bec0744a90f8f64292420bf5ff5b5f54a0da2522f44a8a1919e23c9f",
+    "mode": "100644",
+    "size": 168
+  },
+  "src/arc/authority.rs": {
+    "hash": "1facbcceb5417fcabda548ee09a67c64f685028ea762c71a8fda14c878f5d4e7",
+    "mode": "100644",
+    "size": 15912
+  },
+  "ARCLogoRectangular.png": {
+    "hash": "e2b231ff239d83e0411900a1e6f2d7fb14ee313a32257a7fc05365118fe23e0c",
+    "mode": "100644",
+    "size": 866569
+  },
+  "ARCLogoSquare.png": {
+    "hash": "1eed54b7869657021a0a227a67df33e4e22da767e0ab40fe73979f9b7392b797",
+    "mode": "100644",
+    "size": 921104
+  },
+  "src/arc/model.rs": {
+    "hash": "d4bbf62f89ba8b75beb2dc21259669ec209a5de0e7822f29b39922e3137e2726",
+    "mode": "100644",
+    "size": 9481
+  },
+  "src/arc/tsig.rs": {
+    "hash": "a9ec670c927554ed810bf996e49bbaefa963254f93f8bd6282e112aa7d853da4",
+    "mode": "100644",
+    "size": 6795
+  },
+  "src/arc/verify.rs": {
+    "hash": "03e5aada6d2a78910f7e51e223d60202709673daa35bd49e62f6b504457ca551",
+    "mode": "100644",
+    "size": 22588
+  },
+  "src/arc/transparency.rs": {
+    "hash": "467c49553f825d9838a18cfa69713247d1d20fde8917adf8a30d36d8736c35ed",
+    "mode": "100644",
+    "size": 10796
+  },
+  "src/core/mod.rs": {
+    "hash": "78349bdb798fe71861d909ed70395078986a2761c5bac168c7828a8803e8d760",
+    "mode": "100644",
+    "size": 49
+  },
+  "src/core/error.rs": {
+    "hash": "e8f3ca8181d00244c7f792aa6697ff5b35a622e739224ee10ad17541e6743edd",
+    "mode": "100644",
+    "size": 512
+  },
+  "src/core/rights.rs": {
+    "hash": "39dcc3b9ad2f28638fa8f06d58e0f8911a0e8b8186c53de2019ba48e52a3ade0",
+    "mode": "100644",
+    "size": 939
+  },
+  "src/core/temporal.rs": {
+    "hash": "a95db3151670789c264b4f63be71d2907a98809894f5c7607f693635bd2b68d6",
+    "mode": "100644",
+    "size": 1057
+  },
+  "src/encoding/codec.rs": {
+    "hash": "553558b7b0fc5bf3623c9074506fac3a1b973267d0a8ef946b347644b2391ad6",
+    "mode": "100644",
+    "size": 5234
+  },
+  "src/encoding/wire.rs": {
+    "hash": "aea43d15a022d0345f86fb8d0f2b5a40089d1b6f36a2c6efbc33ed741d43c58c",
+    "mode": "100644",
+    "size": 13453
+  },
+  "src/encoding/mod.rs": {
+    "hash": "06866940a32e9f8339d926999bcb2a579825e9a7d83d20e77b51bdbe209b2d04",
+    "mode": "100644",
+    "size": 29
+  },
+  "src/lib.rs": {
+    "hash": "04b5c435dc8c4a053573e1e1951e61a445c974a35dfc7a3fe70fe98c1340259a",
+    "mode": "100644",
+    "size": 3091
+  },
+  "tests/arc_async_transparency.rs": {
+    "hash": "a7bfbb777bd30733f324199b256df672e9aaa958cfc6ca9a8cb22a1239b13dea",
+    "mode": "100644",
+    "size": 2319
+  },
+  "tests/arc_add_wrapper_and_commit.rs": {
+    "hash": "6969a99cd72a422ab80316449e179448ee999ebf4f63cd7208bcb9676db0305b",
+    "mode": "100644",
+    "size": 5612
+  },
+  "tests/arc_async_revocation.rs": {
+    "hash": "241f776a00e5ed24f82e7409498c20027696196434f0bba52358ed65aad0fe1d",
+    "mode": "100644",
+    "size": 2387
+  },
+  "tests/arc_capability_tree.rs": {
+    "hash": "f4e32d8f746cfba884ce67260eb127e84e5adc941523b586301306bfb6e2b49b",
+    "mode": "100644",
+    "size": 8220
+  },
+  "tests/arc_compromise_notice.rs": {
+    "hash": "cd55ea5f8e4490d2c29fe9423fa8327012cb6ab09ed474103ab7af9779e98687",
+    "mode": "100644",
+    "size": 5402
+  },
+  "tests/arc_crypto_verifier.rs": {
+    "hash": "743659af2945061327b5738a7ae14804bb150ae010f2f48102254d00538a41c5",
+    "mode": "100644",
+    "size": 4865
+  },
+  "tests/arc_chain_hash_integration.rs": {
+    "hash": "dbf98f9c6c8f3b7cc7a6ae5a99959e0f237ab3392b9959d8f77ff0c68bfae7c9",
+    "mode": "100644",
+    "size": 7016
+  },
+  "tests/arc_compromise_open.rs": {
+    "hash": "f70ef48703d95cec6562bdd99a1c720143d987bec5d2b828e90d1c06c947e36a",
+    "mode": "100644",
+    "size": 18748
+  },
+  "tests/arc_delegation.rs": {
+    "hash": "72faa0545e3293faa40a865ca4ee42f5ff47cff1b77b8674018189686fee67c6",
+    "mode": "100644",
+    "size": 17613
+  },
+  "tests/arc_flow.rs": {
+    "hash": "c8f81605d16588667a4d5dca2914157da0f7e7879decd8d10ddf6aeba503cac2",
+    "mode": "100644",
+    "size": 4570
+  },
+  "tests/arc_epoch_rotation.rs": {
+    "hash": "1fcd9f089229bbf9cf02a0877d0889f046de2dfb8aef1835614774ff36df7808",
+    "mode": "100644",
+    "size": 19219
+  },
+  "tests/arc_guards.rs": {
+    "hash": "9fac7ab109874601f6bd5e060996bed62a19c268ce4c006d6603bee6766e61e1",
+    "mode": "100644",
+    "size": 4150
+  },
+  "tests/arc_issue.rs": {
+    "hash": "f9febe20cf9fab4b9830e17062af72a3b1a4fb3f98396bf69b7123749ff4f9cb",
+    "mode": "100644",
+    "size": 8191
+  },
+  "tests/arc_log_chain.rs": {
+    "hash": "a2f2e71e16ad89f280afa260aa7e54e553abbf7b13ce7e139ae9367a3bf83397",
+    "mode": "100644",
+    "size": 7387
+  },
+  "tests/arc_parent_stamp.rs": {
+    "hash": "b4e4ff1825c2a16acf46fb0084e6322b16c7def0b2cdb7cbc9b62374bf33acd9",
+    "mode": "100644",
+    "size": 3338
+  },
+  "tests/arc_multi_wrapper.rs": {
+    "hash": "498fc3178e7f01d8f36b46bcbec3a2077bc6d6a3b9297a1bbc9010c2987e1dd7",
+    "mode": "100644",
+    "size": 6357
+  },
+  "tests/arc_pq_kem.rs": {
+    "hash": "f1a71ae0beffb7c2153b89406334c943f18537612a339693a2a781c7ae1a00b6",
+    "mode": "100644",
+    "size": 6812
+  },
+  "tests/arc_reseal_required_e2e.rs": {
+    "hash": "686686199c3b86207a291e8f2c86bc991534c45e72ff2e9940b75abcfe4bc54f",
+    "mode": "100644",
+    "size": 9739
+  },
+  "tests/arc_revocation.rs": {
+    "hash": "339202a3c3dac30a7aeadbb99ed233331baff71b55b395ed0f496232f44d9d18",
+    "mode": "100644",
+    "size": 3852
+  },
+  "tests/arc_reseal.rs": {
+    "hash": "c7dceda549db51b6afe886456070a6c563e8f57e07b9d0310d08f7eb0845a4d8",
+    "mode": "100644",
+    "size": 9078
+  },
+  "tests/arc_seal_and_commit.rs": {
+    "hash": "d17b4b0132972be78021ddbcd81225701ef26f69560e4e1b7f46ff2fe1e8af98",
+    "mode": "100644",
+    "size": 9106
+  },
+  "tests/arc_rights.rs": {
+    "hash": "6821e0e1247fc2c00f5a59592ee32f92daf76ef83cb2747e8f7378f23a4259a0",
+    "mode": "100644",
+    "size": 6844
+  },
+  "tests/arc_rewrap_spec.rs": {
+    "hash": "d430132bea0da648fbe20936bc706c911dba1fe46c48e09b7d73dcef15a3047b",
+    "mode": "100644",
+    "size": 8928
+  },
+  "tests/arc_temporal.rs": {
+    "hash": "9308a7ed90e83856e2570809ffd3e57aee98fa347296932ed2017714327edffb",
+    "mode": "100644",
+    "size": 10206
+  },
+  "tests/arc_tsig_verifier.rs": {
+    "hash": "f6148fe1c82075217637f055b0d1f0aa3176afa186f98b175b4862c027982377",
+    "mode": "100644",
+    "size": 8704
+  },
+  "tests/arc_tsig.rs": {
+    "hash": "3c5ef977b590817ed6d34db2719c63aacbbc2439dc5fbbb49c926852422572d7",
+    "mode": "100644",
+    "size": 11808
+  },
+  "tests/arc_wire_capability_tsig.rs": {
+    "hash": "bf53282f435e95b757ef340004b1b0dac13e3b897a23ce91b4da23b110af01e9",
+    "mode": "100644",
+    "size": 8259
+  },
+  "tests/arc_verify.rs": {
+    "hash": "0176993b92e3f88c78799175d16641a4b55f73786b9721d863ff43f8d370fbc7",
+    "mode": "100644",
+    "size": 14343
+  },
+  "tests/arc_wire.rs": {
+    "hash": "fca496a1879379a1dd273e89caf71e6c6310249ba63b42127ed8714a01d257fe",
+    "mode": "100644",
+    "size": 13879
+  },
+  "tests/helpers/scenario.rs": {
+    "hash": "ced6dcaf174890ebc7fc15e8289c0e698e8e7319cb3d7cf6ce90735c4e87271b",
+    "mode": "100644",
+    "size": 4867
+  },
+  "tests/helpers/capability.rs": {
+    "hash": "8667ac0c6702527cec3799c1f4275c33ab0ab1dc94f76a196724ab4c2436b9a5",
+    "mode": "100644",
+    "size": 2598
+  },
+  "tests/helpers/request_builders.rs": {
+    "hash": "55337de6207efe0c3608d30888a3a68fe9188f290b5724f293c4ef1370b3f25c",
+    "mode": "100644",
+    "size": 403
+  },
+  "tests/helpers/mod.rs": {
+    "hash": "6f673455626bf7584ea025fe144d15eece4465e80dd030303ab684c8bd80cb8b",
+    "mode": "100644",
+    "size": 101
+  },
+  "tests/helpers/transparency.rs": {
+    "hash": "409968087b617bec5494fd371399a5984abaebd4465598839e3c8f369b03d721",
+    "mode": "100644",
+    "size": 308
+  },
+  "tests/helpers/state.rs": {
+    "hash": "cbce1915c16d152aab9eceedcd416363bb48e6aa20b681cc28945d0dcb8d044f",
+    "mode": "100644",
+    "size": 549
+  },
+  "docs/ARC-Spec-Sheet.md": {
+    "hash": "fd4afc778bb9d44fb043bb44d6393530f87c79270f750a5b66e20a4a92791ab4",
+    "mode": "100644",
+    "size": 23188
+  },
+  "docs/README.md": {
+    "hash": "19cbb3fe3e5c3057b8c7413ee022f05ec8a579b8fab793ea2b04c0e4729d8c2b",
+    "mode": "100644",
+    "size": 126
+  }
+}

@@ -7,15 +7,13 @@
 /// hold `sk_B`.
 mod helpers;
 
+use arc_core::InMemoryTransparencyLog;
 use arc_core::{
-    ArcError, Capability, Rights, TemporalPolicy,
-    open, seal, verify, verify_with_verifier,
-    BasicAuthorityVerifier, CryptoAuthorityVerifier, AuthorityEpochEvidence,
-    hash_policy,
+    ArcError, Capability, CryptoAuthorityVerifier, Rights, TemporalPolicy, open, seal, verify,
+    verify_with_verifier,
 };
 use helpers::scenario::Scenario;
 use helpers::transparency::commit_state;
-use arc_core::InMemoryTransparencyLog;
 
 // ---------------------------------------------------------------------------
 // Happy-path
@@ -104,8 +102,7 @@ fn verify_rejects_temporal_policy_epoch_mismatch() {
     let err = verify(&object, &s.cap, &s.proof, &wrong_state, &wrong_proof)
         .expect_err("should reject wrong epoch");
     assert!(
-        matches!(err, ArcError::TemporalRejected)
-            || matches!(err, ArcError::AuthorityState(_)),
+        matches!(err, ArcError::TemporalRejected) || matches!(err, ArcError::AuthorityState(_)),
         "unexpected error: {err:?}"
     );
 }
@@ -133,8 +130,14 @@ fn verify_rejects_invalid_epoch_signature_flag() {
     let mut bad_state = s.seal_state.clone();
     bad_state.epoch_signature_valid = false;
 
-    let err = verify(&object, &s.cap, &s.proof, &bad_state, &s.seal_transparency_proof)
-        .expect_err("should reject bad epoch sig flag");
+    let err = verify(
+        &object,
+        &s.cap,
+        &s.proof,
+        &bad_state,
+        &s.seal_transparency_proof,
+    )
+    .expect_err("should reject bad epoch sig flag");
     assert!(matches!(err, ArcError::AuthorityState(_)), "{err:?}");
 }
 
@@ -157,8 +160,14 @@ fn verify_rejects_invalid_epoch_cert_flag() {
     let mut bad_state = s.seal_state.clone();
     bad_state.epoch_key_cert_valid = false;
 
-    let err = verify(&object, &s.cap, &s.proof, &bad_state, &s.seal_transparency_proof)
-        .expect_err("should reject bad cert flag");
+    let err = verify(
+        &object,
+        &s.cap,
+        &s.proof,
+        &bad_state,
+        &s.seal_transparency_proof,
+    )
+    .expect_err("should reject bad cert flag");
     assert!(matches!(err, ArcError::AuthorityState(_)), "{err:?}");
 }
 
@@ -187,7 +196,7 @@ fn verify_rejects_delegated_cap_with_zero_parent_stamp() {
     // delegation_depth > 0.
     let delegated_cap = Capability {
         delegation_depth: 1,
-        ..s.cap.clone()  // inherits parent_stamp: [0u8; 32]
+        ..s.cap.clone() // inherits parent_stamp: [0u8; 32]
     };
 
     let err = verify(
@@ -235,7 +244,6 @@ fn verify_rejects_wrong_object_id() {
 
 #[test]
 fn verify_rejects_insufficient_rights() {
-    use arc_core::OpenRequest;
     let s = Scenario::baseline("verify-rights", 42).with_message(b"payload");
 
     // Seal with required_rights = READ | DECRYPT (from Scenario defaults).
@@ -290,15 +298,13 @@ fn verify_with_crypto_verifier_succeeds() {
 
     // Build a CryptoAuthorityVerifier with the offline root public key and
     // enough evidence to pass epoch chain verification.
-    let epoch_root_sig = s
-        .authority
-        .epoch_kp
-        .sign_epoch_root(
-            &s.seal_state.authority_root,
-            &s.seal_state.revocation_root,
-            s.seal_state.epoch,
-            &[0u8; 32],
-        );
+    let epoch_root_sig = s.authority.epoch_kp.sign_epoch_root(
+        &s.seal_state.authority_root,
+        &s.seal_state.revocation_root,
+        &s.seal_state.transparency_root,
+        s.seal_state.epoch,
+        &[0u8; 32],
+    );
 
     let mut verifier = CryptoAuthorityVerifier::with_root_pk(s.authority.root_pk());
     verifier.add_evidence(
@@ -377,8 +383,14 @@ fn verify_rejects_invalid_transparency_flag() {
     let mut bad_state = s.seal_state.clone();
     bad_state.transparency_inclusion_valid = false;
 
-    let err = verify(&object, &s.cap, &s.proof, &bad_state, &s.seal_transparency_proof)
-        .expect_err("should reject when transparency inclusion flag is false");
+    let err = verify(
+        &object,
+        &s.cap,
+        &s.proof,
+        &bad_state,
+        &s.seal_transparency_proof,
+    )
+    .expect_err("should reject when transparency inclusion flag is false");
     assert!(matches!(err, ArcError::AuthorityState(_)), "{err:?}");
 }
 
@@ -391,10 +403,14 @@ fn verify_rejects_invalid_transparency_flag() {
 /// has ended before the open epoch, verify must reject.
 #[test]
 fn verify_rejects_cap_epoch_window_expired() {
-    // Seal at epoch 42.  Cap covers epochs [40, 44].  Then try to verify
-    // at epoch 50 (past cap.epoch_end) — ValidCap check 6 must reject.
-    use arc_core::{AuthorityState, InMemoryTransparencyLog};
-
+    // Seal at epoch 42.  Cap covers epochs [40, 60] (from sample_cap).
+    // Open at epoch 65 — past cap.epoch_end=60 — with a wider temporal
+    // window [40, 70] so TemporalAccept passes but ValidCap check 6 rejects.
+    //
+    // Note: before the V7 fix (epoch-independent capability_stamp), this test
+    // accidentally passed because a mismatched stamp caused a false "revoked"
+    // error when verifying at a different epoch.  Now we deliberately push the
+    // open epoch beyond cap.epoch_end to exercise the real epoch-window guard.
     let s = Scenario::baseline("verify-epoch-expired", 42).with_message(b"payload");
 
     let object = seal(
@@ -405,13 +421,13 @@ fn verify_rejects_cap_epoch_window_expired() {
         &s.seal_transparency_proof,
         &s.seal_state,
         &s.req,
-        TemporalPolicy::Window { start: 40, end: 60 }, // wide window so TemporalAccept passes
+        TemporalPolicy::Window { start: 40, end: 70 }, // wider than cap so TemporalAccept passes
     )
     .expect("seal");
 
-    // Build an authority state at epoch 50 — past cap.epoch_end (44).
+    // Build an authority state at epoch 65 — past cap.epoch_end (60).
     let mut late_seed = s.seal_state.clone();
-    late_seed.epoch = 50;
+    late_seed.epoch = 65;
     let mut log = InMemoryTransparencyLog::new();
     let (late_state, late_proof) = commit_state(&mut log, &late_seed).expect("commit");
 
@@ -456,14 +472,8 @@ fn verify_and_open_agree_on_valid_object() {
     .expect("verify should succeed");
 
     // open with the same state must also succeed and produce the same plaintext.
-    let plaintext = open(
-        &s.keypair.secret,
-        &object,
-        &s.cap,
-        &s.proof,
-        &s.open_state,
-    )
-    .expect("open should succeed when verify passes");
+    let plaintext = open(&s.keypair.secret, &object, &s.cap, &s.proof, &s.open_state)
+        .expect("open should succeed when verify passes");
 
     assert_eq!(plaintext, s.message);
 }

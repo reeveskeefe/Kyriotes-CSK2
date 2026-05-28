@@ -1,22 +1,10 @@
 mod helpers;
 
 use arc_core::{
-    ArcError,
-    ArcObject,
-    AuthorityWrapper,
-    DecodeLimits,
-    DecodeProfile,
-    InMemoryTransparencyLog,
-    TransparencyLog,
-    decode_profile_from_env,
-    decode_profile_from_env_value,
-    Rights,
-    TemporalPolicy,
-    decode_arc_object,
-    decode_arc_object_with_limits,
-    encode_arc_object,
-    seal,
-    TransparencyProof,
+    ArcError, ArcObject, AuthorityWrapper, DecodeLimits, DecodeProfile, InMemoryTransparencyLog,
+    Rights, TemporalPolicy, TransparencyLog, TransparencyProof, decode_arc_object,
+    decode_arc_object_with_limits, decode_profile_from_env, decode_profile_from_env_value,
+    encode_arc_object, seal,
 };
 use helpers::scenario::Scenario;
 use helpers::state::sample_state;
@@ -26,14 +14,11 @@ fn sample_transparency_proof() -> TransparencyProof {
 
     let mut state0 = sample_state(10);
     state0.authority_id = "auth-wire-0".to_string();
-    log.commit_state(&state0)
-        .expect("state0 should commit");
+    log.commit_state(&state0).expect("state0 should commit");
 
     let mut state1 = sample_state(11);
     state1.authority_id = "auth-wire-1".to_string();
-    let commit = log
-        .commit_state(&state1)
-        .expect("state1 should commit");
+    let commit = log.commit_state(&state1).expect("state1 should commit");
 
     commit.proof
 }
@@ -87,8 +72,7 @@ fn arc_object_decode_rejects_bad_magic() {
 
 #[test]
 fn arc_object_decode_rejects_truncated_input() {
-    let s = Scenario::baseline("wire-truncated", 42)
-        .with_message(b"truncate me");
+    let s = Scenario::baseline("wire-truncated", 42).with_message(b"truncate me");
 
     let object = seal(
         &s.keypair.public,
@@ -128,7 +112,10 @@ fn arc_object_decode_rejects_oversized_payload_field() {
 
     let encoded = encode_arc_object(&object);
     let err = decode_arc_object(&encoded).expect_err("oversized payload must fail");
-    assert!(matches!(err, ArcError::Parse("field exceeds maximum allowed length")));
+    assert!(matches!(
+        err,
+        ArcError::Parse("field exceeds maximum allowed length")
+    ));
 }
 
 #[test]
@@ -161,7 +148,10 @@ fn arc_object_decode_rejects_oversized_wrapper_count() {
 
     let encoded = encode_arc_object(&object);
     let err = decode_arc_object(&encoded).expect_err("oversized wrapper count must fail");
-    assert!(matches!(err, ArcError::Parse("wrapper count exceeds maximum allowed")));
+    assert!(matches!(
+        err,
+        ArcError::Parse("wrapper count exceeds maximum allowed")
+    ));
 }
 
 #[test]
@@ -194,7 +184,10 @@ fn arc_object_decode_rejects_oversized_wrapped_dek_field() {
 
     let encoded = encode_arc_object(&object);
     let err = decode_arc_object(&encoded).expect_err("oversized wrapped DEK must fail");
-    assert!(matches!(err, ArcError::Parse("field exceeds maximum allowed length")));
+    assert!(matches!(
+        err,
+        ArcError::Parse("field exceeds maximum allowed length")
+    ));
 }
 
 #[test]
@@ -222,7 +215,10 @@ fn arc_object_decode_with_limits_rejects_when_custom_max_payload_is_tighter() {
 
     let err = decode_arc_object_with_limits(&encoded, limits)
         .expect_err("custom tighter payload limit should reject");
-    assert!(matches!(err, ArcError::Parse("field exceeds maximum allowed length")));
+    assert!(matches!(
+        err,
+        ArcError::Parse("field exceeds maximum allowed length")
+    ));
 }
 
 #[test]
@@ -285,7 +281,10 @@ fn embedded_profile_rejects_large_payload() {
     let encoded = encode_arc_object(&object);
     let err = decode_arc_object_with_limits(&encoded, DecodeProfile::Embedded.limits())
         .expect_err("embedded profile should reject payload larger than 256 KiB");
-    assert!(matches!(err, ArcError::Parse("field exceeds maximum allowed length")));
+    assert!(matches!(
+        err,
+        ArcError::Parse("field exceeds maximum allowed length")
+    ));
 }
 
 #[test]
@@ -380,19 +379,46 @@ fn arc_object_decode_rejects_transparency_proof_with_too_many_siblings() {
 
 #[test]
 fn decode_profile_maps_to_expected_limits() {
-    assert_eq!(DecodeProfile::Embedded.limits(), DecodeLimits::embedded_profile());
-    assert_eq!(DecodeProfile::Strict.limits(), DecodeLimits::strict_default());
-    assert_eq!(DecodeProfile::Server.limits(), DecodeLimits::server_profile());
+    assert_eq!(
+        DecodeProfile::Embedded.limits(),
+        DecodeLimits::embedded_profile()
+    );
+    assert_eq!(
+        DecodeProfile::Strict.limits(),
+        DecodeLimits::strict_default()
+    );
+    assert_eq!(
+        DecodeProfile::Server.limits(),
+        DecodeLimits::server_profile()
+    );
 }
 
 #[test]
 fn decode_profile_parses_cli_values() {
-    assert_eq!(DecodeProfile::from_cli_value("embedded"), Some(DecodeProfile::Embedded));
-    assert_eq!(DecodeProfile::from_cli_value(" EMBED "), Some(DecodeProfile::Embedded));
-    assert_eq!(DecodeProfile::from_cli_value("strict"), Some(DecodeProfile::Strict));
-    assert_eq!(DecodeProfile::from_cli_value("default"), Some(DecodeProfile::Strict));
-    assert_eq!(DecodeProfile::from_cli_value("SERVER"), Some(DecodeProfile::Server));
-    assert_eq!(DecodeProfile::from_cli_value("srv"), Some(DecodeProfile::Server));
+    assert_eq!(
+        DecodeProfile::from_cli_value("embedded"),
+        Some(DecodeProfile::Embedded)
+    );
+    assert_eq!(
+        DecodeProfile::from_cli_value(" EMBED "),
+        Some(DecodeProfile::Embedded)
+    );
+    assert_eq!(
+        DecodeProfile::from_cli_value("strict"),
+        Some(DecodeProfile::Strict)
+    );
+    assert_eq!(
+        DecodeProfile::from_cli_value("default"),
+        Some(DecodeProfile::Strict)
+    );
+    assert_eq!(
+        DecodeProfile::from_cli_value("SERVER"),
+        Some(DecodeProfile::Server)
+    );
+    assert_eq!(
+        DecodeProfile::from_cli_value("srv"),
+        Some(DecodeProfile::Server)
+    );
     assert_eq!(DecodeProfile::from_cli_value("unknown"), None);
 }
 
@@ -410,8 +436,14 @@ fn decode_profile_from_str_supports_env_cli_paths() {
 #[test]
 fn decode_profile_from_env_value_falls_back_to_strict() {
     assert_eq!(decode_profile_from_env_value(None), DecodeProfile::Strict);
-    assert_eq!(decode_profile_from_env_value(Some("invalid")), DecodeProfile::Strict);
-    assert_eq!(decode_profile_from_env_value(Some("embedded")), DecodeProfile::Embedded);
+    assert_eq!(
+        decode_profile_from_env_value(Some("invalid")),
+        DecodeProfile::Strict
+    );
+    assert_eq!(
+        decode_profile_from_env_value(Some("embedded")),
+        DecodeProfile::Embedded
+    );
 }
 
 #[test]

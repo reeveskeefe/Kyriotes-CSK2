@@ -1,0 +1,13 @@
+{
+  "user": {
+    "name": "reeveskeefe",
+    "email": "reeveskeefe@outlook.com"
+  },
+  "core": {
+    "defaultBranch": "main"
+  },
+  "remote": {
+    "name": "origin",
+    "url": "https://oreulius.com/1f939bc6-8811-4e51-8838-bb1a543f124b/authenticated-routing-system"
+  }
+}

@@ -15,8 +15,8 @@
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use rand::{CryptoRng, RngCore};
 
-use crate::core::error::ArcError;
 use super::model::CompromiseNotice;
+use crate::core::error::ArcError;
 
 // ---------------------------------------------------------------------------
 // Core cert type
@@ -76,19 +76,26 @@ pub fn capability_issuance_signing_message(
 
 /// Canonical message signed by the epoch online key to commit authority roots.
 ///
-/// Format: `"ARC-EPOCH-ROOT-v1" || R_e || Rev_e || epoch_le64 || prev_epoch_hash`
+/// Format: `"ARC-EPOCH-ROOT-v2" || R_e || Rev_e || T_e || epoch_le64 || prev_epoch_hash`
+///
+/// `T_e` is the transparency log Merkle root at epoch `e`.  Including it in the
+/// signed message ensures that sigma_e cryptographically binds the full epoch
+/// state; an attacker cannot swap a fake transparency_root without breaking the
+/// signature.
 ///
 /// Use `[0u8; 32]` for `prev_epoch_hash` at the genesis epoch.
 pub fn epoch_root_signing_message(
     authority_root: &[u8; 32],
     revocation_root: &[u8; 32],
+    transparency_root: &[u8; 32],
     epoch: u64,
     prev_epoch_hash: &[u8; 32],
 ) -> Vec<u8> {
-    let mut msg = Vec::with_capacity(17 + 32 + 32 + 8 + 32);
-    msg.extend_from_slice(b"ARC-EPOCH-ROOT-v1");
+    let mut msg = Vec::with_capacity(17 + 32 + 32 + 32 + 8 + 32);
+    msg.extend_from_slice(b"ARC-EPOCH-ROOT-v2");
     msg.extend_from_slice(authority_root);
     msg.extend_from_slice(revocation_root);
+    msg.extend_from_slice(transparency_root);
     msg.extend_from_slice(&epoch.to_le_bytes());
     msg.extend_from_slice(prev_epoch_hash);
     msg
@@ -116,10 +123,7 @@ pub fn compromise_notice_signing_message(
 
 /// Verify that `cert` was signed by the offline authority root whose public key
 /// is `root_pk_bytes`.
-pub fn verify_epoch_cert(
-    root_pk_bytes: &[u8; 32],
-    cert: &EpochKeyCert,
-) -> Result<(), ArcError> {
+pub fn verify_epoch_cert(root_pk_bytes: &[u8; 32], cert: &EpochKeyCert) -> Result<(), ArcError> {
     let root_pk = VerifyingKey::from_bytes(root_pk_bytes)
         .map_err(|_| ArcError::AuthorityState("invalid authority root public key"))?;
     let msg = epoch_cert_signing_message(&cert.epoch_pk, cert.epoch, cert.validity_window);
@@ -138,14 +142,20 @@ pub fn verify_epoch_root_sig(
     epoch_pk_bytes: &[u8; 32],
     authority_root: &[u8; 32],
     revocation_root: &[u8; 32],
+    transparency_root: &[u8; 32],
     epoch: u64,
     prev_epoch_hash: &[u8; 32],
     sig_bytes: &[u8; 64],
 ) -> Result<(), ArcError> {
     let epoch_pk = VerifyingKey::from_bytes(epoch_pk_bytes)
         .map_err(|_| ArcError::AuthorityState("invalid epoch public key"))?;
-    let msg =
-        epoch_root_signing_message(authority_root, revocation_root, epoch, prev_epoch_hash);
+    let msg = epoch_root_signing_message(
+        authority_root,
+        revocation_root,
+        transparency_root,
+        epoch,
+        prev_epoch_hash,
+    );
     let sig = Signature::from_bytes(sig_bytes);
     epoch_pk
         .verify_strict(&msg, &sig)
@@ -279,19 +289,26 @@ impl EpochSigningKeyPair {
         self.signing_key.verifying_key().to_bytes()
     }
 
-    /// Produce the epoch root signature over `(authority_root, revocation_root,
-    /// epoch, prev_epoch_hash)`.
+    /// Produce the epoch root signature over
+    /// `(authority_root, revocation_root, transparency_root, epoch, prev_epoch_hash)`.
     ///
     /// `prev_epoch_hash` is `[0u8; 32]` for the genesis epoch.
+    /// `transparency_root` is the Merkle root of the transparency log at this epoch.
     pub fn sign_epoch_root(
         &self,
         authority_root: &[u8; 32],
         revocation_root: &[u8; 32],
+        transparency_root: &[u8; 32],
         epoch: u64,
         prev_epoch_hash: &[u8; 32],
     ) -> [u8; 64] {
-        let msg =
-            epoch_root_signing_message(authority_root, revocation_root, epoch, prev_epoch_hash);
+        let msg = epoch_root_signing_message(
+            authority_root,
+            revocation_root,
+            transparency_root,
+            epoch,
+            prev_epoch_hash,
+        );
         self.signing_key.sign(&msg).to_bytes()
     }
 
@@ -347,8 +364,7 @@ mod tests {
     fn verify_epoch_cert_accepts_valid_cert() {
         let (root, epoch_kp) = make_keypairs();
         let cert = root.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 5, 10);
-        verify_epoch_cert(&root.verifying_key_bytes(), &cert)
-            .expect("valid cert should verify");
+        verify_epoch_cert(&root.verifying_key_bytes(), &cert).expect("valid cert should verify");
     }
 
     #[test]
@@ -383,8 +399,9 @@ mod tests {
         let cert = root.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), 7, 10);
         let r_e = [1u8; 32];
         let rev_e = [2u8; 32];
-        let sig = epoch_kp.sign_epoch_root(&r_e, &rev_e, 7, &[0u8; 32]);
-        verify_epoch_root_sig(&cert.epoch_pk, &r_e, &rev_e, 7, &[0u8; 32], &sig)
+        let t_e = [3u8; 32];
+        let sig = epoch_kp.sign_epoch_root(&r_e, &rev_e, &t_e, 7, &[0u8; 32]);
+        verify_epoch_root_sig(&cert.epoch_pk, &r_e, &rev_e, &t_e, 7, &[0u8; 32], &sig)
             .expect("valid epoch root sig should verify");
     }
 
@@ -393,13 +410,15 @@ mod tests {
         let (_, epoch_kp) = make_keypairs();
         let r_e = [1u8; 32];
         let rev_e = [2u8; 32];
-        let sig = epoch_kp.sign_epoch_root(&r_e, &rev_e, 7, &[0u8; 32]);
+        let t_e = [3u8; 32];
+        let sig = epoch_kp.sign_epoch_root(&r_e, &rev_e, &t_e, 7, &[0u8; 32]);
         let mut tampered_r = r_e;
         tampered_r[0] ^= 0xFF;
         let err = verify_epoch_root_sig(
             &epoch_kp.verifying_key_bytes(),
             &tampered_r,
             &rev_e,
+            &t_e,
             7,
             &[0u8; 32],
             &sig,

@@ -1,22 +1,13 @@
 use arc_core::{
-    ArcError,
-    AuthorityRootKeyPair,
-    CompromiseNotice,
-    EpochSigningKeyPair,
-    check_epoch_not_compromised,
-    compromise_notice_signing_message,
-    verify_compromise_notice,
+    ArcError, AuthorityRootKeyPair, CompromiseNotice, EpochSigningKeyPair,
+    check_epoch_not_compromised, compromise_notice_signing_message, verify_compromise_notice,
 };
 use rand::rngs::OsRng;
 
 fn make_notice() -> (AuthorityRootKeyPair, EpochSigningKeyPair, CompromiseNotice) {
     let root = AuthorityRootKeyPair::generate(&mut OsRng);
     let epoch_kp = EpochSigningKeyPair::generate(&mut OsRng);
-    let notice = root.issue_compromise_notice(
-        &epoch_kp.verifying_key_bytes(),
-        42,
-        [0xABu8; 32],
-    );
+    let notice = root.issue_compromise_notice(&epoch_kp.verifying_key_bytes(), 42, [0xABu8; 32]);
     (root, epoch_kp, notice)
 }
 

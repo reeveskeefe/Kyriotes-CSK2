@@ -6,9 +6,8 @@
 mod helpers;
 
 use arc_core::{
-    ArcError, AuthorityState, Capability, InMemoryTransparencyLog,
-    OpenRequest, RecipientKeyPair, Rights, TemporalPolicy,
-    open, seal,
+    ArcError, AuthorityState, Capability, InMemoryTransparencyLog, OpenRequest, RecipientKeyPair,
+    Rights, TemporalPolicy, open, seal,
 };
 use helpers::capability::TestAuthority;
 use helpers::request_builders::{DEFAULT_OBJECT_ID, policy_hash};
@@ -44,7 +43,12 @@ fn make_req(rights: Rights, p_hash: [u8; 32]) -> OpenRequest {
 /// for the given cap, using a freshly generated TestAuthority at EPOCH.
 fn setup(
     cap: &Capability,
-) -> (TestAuthority, AuthorityState, arc_core::TransparencyProof, arc_core::CapabilityProof) {
+) -> (
+    TestAuthority,
+    AuthorityState,
+    arc_core::TransparencyProof,
+    arc_core::CapabilityProof,
+) {
     let authority = TestAuthority::new_for_cap(cap, EPOCH);
     let mut log = InMemoryTransparencyLog::new();
     let seed = AuthorityState {
@@ -80,9 +84,17 @@ fn rights_superset_satisfies_requirement() {
     let (_, state, tp, proof) = setup(&cap);
     let kp = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
 
-    let obj = seal(&kp.public, b"superset-test", &cap, &proof, &tp, &state, &req,
-        TemporalPolicy::Historical(EPOCH))
-        .expect("seal with superset rights should succeed");
+    let obj = seal(
+        &kp.public,
+        b"superset-test",
+        &cap,
+        &proof,
+        &tp,
+        &state,
+        &req,
+        TemporalPolicy::Historical(EPOCH),
+    )
+    .expect("seal with superset rights should succeed");
 
     let plaintext = open(&kp.secret, &obj, &cap, &proof, &state)
         .expect("open with superset rights should succeed");
@@ -99,9 +111,17 @@ fn rights_exact_match_satisfies_requirement() {
     let (_, state, tp, proof) = setup(&cap);
     let kp = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
 
-    let obj = seal(&kp.public, b"exact-match", &cap, &proof, &tp, &state, &req,
-        TemporalPolicy::Historical(EPOCH))
-        .expect("seal with exact rights match should succeed");
+    let obj = seal(
+        &kp.public,
+        b"exact-match",
+        &cap,
+        &proof,
+        &tp,
+        &state,
+        &req,
+        TemporalPolicy::Historical(EPOCH),
+    )
+    .expect("seal with exact rights match should succeed");
 
     let plaintext = open(&kp.secret, &obj, &cap, &proof, &state)
         .expect("open with exact rights match should succeed");
@@ -118,9 +138,17 @@ fn rights_multi_required_all_present_satisfies_requirement() {
     let (_, state, tp, proof) = setup(&cap);
     let kp = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
 
-    let obj = seal(&kp.public, b"multi-rights", &cap, &proof, &tp, &state, &req,
-        TemporalPolicy::Historical(EPOCH))
-        .expect("seal with all required rights should succeed");
+    let obj = seal(
+        &kp.public,
+        b"multi-rights",
+        &cap,
+        &proof,
+        &tp,
+        &state,
+        &req,
+        TemporalPolicy::Historical(EPOCH),
+    )
+    .expect("seal with all required rights should succeed");
 
     let plaintext = open(&kp.secret, &obj, &cap, &proof, &state)
         .expect("open with all required rights should succeed");
@@ -141,9 +169,17 @@ fn seal_rejects_when_cap_rights_insufficient() {
     let (_, state, tp, proof) = setup(&cap);
     let kp = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
 
-    let err = seal(&kp.public, b"secret", &cap, &proof, &tp, &state, &req,
-        TemporalPolicy::Historical(EPOCH))
-        .expect_err("seal with insufficient rights must be rejected");
+    let err = seal(
+        &kp.public,
+        b"secret",
+        &cap,
+        &proof,
+        &tp,
+        &state,
+        &req,
+        TemporalPolicy::Historical(EPOCH),
+    )
+    .expect_err("seal with insufficient rights must be rejected");
 
     assert!(
         matches!(err, ArcError::InvalidCapability("insufficient rights")),
@@ -161,9 +197,17 @@ fn seal_rejects_when_one_of_multiple_required_rights_is_absent() {
     let (_, state, tp, proof) = setup(&cap);
     let kp = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
 
-    let err = seal(&kp.public, b"secret", &cap, &proof, &tp, &state, &req,
-        TemporalPolicy::Historical(EPOCH))
-        .expect_err("partial rights must be rejected");
+    let err = seal(
+        &kp.public,
+        b"secret",
+        &cap,
+        &proof,
+        &tp,
+        &state,
+        &req,
+        TemporalPolicy::Historical(EPOCH),
+    )
+    .expect_err("partial rights must be rejected");
 
     assert!(
         matches!(err, ArcError::InvalidCapability("insufficient rights")),

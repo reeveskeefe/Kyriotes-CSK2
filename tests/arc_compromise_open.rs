@@ -1,22 +1,12 @@
 /// Integration tests for spec §16 compromise-check-integrated open/verify:
 /// `open_with_compromise_check` and `verify_with_compromise_check`.
-
 mod helpers;
 
 use arc_core::{
-    ArcError,
-    AuthorityRootKeyPair,
-    EpochSigningKeyPair,
-    TemporalPolicy,
-    open_with_compromise_check,
-    seal,
-    verify_with_compromise_check,
+    ArcError, AuthorityRootKeyPair, EpochSigningKeyPair, TemporalPolicy,
+    open_with_compromise_check, seal, verify_with_compromise_check,
 };
-use helpers::{
-    capability::TestAuthority,
-    request_builders::{policy_hash, sample_req},
-    scenario::Scenario,
-};
+use helpers::{request_builders::policy_hash, scenario::Scenario};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -80,7 +70,7 @@ fn open_with_compromise_check_succeeds_when_notice_does_not_match_epoch_key() {
     // Notice targets a *different* epoch key — should not block the open.
     let root_kp = AuthorityRootKeyPair::generate(&mut rand::rngs::OsRng);
     let different_pk = [0xFFu8; 32];
-    let notice = root_kp.issue_compromise_notice(&different_pk, 42, [0u8; 32]);
+    let _notice = root_kp.issue_compromise_notice(&different_pk, 42, [0u8; 32]);
 
     // This notice has wrong root_pk relative to s.open_state.root_pk — it
     // will fail notice signature verification.  Use a valid notice signed
@@ -120,13 +110,13 @@ fn open_with_compromise_check_rejects_when_issuance_epoch_key_is_compromised() {
     let epoch_cert = root_kp.issue_epoch_cert(&bad_epoch_pk, 42, 10);
 
     use arc_core::{
-        AuthorityCapabilityTree, AuthorityState, CapabilityProof, CapabilityIssuanceProof,
-        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, TransparencyLog,
-        capability_stamp, capability_leaf_hash,
+        AuthorityCapabilityTree, AuthorityState, CapabilityIssuanceProof, CapabilityProof,
+        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, capability_leaf_hash,
+        capability_stamp,
     };
     use helpers::capability::sample_cap;
-    use helpers::transparency::commit_state;
     use helpers::request_builders::sample_req;
+    use helpers::transparency::commit_state;
 
     let cap = sample_cap(40, 60, p);
     let mut tree = AuthorityCapabilityTree::new();
@@ -176,17 +166,13 @@ fn open_with_compromise_check_rejects_when_issuance_epoch_key_is_compromised() {
     // Now declare bad_epoch_pk compromised at epoch 42.
     let notice = root_kp.issue_compromise_notice(&bad_epoch_pk, 42, [0xABu8; 32]);
 
-    let err = open_with_compromise_check(
-        &keypair.secret,
-        &obj,
-        &cap,
-        &proof,
-        &state,
-        &[notice],
-    )
-    .expect_err("compromised epoch key should block the open");
+    let err = open_with_compromise_check(&keypair.secret, &obj, &cap, &proof, &state, &[notice])
+        .expect_err("compromised epoch key should block the open");
 
-    assert!(matches!(err, ArcError::AuthorityState(_)), "expected AuthorityState error, got: {err:?}");
+    assert!(
+        matches!(err, ArcError::AuthorityState(_)),
+        "expected AuthorityState error, got: {err:?}"
+    );
 }
 
 #[test]
@@ -201,13 +187,13 @@ fn open_with_compromise_check_allows_open_before_compromise_epoch() {
     let epoch_cert = root_kp.issue_epoch_cert(&epoch_pk, 42, 10);
 
     use arc_core::{
-        AuthorityCapabilityTree, AuthorityState, CapabilityProof, CapabilityIssuanceProof,
-        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, TransparencyLog,
-        capability_stamp, capability_leaf_hash,
+        AuthorityCapabilityTree, AuthorityState, CapabilityIssuanceProof, CapabilityProof,
+        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, capability_leaf_hash,
+        capability_stamp,
     };
     use helpers::capability::sample_cap;
-    use helpers::transparency::commit_state;
     use helpers::request_builders::sample_req;
+    use helpers::transparency::commit_state;
 
     let cap = sample_cap(40, 60, p);
     let mut tree = AuthorityCapabilityTree::new();
@@ -256,15 +242,9 @@ fn open_with_compromise_check_allows_open_before_compromise_epoch() {
     // Declare compromise at epoch 43 — epoch 42 open is before the boundary.
     let notice = root_kp.issue_compromise_notice(&epoch_pk, 43, [0xABu8; 32]);
 
-    let plaintext = open_with_compromise_check(
-        &keypair.secret,
-        &obj,
-        &cap,
-        &proof,
-        &state,
-        &[notice],
-    )
-    .expect("open before compromise epoch boundary should succeed");
+    let plaintext =
+        open_with_compromise_check(&keypair.secret, &obj, &cap, &proof, &state, &[notice])
+            .expect("open before compromise epoch boundary should succeed");
 
     assert_eq!(plaintext, b"still valid");
 }
@@ -309,13 +289,13 @@ fn verify_with_compromise_check_rejects_compromised_epoch_key() {
     let epoch_cert = root_kp.issue_epoch_cert(&bad_epoch_pk, 42, 10);
 
     use arc_core::{
-        AuthorityCapabilityTree, AuthorityState, CapabilityProof, CapabilityIssuanceProof,
-        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, TransparencyLog,
-        capability_stamp, capability_leaf_hash,
+        AuthorityCapabilityTree, AuthorityState, CapabilityIssuanceProof, CapabilityProof,
+        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, capability_leaf_hash,
+        capability_stamp,
     };
     use helpers::capability::sample_cap;
-    use helpers::transparency::commit_state;
     use helpers::request_builders::sample_req;
+    use helpers::transparency::commit_state;
 
     let cap = sample_cap(40, 60, p);
     let mut tree = AuthorityCapabilityTree::new();
@@ -363,15 +343,8 @@ fn verify_with_compromise_check_rejects_compromised_epoch_key() {
 
     let notice = root_kp.issue_compromise_notice(&bad_epoch_pk, 42, [0xABu8; 32]);
 
-    let err = verify_with_compromise_check(
-        &obj,
-        &cap,
-        &proof,
-        &state,
-        &tp,
-        &[notice],
-    )
-    .expect_err("compromised epoch key should block verify");
+    let err = verify_with_compromise_check(&obj, &cap, &proof, &state, &tp, &[notice])
+        .expect_err("compromised epoch key should block verify");
 
     assert!(matches!(err, ArcError::AuthorityState(_)));
 }
@@ -398,13 +371,13 @@ fn open_with_compromise_check_valid_notice_for_different_epoch_pk_does_not_block
     let epoch_cert = root_kp.issue_epoch_cert(&good_epoch_pk, 42, 10);
 
     use arc_core::{
-        AuthorityCapabilityTree, AuthorityState, CapabilityProof, CapabilityIssuanceProof,
-        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, TransparencyLog,
-        capability_stamp, capability_leaf_hash,
+        AuthorityCapabilityTree, AuthorityState, CapabilityIssuanceProof, CapabilityProof,
+        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, capability_leaf_hash,
+        capability_stamp,
     };
     use helpers::capability::sample_cap;
-    use helpers::transparency::commit_state;
     use helpers::request_builders::sample_req;
+    use helpers::transparency::commit_state;
 
     let cap = sample_cap(40, 60, p);
     let mut tree = AuthorityCapabilityTree::new();
@@ -458,15 +431,9 @@ fn open_with_compromise_check_valid_notice_for_different_epoch_pk_does_not_block
     let notice = root_kp.issue_compromise_notice(&unrelated_pk, 42, [0xABu8; 32]);
 
     // The open must succeed: `good_epoch_pk != unrelated_pk`.
-    let plaintext = open_with_compromise_check(
-        &keypair.secret,
-        &obj,
-        &cap,
-        &proof,
-        &state,
-        &[notice],
-    )
-    .expect("notice for unrelated epoch pk must not block this open");
+    let plaintext =
+        open_with_compromise_check(&keypair.secret, &obj, &cap, &proof, &state, &[notice])
+            .expect("notice for unrelated epoch pk must not block this open");
 
     assert_eq!(plaintext, b"unaffected");
 }
@@ -483,13 +450,13 @@ fn verify_with_compromise_check_valid_notice_for_different_epoch_pk_does_not_blo
     let epoch_cert = root_kp.issue_epoch_cert(&good_epoch_pk, 42, 10);
 
     use arc_core::{
-        AuthorityCapabilityTree, AuthorityState, CapabilityProof, CapabilityIssuanceProof,
-        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, TransparencyLog,
-        capability_stamp, capability_leaf_hash,
+        AuthorityCapabilityTree, AuthorityState, CapabilityIssuanceProof, CapabilityProof,
+        InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, capability_leaf_hash,
+        capability_stamp,
     };
     use helpers::capability::sample_cap;
-    use helpers::transparency::commit_state;
     use helpers::request_builders::sample_req;
+    use helpers::transparency::commit_state;
 
     let cap = sample_cap(40, 60, p);
     let mut tree = AuthorityCapabilityTree::new();
@@ -539,13 +506,6 @@ fn verify_with_compromise_check_valid_notice_for_different_epoch_pk_does_not_blo
     let unrelated_pk = unrelated_epoch_kp.verifying_key_bytes();
     let notice = root_kp.issue_compromise_notice(&unrelated_pk, 42, [0xCDu8; 32]);
 
-    verify_with_compromise_check(
-        &obj,
-        &cap,
-        &proof,
-        &state,
-        &tp,
-        &[notice],
-    )
-    .expect("notice for unrelated epoch pk must not block this verify");
+    verify_with_compromise_check(&obj, &cap, &proof, &state, &tp, &[notice])
+        .expect("notice for unrelated epoch pk must not block this verify");
 }

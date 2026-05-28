@@ -1,23 +1,11 @@
+use crate::ArcError;
 use crate::arc::model::{ArcObject, AuthorityWrapper, Capability, TransparencyProof};
 use crate::arc::tsig::{ThresholdPartialSig, ThresholdSignatureSet};
 use crate::encoding::codec::{
-    put_bytes,
-    put_rights,
-    put_str,
-    put_temporal_policy,
-    put_u16,
-    put_u32,
-    put_u64,
-    take_fixed_limited,
-    take_rights,
-    take_str_limited,
-    take_temporal_policy,
-    take_u16,
-    take_u32,
-    take_u64,
-    take_bytes_limited,
+    put_bytes, put_rights, put_str, put_temporal_policy, put_u16, put_u32, put_u64,
+    take_bytes_limited, take_fixed_limited, take_rights, take_str_limited, take_temporal_policy,
+    take_u16, take_u32, take_u64,
 };
-use crate::ArcError;
 
 const MAGIC: &[u8; 4] = b"ARCO";
 
@@ -175,7 +163,10 @@ pub fn decode_arc_object(input: &[u8]) -> Result<ArcObject, ArcError> {
     decode_arc_object_with_limits(input, DecodeLimits::default())
 }
 
-pub fn decode_arc_object_with_limits(input: &[u8], limits: DecodeLimits) -> Result<ArcObject, ArcError> {
+pub fn decode_arc_object_with_limits(
+    input: &[u8],
+    limits: DecodeLimits,
+) -> Result<ArcObject, ArcError> {
     let mut cursor = 0usize;
 
     if input.len() < MAGIC.len() {
@@ -196,7 +187,8 @@ pub fn decode_arc_object_with_limits(input: &[u8], limits: DecodeLimits) -> Resu
     let authority_root = take_fixed_limited::<32>(input, &mut cursor, 32)?;
     let revocation_root = take_fixed_limited::<32>(input, &mut cursor, 32)?;
     let payload_nonce = take_fixed_limited::<12>(input, &mut cursor, 12)?;
-    let payload_ciphertext = take_bytes_limited(input, &mut cursor, limits.max_payload_ciphertext_len)?;
+    let payload_ciphertext =
+        take_bytes_limited(input, &mut cursor, limits.max_payload_ciphertext_len)?;
 
     let wrappers_len = take_u32(input, &mut cursor)? as usize;
     if wrappers_len > limits.max_wrappers {
@@ -369,13 +361,17 @@ pub fn decode_threshold_signature_set_with_max(
     let threshold = take_u32(input, &mut cursor)?;
     let count = take_u32(input, &mut cursor)? as usize;
     if count > max_partials {
-        return Err(ArcError::Parse("partial signature count exceeds maximum allowed"));
+        return Err(ArcError::Parse(
+            "partial signature count exceeds maximum allowed",
+        ));
     }
     let mut partials = Vec::with_capacity(count);
     for _ in 0..count {
         let signer_index = take_u32(input, &mut cursor)?;
         if cursor + 64 > input.len() {
-            return Err(ArcError::Parse("unexpected EOF reading partial signature bytes"));
+            return Err(ArcError::Parse(
+                "unexpected EOF reading partial signature bytes",
+            ));
         }
         let mut sig = [0u8; 64];
         sig.copy_from_slice(&input[cursor..cursor + 64]);
@@ -384,8 +380,13 @@ pub fn decode_threshold_signature_set_with_max(
     }
 
     if cursor != input.len() {
-        return Err(ArcError::Parse("trailing bytes after threshold signature set"));
+        return Err(ArcError::Parse(
+            "trailing bytes after threshold signature set",
+        ));
     }
 
-    Ok(ThresholdSignatureSet { threshold, partials })
+    Ok(ThresholdSignatureSet {
+        threshold,
+        partials,
+    })
 }

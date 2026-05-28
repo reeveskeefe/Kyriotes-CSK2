@@ -32,7 +32,9 @@ impl AuthorityVerifier for BasicAuthorityVerifier {
             return Err(ArcError::AuthorityState("invalid epoch key certificate"));
         }
         if !state.transparency_inclusion_valid {
-            return Err(ArcError::AuthorityState("missing or invalid transparency proof"));
+            return Err(ArcError::AuthorityState(
+                "missing or invalid transparency proof",
+            ));
         }
         Ok(())
     }
@@ -140,12 +142,11 @@ impl CryptoAuthorityVerifier {
 
     /// Register evidence for `(authority_id, epoch)`.
     ///
-    /// - `epoch_pk`      — epoch online public key (`pk_A_e`)
-    /// - `epoch_root_sig`— signature over the epoch root message produced by
-    ///                     `sk_A_e` (use [`EpochSigningKeyPair::sign_epoch_root`])
-    /// - `epoch_cert`    — certificate issued by the offline root binding
-    ///                     `epoch_pk` to `epoch` (use
-    ///                     [`AuthorityRootKeyPair::issue_epoch_cert`])
+    /// - `epoch_pk` — epoch online public key (`pk_A_e`)
+    /// - `epoch_root_sig` — signature over the epoch root message produced by
+    ///   `sk_A_e` (use [`EpochSigningKeyPair::sign_epoch_root`])
+    /// - `epoch_cert` — certificate issued by the offline root binding
+    ///   `epoch_pk` to `epoch` (use [`AuthorityRootKeyPair::issue_epoch_cert`])
     pub fn add_evidence(
         &mut self,
         authority_id: impl Into<String>,
@@ -171,12 +172,11 @@ impl CryptoAuthorityVerifier {
     /// will call [`tsig_verify`] against `authorized_keys` and `tsig_set`
     /// instead of the single-signer path.
     ///
-    /// - `epoch_pk`        — any one of the epoch keys, used only to satisfy
-    ///                       the single-signer `epoch_cert` field; supply the
-    ///                       first signer's key or `[0u8; 32]` if no cert is
-    ///                       needed for the legacy path.
-    /// - `epoch_cert`      — the epoch key cert for `epoch_pk` (required for
-    ///                       the offline-root cert-chain path).
+    /// - `epoch_pk` — any one of the epoch keys, used only to satisfy
+    ///   the single-signer `epoch_cert` field; supply the first signer's key
+    ///   or `[0u8; 32]` if no cert is needed for the legacy path.
+    /// - `epoch_cert` — the epoch key cert for `epoch_pk` (required for
+    ///   the offline-root cert-chain path).
     /// - `authorized_keys` — the ordered set of `n` epoch-online public keys.
     /// - `tsig_set`        — the collected [`ThresholdSignatureSet`].
     pub fn add_evidence_tsig(
@@ -216,7 +216,9 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
                 return Err(ArcError::AuthorityState("invalid epoch key certificate"));
             }
             if !state.transparency_inclusion_valid {
-                return Err(ArcError::AuthorityState("missing or invalid transparency proof"));
+                return Err(ArcError::AuthorityState(
+                    "missing or invalid transparency proof",
+                ));
             }
         }
 
@@ -234,7 +236,9 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
 
                 // Enforce that the epoch cert has not expired: the cert covers
                 // epochs [cert.epoch, cert.epoch + validity_window).
-                let cert_epoch_end = evidence.epoch_cert.epoch
+                let cert_epoch_end = evidence
+                    .epoch_cert
+                    .epoch
                     .saturating_add(evidence.epoch_cert.validity_window);
                 if state.epoch >= cert_epoch_end {
                     return Err(ArcError::AuthorityState(
@@ -248,20 +252,22 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
                         tsig_verify(
                             &state.authority_root,
                             &state.revocation_root,
+                            &state.transparency_root,
                             state.epoch,
                             &state.prev_epoch_hash,
                             &tsig_ev.set,
                             &tsig_ev.authorized_keys,
                         )
-                        .map_err(|_| ArcError::AuthorityState(
-                            "threshold epoch root signature failed",
-                        ))?;
+                        .map_err(|_| {
+                            ArcError::AuthorityState("threshold epoch root signature failed")
+                        })?;
                     }
                     None => {
                         verify_epoch_root_sig(
                             &evidence.epoch_cert.epoch_pk,
                             &state.authority_root,
                             &state.revocation_root,
+                            &state.transparency_root,
                             state.epoch,
                             &state.prev_epoch_hash,
                             &evidence.epoch_root_sig,
@@ -289,7 +295,9 @@ fn verify_transparency_inclusion(
     proof: &TransparencyProof,
 ) -> Result<(), ArcError> {
     if !state.transparency_inclusion_valid {
-        return Err(ArcError::AuthorityState("missing or invalid transparency proof"));
+        return Err(ArcError::AuthorityState(
+            "missing or invalid transparency proof",
+        ));
     }
 
     let expected_leaf = transparency_leaf_hash(state);
@@ -311,9 +319,7 @@ fn verify_transparency_inclusion(
     }
 
     if acc != state.transparency_root {
-        return Err(ArcError::AuthorityState(
-            "transparency proof root mismatch",
-        ));
+        return Err(ArcError::AuthorityState("transparency proof root mismatch"));
     }
 
     Ok(())
@@ -321,12 +327,14 @@ fn verify_transparency_inclusion(
 
 pub fn authority_state_signing_message(state: &AuthorityState) -> Vec<u8> {
     let mut msg = Vec::new();
-    msg.extend_from_slice(b"ARC-AUTHORITY-STATE-SIG-v1");
+    msg.extend_from_slice(b"ARC-AUTHORITY-STATE-SIG-v2");
     put_bytes(&mut msg, &state.authority_root);
     put_bytes(&mut msg, &state.revocation_root);
     put_bytes(&mut msg, &state.transparency_root);
     put_u64(&mut msg, state.epoch);
     put_str(&mut msg, &state.authority_id);
+    put_u64(&mut msg, state.revocation_count);
+    put_bytes(&mut msg, &state.prev_epoch_hash);
     msg
 }
 
@@ -423,7 +431,10 @@ mod tests {
         let err = verifier
             .verify_state(&state, &sample_transparency_proof(&state))
             .expect_err("tampered state should fail signature");
-        assert!(matches!(err, ArcError::AuthorityState("invalid authority signature")));
+        assert!(matches!(
+            err,
+            ArcError::AuthorityState("invalid authority signature")
+        ));
     }
 
     #[test]
@@ -472,9 +483,11 @@ mod tests {
     // Full cert-chain tests (CryptoAuthorityVerifier::with_root_pk)
     // -----------------------------------------------------------------------
 
-    fn cert_chain_verifier_for(state: &AuthorityState, root_seed: u8, epoch_seed: u8)
-        -> CryptoAuthorityVerifier
-    {
+    fn cert_chain_verifier_for(
+        state: &AuthorityState,
+        root_seed: u8,
+        epoch_seed: u8,
+    ) -> CryptoAuthorityVerifier {
         use super::super::authority::{AuthorityRootKeyPair, EpochSigningKeyPair};
         let root_kp = AuthorityRootKeyPair::from_seed([root_seed; 32]);
         let epoch_kp = EpochSigningKeyPair::from_seed([epoch_seed; 32]);
@@ -483,6 +496,7 @@ mod tests {
         let epoch_root_sig = epoch_kp.sign_epoch_root(
             &state.authority_root,
             &state.revocation_root,
+            &state.transparency_root,
             state.epoch,
             &[0u8; 32],
         );
@@ -522,6 +536,63 @@ mod tests {
         assert!(matches!(
             err,
             ArcError::AuthorityState("epoch root signature invalid")
+        ));
+    }
+
+    #[test]
+    fn legacy_path_rejects_tampered_revocation_count() {
+        let mut state = sample_state();
+        state.revocation_count = 0;
+        let signing_key = SigningKey::from_bytes(&[11u8; 32]);
+        let msg = authority_state_signing_message(&state);
+        let sig = signing_key.sign(&msg).to_bytes();
+
+        let mut verifier = CryptoAuthorityVerifier::new();
+        verifier.add_evidence(
+            state.authority_id.clone(),
+            state.epoch,
+            signing_key.verifying_key().to_bytes(),
+            sig,
+            dummy_cert(),
+        );
+
+        // Inflate revocation_count — signature must not verify.
+        state.revocation_count = 99;
+        let err = verifier
+            .verify_state(&state, &sample_transparency_proof(&state))
+            .expect_err("tampered revocation_count should fail signature");
+        assert!(matches!(
+            err,
+            ArcError::AuthorityState("invalid authority signature")
+        ));
+    }
+
+    #[test]
+    fn legacy_path_rejects_tampered_prev_epoch_hash() {
+        let mut state = sample_state();
+        state.prev_epoch_hash = [0u8; 32];
+        let signing_key = SigningKey::from_bytes(&[13u8; 32]);
+        let msg = authority_state_signing_message(&state);
+        let sig = signing_key.sign(&msg).to_bytes();
+
+        let mut verifier = CryptoAuthorityVerifier::new();
+        verifier.add_evidence(
+            state.authority_id.clone(),
+            state.epoch,
+            signing_key.verifying_key().to_bytes(),
+            sig,
+            dummy_cert(),
+        );
+
+        // Swap in a different prev_epoch_hash — signature must not verify.
+        state.prev_epoch_hash = [0xAB; 32];
+        state.transparency_root = transparency_leaf_hash(&state);
+        let err = verifier
+            .verify_state(&state, &sample_transparency_proof(&state))
+            .expect_err("tampered prev_epoch_hash should fail signature");
+        assert!(matches!(
+            err,
+            ArcError::AuthorityState("invalid authority signature")
         ));
     }
 

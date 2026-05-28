@@ -4,15 +4,9 @@
 /// the full cert-chain verifier dispatches to `tsig_verify` instead of the
 /// single-signer path, and that single-signer evidence still works unchanged.
 use arc_core::{
-    AuthorityRootKeyPair,
-    AuthorityState,
-    CryptoAuthorityVerifier,
-    AuthorityVerifier,
-    EpochSigningKeyPair,
-    ThresholdSignatureSet,
-    TransparencyProof,
+    AuthorityRootKeyPair, AuthorityState, AuthorityVerifier, CryptoAuthorityVerifier,
+    EpochSigningKeyPair, ThresholdSignatureSet, TransparencyProof, transparency_leaf_hash,
     tsig_sign,
-    transparency_leaf_hash,
 };
 
 // ---------------------------------------------------------------------------
@@ -58,6 +52,7 @@ fn make_tsig_set(
         let partial = tsig_sign(
             &state.authority_root,
             &state.revocation_root,
+            &state.transparency_root,
             state.epoch,
             &state.prev_epoch_hash,
             &kps[idx],
@@ -104,8 +99,9 @@ fn tsig_verifier(
 fn tsig_verifier_accepts_2_of_3() {
     let mut rng = rand::rngs::OsRng;
     let root_kp = AuthorityRootKeyPair::generate(&mut rng);
-    let kps: Vec<EpochSigningKeyPair> =
-        (0..3).map(|_| EpochSigningKeyPair::generate(&mut rng)).collect();
+    let kps: Vec<EpochSigningKeyPair> = (0..3)
+        .map(|_| EpochSigningKeyPair::generate(&mut rng))
+        .collect();
     let state = make_state(5);
 
     let verifier = tsig_verifier(&state, &root_kp, &kps, 2, &[0, 2]);
@@ -119,8 +115,9 @@ fn tsig_verifier_accepts_2_of_3() {
 fn tsig_verifier_accepts_3_of_3() {
     let mut rng = rand::rngs::OsRng;
     let root_kp = AuthorityRootKeyPair::generate(&mut rng);
-    let kps: Vec<EpochSigningKeyPair> =
-        (0..3).map(|_| EpochSigningKeyPair::generate(&mut rng)).collect();
+    let kps: Vec<EpochSigningKeyPair> = (0..3)
+        .map(|_| EpochSigningKeyPair::generate(&mut rng))
+        .collect();
     let state = make_state(7);
 
     let verifier = tsig_verifier(&state, &root_kp, &kps, 3, &[0, 1, 2]);
@@ -134,8 +131,9 @@ fn tsig_verifier_accepts_3_of_3() {
 fn tsig_verifier_rejects_below_threshold() {
     let mut rng = rand::rngs::OsRng;
     let root_kp = AuthorityRootKeyPair::generate(&mut rng);
-    let kps: Vec<EpochSigningKeyPair> =
-        (0..3).map(|_| EpochSigningKeyPair::generate(&mut rng)).collect();
+    let kps: Vec<EpochSigningKeyPair> = (0..3)
+        .map(|_| EpochSigningKeyPair::generate(&mut rng))
+        .collect();
     let state = make_state(3);
 
     let verifier = tsig_verifier(&state, &root_kp, &kps, 2, &[1]); // only 1 sig
@@ -143,7 +141,10 @@ fn tsig_verifier_rejects_below_threshold() {
         .verify_state(&state, &sample_proof(&state))
         .expect_err("1 of 2 required sigs should fail");
     assert!(
-        matches!(err, arc_core::ArcError::AuthorityState("threshold epoch root signature failed")),
+        matches!(
+            err,
+            arc_core::ArcError::AuthorityState("threshold epoch root signature failed")
+        ),
         "unexpected error: {err:?}"
     );
 }
@@ -153,8 +154,9 @@ fn tsig_verifier_rejects_below_threshold() {
 fn tsig_verifier_rejects_tampered_partial_sig() {
     let mut rng = rand::rngs::OsRng;
     let root_kp = AuthorityRootKeyPair::generate(&mut rng);
-    let kps: Vec<EpochSigningKeyPair> =
-        (0..3).map(|_| EpochSigningKeyPair::generate(&mut rng)).collect();
+    let kps: Vec<EpochSigningKeyPair> = (0..3)
+        .map(|_| EpochSigningKeyPair::generate(&mut rng))
+        .collect();
     let state = make_state(9);
     let epoch_pk = kps[0].verifying_key_bytes();
     let cert = root_kp.issue_epoch_cert(&epoch_pk, state.epoch, 10);
@@ -178,7 +180,10 @@ fn tsig_verifier_rejects_tampered_partial_sig() {
         .verify_state(&state, &sample_proof(&state))
         .expect_err("tampered sig should drop below threshold");
     assert!(
-        matches!(err, arc_core::ArcError::AuthorityState("threshold epoch root signature failed")),
+        matches!(
+            err,
+            arc_core::ArcError::AuthorityState("threshold epoch root signature failed")
+        ),
         "unexpected error: {err:?}"
     );
 }
@@ -189,8 +194,9 @@ fn tsig_verifier_rejects_tampered_partial_sig() {
 fn tsig_verifier_rejects_tampered_authority_root() {
     let mut rng = rand::rngs::OsRng;
     let root_kp = AuthorityRootKeyPair::generate(&mut rng);
-    let kps: Vec<EpochSigningKeyPair> =
-        (0..2).map(|_| EpochSigningKeyPair::generate(&mut rng)).collect();
+    let kps: Vec<EpochSigningKeyPair> = (0..2)
+        .map(|_| EpochSigningKeyPair::generate(&mut rng))
+        .collect();
     let original = make_state(11);
 
     let verifier = tsig_verifier(&original, &root_kp, &kps, 2, &[0, 1]);
@@ -204,7 +210,10 @@ fn tsig_verifier_rejects_tampered_authority_root() {
         .verify_state(&tampered, &sample_proof(&tampered))
         .expect_err("tampered authority root must fail TSIG check");
     assert!(
-        matches!(err, arc_core::ArcError::AuthorityState("threshold epoch root signature failed")),
+        matches!(
+            err,
+            arc_core::ArcError::AuthorityState("threshold epoch root signature failed")
+        ),
         "unexpected error: {err:?}"
     );
 }
@@ -223,6 +232,7 @@ fn single_sig_cert_chain_still_works() {
     let epoch_root_sig = epoch_kp.sign_epoch_root(
         &state.authority_root,
         &state.revocation_root,
+        &state.transparency_root,
         state.epoch,
         &[0u8; 32],
     );

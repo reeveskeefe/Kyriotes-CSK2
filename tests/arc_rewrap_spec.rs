@@ -6,13 +6,10 @@
 /// - Happy-path rewrap to a strictly later epoch within the cap window succeeds.
 mod helpers;
 
-use arc_core::{
-    ArcError, TemporalPolicy,
-    add_epoch_wrapper, open, seal,
-};
+use arc_core::InMemoryTransparencyLog;
+use arc_core::{ArcError, TemporalPolicy, add_epoch_wrapper, open, seal};
 use helpers::scenario::Scenario;
 use helpers::transparency::commit_state;
-use arc_core::InMemoryTransparencyLog;
 
 // ---------------------------------------------------------------------------
 // Helper: seal an object at the scenario's baseline epoch.
@@ -39,8 +36,7 @@ fn sealed_object(s: &Scenario) -> arc_core::ArcObject {
 #[test]
 fn rewrap_rejects_backward_epoch() {
     // Baseline at epoch 50, cap valid 40..60.
-    let s = Scenario::baseline("rewrap-backward", 50)
-        .with_temporal_policy(TemporalPolicy::Current);
+    let s = Scenario::baseline("rewrap-backward", 50).with_temporal_policy(TemporalPolicy::Current);
     let mut obj = sealed_object(&s);
 
     // Try to rewrap FROM epoch 50 TO epoch 45 (backward).
@@ -54,14 +50,19 @@ fn rewrap_rejects_backward_epoch() {
         &mut obj,
         &s.cap,
         &s.proof,
-        &s.seal_state,   // from: epoch 50
-        &state45,        // to: epoch 45 — backward
+        &s.seal_state, // from: epoch 50
+        &state45,      // to: epoch 45 — backward
         &tp45,
     )
     .expect_err("backward rewrap must be rejected");
 
     assert!(
-        matches!(err, ArcError::InvalidCapability("rewrap target epoch must be strictly later than source epoch")),
+        matches!(
+            err,
+            ArcError::InvalidCapability(
+                "rewrap target epoch must be strictly later than source epoch"
+            )
+        ),
         "unexpected error: {err:?}"
     );
 }
@@ -69,8 +70,7 @@ fn rewrap_rejects_backward_epoch() {
 /// Rewrapping to the same epoch as the source must be rejected.
 #[test]
 fn rewrap_rejects_same_epoch() {
-    let s = Scenario::baseline("rewrap-same", 50)
-        .with_temporal_policy(TemporalPolicy::Current);
+    let s = Scenario::baseline("rewrap-same", 50).with_temporal_policy(TemporalPolicy::Current);
     let mut obj = sealed_object(&s);
 
     // Use the same state for both from and to.
@@ -80,14 +80,19 @@ fn rewrap_rejects_same_epoch() {
         &mut obj,
         &s.cap,
         &s.proof,
-        &s.seal_state,  // from: epoch 50
-        &s.seal_state,  // to: same epoch 50
+        &s.seal_state, // from: epoch 50
+        &s.seal_state, // to: same epoch 50
         &s.seal_transparency_proof,
     )
     .expect_err("same-epoch rewrap must be rejected");
 
     assert!(
-        matches!(err, ArcError::InvalidCapability("rewrap target epoch must be strictly later than source epoch")),
+        matches!(
+            err,
+            ArcError::InvalidCapability(
+                "rewrap target epoch must be strictly later than source epoch"
+            )
+        ),
         "unexpected error: {err:?}"
     );
 }
@@ -100,8 +105,8 @@ fn rewrap_rejects_same_epoch() {
 #[test]
 fn rewrap_rejects_to_epoch_after_cap_end() {
     // Baseline at epoch 42, cap valid 40..60.
-    let s = Scenario::baseline("rewrap-to-after-end", 42)
-        .with_temporal_policy(TemporalPolicy::Current);
+    let s =
+        Scenario::baseline("rewrap-to-after-end", 42).with_temporal_policy(TemporalPolicy::Current);
     let mut obj = sealed_object(&s);
 
     let mut log = InMemoryTransparencyLog::new();
@@ -121,7 +126,10 @@ fn rewrap_rejects_to_epoch_after_cap_end() {
     .expect_err("to-epoch after cap_end must be rejected");
 
     assert!(
-        matches!(err, ArcError::InvalidCapability("epoch outside capability validity")),
+        matches!(
+            err,
+            ArcError::InvalidCapability("epoch outside capability validity")
+        ),
         "unexpected error: {err:?}"
     );
 }
@@ -177,15 +185,20 @@ fn rewrap_rejects_to_epoch_before_cap_start() {
         &mut obj,
         &s.cap,
         &s.proof,
-        &s.seal_state,  // from: epoch 50
-        &state30,       // to: epoch 30 — before cap_start AND backward
+        &s.seal_state, // from: epoch 50
+        &state30,      // to: epoch 30 — before cap_start AND backward
         &tp30,
     )
     .expect_err("to-epoch before cap_start must be rejected");
 
     // Caught by backward-epoch check first (30 <= 50).
     assert!(
-        matches!(err, ArcError::InvalidCapability("rewrap target epoch must be strictly later than source epoch")),
+        matches!(
+            err,
+            ArcError::InvalidCapability(
+                "rewrap target epoch must be strictly later than source epoch"
+            )
+        ),
         "unexpected error: {err:?}"
     );
 }

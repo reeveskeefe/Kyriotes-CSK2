@@ -3,6 +3,24 @@
 version = 4
 
 [[package]]
+name = "ARCencryption"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chacha20poly1305",
+ "ed25519-dalek",
+ "hkdf",
+ "ml-kem",
+ "rand",
+ "rand_core 0.10.1",
+ "sha2",
+ "thiserror",
+ "tokio",
+ "x25519-dalek",
+ "zeroize",
+]
+
+[[package]]
 name = "aead"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -17,23 +35,6 @@ name = "anyhow"
 version = "1.0.102"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
-
-[[package]]
-name = "arc_core"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "chacha20poly1305",
- "ed25519-dalek",
- "hkdf",
- "ml-kem",
- "rand",
- "rand_core 0.10.1",
- "sha2",
- "thiserror",
- "tokio",
- "x25519-dalek",
-]
 
 [[package]]
 name = "async-trait"

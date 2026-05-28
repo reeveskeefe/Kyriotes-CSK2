@@ -86,10 +86,11 @@ Why this matters:
 ```toml
 # Cargo.toml
 [dependencies]
-arc_core = { path = "../ARC" }
+arc_core = { package = "ARCencryption", path = "../ARC" }
 ```
 
-Adjust the path for your workspace layout.
+Adjust the path for your workspace layout. The package is named
+`ARCencryption`, while Rust code imports the library as `arc_core`.
 
 If your app and ARC live in different folders, update the path string to the relative location of this repository.
 
@@ -566,17 +567,17 @@ pub struct RekorTransparencyLog {
 impl AsyncTransparencyLog for RekorTransparencyLog {
     async fn commit_state(&mut self, state: &AuthorityState) -> Result<TransparencyStateCommit, ArcError> {
         // POST the state to your log service, get back the Merkle proof
-        todo!()
+        Err(ArcError::AuthorityState("backend-specific commit_state implementation required"))
     }
 
     async fn proof_for_state(&self, state: &AuthorityState) -> Result<TransparencyProof, ArcError> {
         // GET proof by state leaf hash from your log service
-        todo!()
+        Err(ArcError::AuthorityState("backend-specific proof_for_state implementation required"))
     }
 
     async fn current_root(&self) -> [u8; 32] {
         // GET the current signed tree head from your log service
-        todo!()
+        [0u8; 32]
     }
 }
 ```

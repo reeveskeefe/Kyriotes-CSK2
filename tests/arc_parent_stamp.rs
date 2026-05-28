@@ -4,18 +4,13 @@
 /// delegated capabilities to their parent; `version` identifies the capability
 /// format.  For directly-issued capabilities, `parent_stamp` is `[0u8; 32]`
 /// and `version` is `1`.
-
 mod helpers;
 
 use arc_core::{
-    BasicAuthorityVerifier, Capability, InMemoryTransparencyLog, Rights, TemporalPolicy,
-    capability_leaf_hash, open, seal_and_commit,
+    BasicAuthorityVerifier, Capability, InMemoryTransparencyLog, capability_leaf_hash, open,
+    seal_and_commit,
 };
-use helpers::{
-    capability::sample_cap,
-    request_builders::{policy_hash, sample_req, DEFAULT_OBJECT_ID},
-    scenario::Scenario,
-};
+use helpers::{capability::sample_cap, request_builders::policy_hash, scenario::Scenario};
 
 // ---------------------------------------------------------------------------
 // Leaf-hash sensitivity tests
@@ -74,7 +69,10 @@ fn default_values_roundtrip_seal_open() {
 
     // Verify the default cap has the expected fields.
     assert_eq!(s.cap.version, 1, "sample_cap must default to version 1");
-    assert_eq!(s.cap.parent_stamp, [0u8; 32], "sample_cap must default to zero parent_stamp");
+    assert_eq!(
+        s.cap.parent_stamp, [0u8; 32],
+        "sample_cap must default to zero parent_stamp"
+    );
 
     let mut log = InMemoryTransparencyLog::new();
     let verifier = BasicAuthorityVerifier;

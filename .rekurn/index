@@ -50,9 +50,9 @@
     "size": 279
   },
   "README.md": {
-    "hash": "dc8b161a16f687b7e241b7886d4ca45c146c7b6669f003d021bf356d22252722",
+    "hash": "12b52ad837c39dd32197323eb28fd1535defe35c92b824d13474ba38b02f0423",
     "mode": "100644",
-    "size": 4606
+    "size": 4477
   },
   "src/arc/async_transparency.rs": {
     "hash": "9b4f39a2f37b9fde92fecb378d402ca979df558f49785342a7aabfa2568202da",
@@ -335,8 +335,8 @@
     "size": 23188
   },
   "docs/README.md": {
-    "hash": "19cbb3fe3e5c3057b8c7413ee022f05ec8a579b8fab793ea2b04c0e4729d8c2b",
+    "hash": "b49210bed4d02dec0087d045a98989dc90d722ad2778d548052b5ee7888a1104",
     "mode": "100644",
-    "size": 126
+    "size": 118
   }
 }

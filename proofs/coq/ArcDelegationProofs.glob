@@ -1,0 +1,650 @@
+DIGEST 56b4c5c7b8baa2007c7db3df9aa555ee
+FArcDelegationProofs
+R27:30 Stdlib.Lists.List <> <> lib
+R32:35 Stdlib.Bool.Bool <> <> lib
+R37:50 Stdlib.Arith.PeanoNat <> <> lib
+R52:54 Stdlib.micromega.Lia <> <> lib
+R64:76 Stdlib.Lists.List ListNotations <> mod
+R94:101 ArcTypes <> <> lib
+R103:111 ArcMerkle <> <> lib
+R113:124 ArcAuthority <> <> lib
+R126:134 ArcPolicy <> <> lib
+R136:144 ArcVerify <> <> lib
+R146:160 ArcSecurityGame <> <> lib
+R162:172 ArcTheorems <> <> lib
+R174:188 ArcStressProofs <> <> lib
+def 203:222 <> MAX_DELEGATION_DEPTH
+R226:228 Corelib.Init.Datatypes <> nat ind
+def 250:262 <> nonzero_stamp
+R273:275 Corelib.Init.Datatypes <> nat ind
+binder 265:269 <> stamp:1
+R280:283 Corelib.Init.Datatypes <> bool ind
+R290:293 Corelib.Init.Datatypes <> negb def
+R296:302 Stdlib.Arith.PeanoNat Nat eqb def
+R304:308 ArcDelegationProofs <> stamp:1 var
+def 326:343 <> depth_within_limit
+R354:356 Corelib.Init.Datatypes <> nat ind
+binder 346:350 <> depth:2
+R361:364 Corelib.Init.Datatypes <> bool ind
+R371:377 Stdlib.Arith.PeanoNat Nat leb def
+R379:383 ArcDelegationProofs <> depth:2 var
+R385:404 ArcDelegationProofs <> MAX_DELEGATION_DEPTH def
+def 419:431 <> rights_subset
+R449:454 ArcTypes <> Rights def
+binder 434:438 <> child:3
+binder 440:445 <> parent:4
+R459:462 Corelib.Init.Datatypes <> bool ind
+R469:475 Stdlib.Arith.PeanoNat Nat eqb def
+R478:485 Stdlib.Arith.PeanoNat Nat land def
+R487:491 ArcDelegationProofs <> child:3 var
+R493:498 ArcDelegationProofs <> parent:4 var
+R501:505 ArcDelegationProofs <> child:3 var
+def 520:538 <> epoch_window_subset
+R591:595 ArcTypes <> Epoch def
+binder 543:553 <> child_start:5
+binder 555:563 <> child_end:6
+binder 565:576 <> parent_start:7
+binder 578:587 <> parent_end:8
+R600:603 Corelib.Init.Datatypes <> bool ind
+R642:647 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R610:616 Stdlib.Arith.PeanoNat Nat leb def
+R618:629 ArcDelegationProofs <> parent_start:7 var
+R631:641 ArcDelegationProofs <> child_start:5 var
+R648:654 Stdlib.Arith.PeanoNat Nat leb def
+R656:664 ArcDelegationProofs <> child_end:6 var
+R666:675 ArcDelegationProofs <> parent_end:8 var
+def 690:721 <> delegated_capability_shape_valid
+R730:739 ArcTypes <> Capability rec
+binder 724:726 <> cap:9
+R744:747 Corelib.Init.Datatypes <> bool ind
+R790:795 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R754:766 ArcDelegationProofs <> nonzero_stamp def
+R769:784 ArcTypes <> cap_parent_stamp proj
+R786:788 ArcDelegationProofs <> cap:9 var
+R796:813 ArcDelegationProofs <> depth_within_limit def
+R816:835 ArcTypes <> cap_delegation_depth proj
+R837:839 ArcDelegationProofs <> cap:9 var
+def 855:881 <> delegation_constraints_hold
+R899:908 ArcTypes <> Capability rec
+binder 884:888 <> child:10
+binder 890:895 <> parent:11
+R913:916 Corelib.Init.Datatypes <> bool ind
+R1167:1172 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R1032:1037 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R974:979 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R923:929 Stdlib.Arith.PeanoNat Nat eqb def
+R932:947 ArcTypes <> cap_parent_stamp proj
+R949:953 ArcDelegationProofs <> child:10 var
+R957:965 ArcTypes <> cap_stamp proj
+R967:972 ArcDelegationProofs <> parent:11 var
+R980:992 ArcDelegationProofs <> rights_subset def
+R995:1004 ArcTypes <> cap_rights proj
+R1006:1010 ArcDelegationProofs <> child:10 var
+R1014:1023 ArcTypes <> cap_rights proj
+R1025:1030 ArcDelegationProofs <> parent:11 var
+R1038:1056 ArcDelegationProofs <> epoch_window_subset def
+R1063:1077 ArcTypes <> cap_epoch_start proj
+R1079:1083 ArcDelegationProofs <> child:10 var
+R1091:1103 ArcTypes <> cap_epoch_end proj
+R1105:1109 ArcDelegationProofs <> child:10 var
+R1117:1131 ArcTypes <> cap_epoch_start proj
+R1133:1138 ArcDelegationProofs <> parent:11 var
+R1146:1158 ArcTypes <> cap_epoch_end proj
+R1160:1165 ArcDelegationProofs <> parent:11 var
+R1173:1190 ArcDelegationProofs <> depth_within_limit def
+R1193:1212 ArcTypes <> cap_delegation_depth proj
+R1214:1218 ArcDelegationProofs <> child:10 var
+prf 1231:1278 <> stress_zero_parent_stamp_rejects_delegated_shape
+binder 1291:1293 <> cap:12
+R1324:1331 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R1320:1322 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1300:1315 ArcTypes <> cap_parent_stamp proj
+R1317:1319 ArcDelegationProofs <> cap:12 var
+R1368:1370 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1332:1363 ArcDelegationProofs <> delegated_capability_shape_valid def
+R1365:1367 ArcDelegationProofs <> cap:12 var
+R1371:1375 Corelib.Init.Datatypes <> false constr
+R1410:1441 ArcDelegationProofs <> delegated_capability_shape_valid def
+R1453:1465 ArcDelegationProofs <> nonzero_stamp def
+prf 1519:1566 <> stress_depth_above_limit_rejects_delegated_shape
+binder 1579:1581 <> cap:13
+R1635:1642 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R1608:1610 Corelib.Init.Peano <> ::nat_scope:x_'<'_x not
+R1588:1607 ArcDelegationProofs <> MAX_DELEGATION_DEPTH def
+R1611:1630 ArcTypes <> cap_delegation_depth proj
+R1632:1634 ArcDelegationProofs <> cap:13 var
+R1679:1681 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1643:1674 ArcDelegationProofs <> delegated_capability_shape_valid def
+R1676:1678 ArcDelegationProofs <> cap:13 var
+R1682:1686 Corelib.Init.Datatypes <> false constr
+R1721:1752 ArcDelegationProofs <> delegated_capability_shape_valid def
+R1764:1781 ArcDelegationProofs <> depth_within_limit def
+R1796:1808 ArcDelegationProofs <> nonzero_stamp def
+R1811:1826 ArcTypes <> cap_parent_stamp proj
+R1796:1808 ArcDelegationProofs <> nonzero_stamp def
+R1811:1826 ArcTypes <> cap_parent_stamp proj
+R1852:1861 Stdlib.Arith.PeanoNat Nat leb_gt thm
+R1852:1861 Stdlib.Arith.PeanoNat Nat leb_gt thm
+prf 1904:1960 <> stress_valid_delegated_shape_implies_nonzero_parent_stamp
+binder 1973:1975 <> cap:14
+R2025:2032 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R2018:2020 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1982:2013 ArcDelegationProofs <> delegated_capability_shape_valid def
+R2015:2017 ArcDelegationProofs <> cap:14 var
+R2021:2024 Corelib.Init.Datatypes <> true constr
+R2053:2056 Corelib.Init.Logic <> ::type_scope:x_'<>'_x not
+R2033:2048 ArcTypes <> cap_parent_stamp proj
+R2050:2052 ArcDelegationProofs <> cap:14 var
+R2092:2123 ArcDelegationProofs <> delegated_capability_shape_valid def
+R2139:2151 Stdlib.Bool.Bool <> andb_true_iff thm
+R2139:2151 Stdlib.Bool.Bool <> andb_true_iff thm
+R2197:2209 ArcDelegationProofs <> nonzero_stamp def
+R2231:2243 Stdlib.Bool.Bool <> negb_true_iff thm
+R2231:2243 Stdlib.Bool.Bool <> negb_true_iff thm
+R2265:2275 Stdlib.Arith.PeanoNat Nat eqb_neq thm
+R2265:2275 Stdlib.Arith.PeanoNat Nat eqb_neq thm
+prf 2320:2367 <> stress_valid_delegated_shape_implies_depth_limit
+binder 2380:2382 <> cap:15
+R2432:2439 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R2425:2427 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R2389:2420 ArcDelegationProofs <> delegated_capability_shape_valid def
+R2422:2424 ArcDelegationProofs <> cap:15 var
+R2428:2431 Corelib.Init.Datatypes <> true constr
+R2464:2467 Corelib.Init.Peano <> ::nat_scope:x_'<='_x not
+R2440:2459 ArcTypes <> cap_delegation_depth proj
+R2461:2463 ArcDelegationProofs <> cap:15 var
+R2468:2487 ArcDelegationProofs <> MAX_DELEGATION_DEPTH def
+R2522:2553 ArcDelegationProofs <> delegated_capability_shape_valid def
+R2569:2581 Stdlib.Bool.Bool <> andb_true_iff thm
+R2569:2581 Stdlib.Bool.Bool <> andb_true_iff thm
+R2627:2644 ArcDelegationProofs <> depth_within_limit def
+R2666:2675 Stdlib.Arith.PeanoNat Nat leb_le thm
+R2666:2675 Stdlib.Arith.PeanoNat Nat leb_le thm
+prf 2720:2766 <> stress_parent_stamp_mismatch_rejects_delegation
+binder 2779:2783 <> child:16
+binder 2785:2790 <> parent:17
+R2839:2846 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R2819:2822 Corelib.Init.Logic <> ::type_scope:x_'<>'_x not
+R2797:2812 ArcTypes <> cap_parent_stamp proj
+R2814:2818 ArcDelegationProofs <> child:16 var
+R2823:2831 ArcTypes <> cap_stamp proj
+R2833:2838 ArcDelegationProofs <> parent:17 var
+R2887:2889 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R2847:2873 ArcDelegationProofs <> delegation_constraints_hold def
+R2875:2879 ArcDelegationProofs <> child:16 var
+R2881:2886 ArcDelegationProofs <> parent:17 var
+R2890:2894 Corelib.Init.Datatypes <> false constr
+R2938:2964 ArcDelegationProofs <> delegation_constraints_hold def
+R2975:2985 Stdlib.Arith.PeanoNat Nat eqb_neq thm
+R2975:2985 Stdlib.Arith.PeanoNat Nat eqb_neq thm
+prf 3035:3077 <> stress_rights_escalation_rejects_delegation
+binder 3090:3094 <> child:18
+binder 3096:3101 <> parent:19
+R3175:3182 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R3155:3158 Corelib.Init.Logic <> ::type_scope:x_'<>'_x not
+R3108:3115 Stdlib.Arith.PeanoNat Nat land def
+R3118:3127 ArcTypes <> cap_rights proj
+R3129:3133 ArcDelegationProofs <> child:18 var
+R3137:3146 ArcTypes <> cap_rights proj
+R3148:3153 ArcDelegationProofs <> parent:19 var
+R3159:3168 ArcTypes <> cap_rights proj
+R3170:3174 ArcDelegationProofs <> child:18 var
+R3223:3225 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R3183:3209 ArcDelegationProofs <> delegation_constraints_hold def
+R3211:3215 ArcDelegationProofs <> child:18 var
+R3217:3222 ArcDelegationProofs <> parent:19 var
+R3226:3230 Corelib.Init.Datatypes <> false constr
+R3274:3300 ArcDelegationProofs <> delegation_constraints_hold def
+R3315:3321 Stdlib.Arith.PeanoNat Nat eqb def
+R3324:3339 ArcTypes <> cap_parent_stamp proj
+R3349:3357 ArcTypes <> cap_stamp proj
+R3315:3321 Stdlib.Arith.PeanoNat Nat eqb def
+R3324:3339 ArcTypes <> cap_parent_stamp proj
+R3349:3357 ArcTypes <> cap_stamp proj
+R3387:3399 ArcDelegationProofs <> rights_subset def
+R3412:3422 Stdlib.Arith.PeanoNat Nat eqb_neq thm
+R3412:3422 Stdlib.Arith.PeanoNat Nat eqb_neq thm
+prf 3493:3550 <> stress_child_epoch_starts_before_parent_rejects_delegation
+binder 3563:3567 <> child:20
+binder 3569:3574 <> parent:21
+R3627:3634 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R3602:3604 Corelib.Init.Peano <> ::nat_scope:x_'<'_x not
+R3581:3595 ArcTypes <> cap_epoch_start proj
+R3597:3601 ArcDelegationProofs <> child:20 var
+R3605:3619 ArcTypes <> cap_epoch_start proj
+R3621:3626 ArcDelegationProofs <> parent:21 var
+R3675:3677 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R3635:3661 ArcDelegationProofs <> delegation_constraints_hold def
+R3663:3667 ArcDelegationProofs <> child:20 var
+R3669:3674 ArcDelegationProofs <> parent:21 var
+R3678:3682 Corelib.Init.Datatypes <> false constr
+R3726:3752 ArcDelegationProofs <> delegation_constraints_hold def
+R3767:3773 Stdlib.Arith.PeanoNat Nat eqb def
+R3776:3791 ArcTypes <> cap_parent_stamp proj
+R3801:3809 ArcTypes <> cap_stamp proj
+R3767:3773 Stdlib.Arith.PeanoNat Nat eqb def
+R3776:3791 ArcTypes <> cap_parent_stamp proj
+R3801:3809 ArcTypes <> cap_stamp proj
+R3842:3854 ArcDelegationProofs <> rights_subset def
+R3857:3866 ArcTypes <> cap_rights proj
+R3876:3885 ArcTypes <> cap_rights proj
+R3842:3854 ArcDelegationProofs <> rights_subset def
+R3857:3866 ArcTypes <> cap_rights proj
+R3876:3885 ArcTypes <> cap_rights proj
+R3917:3935 ArcDelegationProofs <> epoch_window_subset def
+R4008:4010 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R3952:3958 Stdlib.Arith.PeanoNat Nat leb def
+R3961:3975 ArcTypes <> cap_epoch_start proj
+R3986:4000 ArcTypes <> cap_epoch_start proj
+R4011:4015 Corelib.Init.Datatypes <> false constr
+R4008:4010 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R3952:3958 Stdlib.Arith.PeanoNat Nat leb def
+R3961:3975 ArcTypes <> cap_epoch_start proj
+R3986:4000 ArcTypes <> cap_epoch_start proj
+R4011:4015 Corelib.Init.Datatypes <> false constr
+R4044:4053 Stdlib.Arith.PeanoNat Nat leb_gt thm
+R4044:4053 Stdlib.Arith.PeanoNat Nat leb_gt thm
+prf 4159:4213 <> stress_child_epoch_ends_after_parent_rejects_delegation
+binder 4226:4230 <> child:22
+binder 4232:4237 <> parent:23
+R4286:4293 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R4264:4266 Corelib.Init.Peano <> ::nat_scope:x_'<'_x not
+R4244:4256 ArcTypes <> cap_epoch_end proj
+R4258:4263 ArcDelegationProofs <> parent:23 var
+R4267:4279 ArcTypes <> cap_epoch_end proj
+R4281:4285 ArcDelegationProofs <> child:22 var
+R4334:4336 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R4294:4320 ArcDelegationProofs <> delegation_constraints_hold def
+R4322:4326 ArcDelegationProofs <> child:22 var
+R4328:4333 ArcDelegationProofs <> parent:23 var
+R4337:4341 Corelib.Init.Datatypes <> false constr
+R4385:4411 ArcDelegationProofs <> delegation_constraints_hold def
+R4426:4432 Stdlib.Arith.PeanoNat Nat eqb def
+R4435:4450 ArcTypes <> cap_parent_stamp proj
+R4460:4468 ArcTypes <> cap_stamp proj
+R4426:4432 Stdlib.Arith.PeanoNat Nat eqb def
+R4435:4450 ArcTypes <> cap_parent_stamp proj
+R4460:4468 ArcTypes <> cap_stamp proj
+R4501:4513 ArcDelegationProofs <> rights_subset def
+R4516:4525 ArcTypes <> cap_rights proj
+R4535:4544 ArcTypes <> cap_rights proj
+R4501:4513 ArcDelegationProofs <> rights_subset def
+R4516:4525 ArcTypes <> cap_rights proj
+R4535:4544 ArcTypes <> cap_rights proj
+R4576:4594 ArcDelegationProofs <> epoch_window_subset def
+R4613:4619 Stdlib.Arith.PeanoNat Nat leb def
+R4622:4636 ArcTypes <> cap_epoch_start proj
+R4647:4661 ArcTypes <> cap_epoch_start proj
+R4613:4619 Stdlib.Arith.PeanoNat Nat leb def
+R4622:4636 ArcTypes <> cap_epoch_start proj
+R4647:4661 ArcTypes <> cap_epoch_start proj
+R4747:4749 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R4695:4701 Stdlib.Arith.PeanoNat Nat leb def
+R4704:4716 ArcTypes <> cap_epoch_end proj
+R4726:4738 ArcTypes <> cap_epoch_end proj
+R4750:4754 Corelib.Init.Datatypes <> false constr
+R4747:4749 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R4695:4701 Stdlib.Arith.PeanoNat Nat leb def
+R4704:4716 ArcTypes <> cap_epoch_end proj
+R4726:4738 ArcTypes <> cap_epoch_end proj
+R4750:4754 Corelib.Init.Datatypes <> false constr
+R4783:4792 Stdlib.Arith.PeanoNat Nat leb_gt thm
+R4783:4792 Stdlib.Arith.PeanoNat Nat leb_gt thm
+prf 4921:4969 <> stress_child_depth_above_limit_rejects_delegation
+binder 4982:4986 <> child:24
+binder 4988:4993 <> parent:25
+R5049:5056 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R5020:5022 Corelib.Init.Peano <> ::nat_scope:x_'<'_x not
+R5000:5019 ArcDelegationProofs <> MAX_DELEGATION_DEPTH def
+R5023:5042 ArcTypes <> cap_delegation_depth proj
+R5044:5048 ArcDelegationProofs <> child:24 var
+R5097:5099 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R5057:5083 ArcDelegationProofs <> delegation_constraints_hold def
+R5085:5089 ArcDelegationProofs <> child:24 var
+R5091:5096 ArcDelegationProofs <> parent:25 var
+R5100:5104 Corelib.Init.Datatypes <> false constr
+R5148:5174 ArcDelegationProofs <> delegation_constraints_hold def
+R5189:5195 Stdlib.Arith.PeanoNat Nat eqb def
+R5198:5213 ArcTypes <> cap_parent_stamp proj
+R5223:5231 ArcTypes <> cap_stamp proj
+R5189:5195 Stdlib.Arith.PeanoNat Nat eqb def
+R5198:5213 ArcTypes <> cap_parent_stamp proj
+R5223:5231 ArcTypes <> cap_stamp proj
+R5264:5276 ArcDelegationProofs <> rights_subset def
+R5279:5288 ArcTypes <> cap_rights proj
+R5298:5307 ArcTypes <> cap_rights proj
+R5264:5276 ArcDelegationProofs <> rights_subset def
+R5279:5288 ArcTypes <> cap_rights proj
+R5298:5307 ArcTypes <> cap_rights proj
+R5342:5360 ArcDelegationProofs <> epoch_window_subset def
+R5373:5387 ArcTypes <> cap_epoch_start proj
+R5407:5419 ArcTypes <> cap_epoch_end proj
+R5439:5453 ArcTypes <> cap_epoch_start proj
+R5474:5486 ArcTypes <> cap_epoch_end proj
+R5342:5360 ArcDelegationProofs <> epoch_window_subset def
+R5373:5387 ArcTypes <> cap_epoch_start proj
+R5407:5419 ArcTypes <> cap_epoch_end proj
+R5439:5453 ArcTypes <> cap_epoch_start proj
+R5474:5486 ArcTypes <> cap_epoch_end proj
+R5520:5537 ArcDelegationProofs <> depth_within_limit def
+R5554:5563 Stdlib.Arith.PeanoNat Nat leb_gt thm
+R5554:5563 Stdlib.Arith.PeanoNat Nat leb_gt thm
+prf 5654:5705 <> stress_valid_delegation_implies_parent_stamp_binding
+binder 5718:5722 <> child:26
+binder 5724:5729 <> parent:27
+R5783:5790 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R5776:5778 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R5736:5762 ArcDelegationProofs <> delegation_constraints_hold def
+R5764:5768 ArcDelegationProofs <> child:26 var
+R5770:5775 ArcDelegationProofs <> parent:27 var
+R5779:5782 Corelib.Init.Datatypes <> true constr
+R5813:5815 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R5791:5806 ArcTypes <> cap_parent_stamp proj
+R5808:5812 ArcDelegationProofs <> child:26 var
+R5816:5824 ArcTypes <> cap_stamp proj
+R5826:5831 ArcDelegationProofs <> parent:27 var
+R5875:5901 ArcDelegationProofs <> delegation_constraints_hold def
+R5926:5938 Stdlib.Bool.Bool <> andb_true_iff thm
+R5926:5938 Stdlib.Bool.Bool <> andb_true_iff thm
+R5926:5938 Stdlib.Bool.Bool <> andb_true_iff thm
+R5926:5938 Stdlib.Bool.Bool <> andb_true_iff thm
+R5926:5938 Stdlib.Bool.Bool <> andb_true_iff thm
+R5926:5938 Stdlib.Bool.Bool <> andb_true_iff thm
+R5926:5938 Stdlib.Bool.Bool <> andb_true_iff thm
+R5926:5938 Stdlib.Bool.Bool <> andb_true_iff thm
+R6011:6020 Stdlib.Arith.PeanoNat Nat eqb_eq thm
+R6011:6020 Stdlib.Arith.PeanoNat Nat eqb_eq thm
+prf 6054:6098 <> stress_valid_delegation_implies_rights_subset
+binder 6111:6115 <> child:28
+binder 6117:6122 <> parent:29
+R6176:6183 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R6169:6171 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R6129:6155 ArcDelegationProofs <> delegation_constraints_hold def
+R6157:6161 ArcDelegationProofs <> child:28 var
+R6163:6168 ArcDelegationProofs <> parent:29 var
+R6172:6175 Corelib.Init.Datatypes <> true constr
+R6231:6233 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R6184:6191 Stdlib.Arith.PeanoNat Nat land def
+R6194:6203 ArcTypes <> cap_rights proj
+R6205:6209 ArcDelegationProofs <> child:28 var
+R6213:6222 ArcTypes <> cap_rights proj
+R6224:6229 ArcDelegationProofs <> parent:29 var
+R6234:6243 ArcTypes <> cap_rights proj
+R6245:6249 ArcDelegationProofs <> child:28 var
+R6293:6319 ArcDelegationProofs <> delegation_constraints_hold def
+R6344:6356 Stdlib.Bool.Bool <> andb_true_iff thm
+R6344:6356 Stdlib.Bool.Bool <> andb_true_iff thm
+R6344:6356 Stdlib.Bool.Bool <> andb_true_iff thm
+R6344:6356 Stdlib.Bool.Bool <> andb_true_iff thm
+R6344:6356 Stdlib.Bool.Bool <> andb_true_iff thm
+R6344:6356 Stdlib.Bool.Bool <> andb_true_iff thm
+R6344:6356 Stdlib.Bool.Bool <> andb_true_iff thm
+R6344:6356 Stdlib.Bool.Bool <> andb_true_iff thm
+R6430:6442 ArcDelegationProofs <> rights_subset def
+R6465:6474 Stdlib.Arith.PeanoNat Nat eqb_eq thm
+R6465:6474 Stdlib.Arith.PeanoNat Nat eqb_eq thm
+prf 6509:6552 <> stress_valid_delegation_implies_epoch_subset
+binder 6565:6569 <> child:30
+binder 6571:6576 <> parent:31
+R6630:6637 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R6623:6625 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R6583:6609 ArcDelegationProofs <> delegation_constraints_hold def
+R6611:6615 ArcDelegationProofs <> child:30 var
+R6617:6622 ArcDelegationProofs <> parent:31 var
+R6626:6629 Corelib.Init.Datatypes <> true constr
+R6685:6692 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R6660:6663 Corelib.Init.Peano <> ::nat_scope:x_'<='_x not
+R6638:6652 ArcTypes <> cap_epoch_start proj
+R6654:6659 ArcDelegationProofs <> parent:31 var
+R6664:6678 ArcTypes <> cap_epoch_start proj
+R6680:6684 ArcDelegationProofs <> child:30 var
+R6712:6715 Corelib.Init.Peano <> ::nat_scope:x_'<='_x not
+R6693:6705 ArcTypes <> cap_epoch_end proj
+R6707:6711 ArcDelegationProofs <> child:30 var
+R6716:6728 ArcTypes <> cap_epoch_end proj
+R6730:6735 ArcDelegationProofs <> parent:31 var
+R6779:6805 ArcDelegationProofs <> delegation_constraints_hold def
+R6830:6842 Stdlib.Bool.Bool <> andb_true_iff thm
+R6830:6842 Stdlib.Bool.Bool <> andb_true_iff thm
+R6830:6842 Stdlib.Bool.Bool <> andb_true_iff thm
+R6830:6842 Stdlib.Bool.Bool <> andb_true_iff thm
+R6830:6842 Stdlib.Bool.Bool <> andb_true_iff thm
+R6830:6842 Stdlib.Bool.Bool <> andb_true_iff thm
+R6830:6842 Stdlib.Bool.Bool <> andb_true_iff thm
+R6830:6842 Stdlib.Bool.Bool <> andb_true_iff thm
+R6916:6934 ArcDelegationProofs <> epoch_window_subset def
+R6957:6969 Stdlib.Bool.Bool <> andb_true_iff thm
+R6957:6969 Stdlib.Bool.Bool <> andb_true_iff thm
+R7032:7041 Stdlib.Arith.PeanoNat Nat leb_le thm
+R7032:7041 Stdlib.Arith.PeanoNat Nat leb_le thm
+R7063:7072 Stdlib.Arith.PeanoNat Nat leb_le thm
+R7063:7072 Stdlib.Arith.PeanoNat Nat leb_le thm
+prf 7119:7161 <> stress_valid_delegation_implies_depth_limit
+binder 7174:7178 <> child:32
+binder 7180:7185 <> parent:33
+R7239:7246 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R7232:7234 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R7192:7218 ArcDelegationProofs <> delegation_constraints_hold def
+R7220:7224 ArcDelegationProofs <> child:32 var
+R7226:7231 ArcDelegationProofs <> parent:33 var
+R7235:7238 Corelib.Init.Datatypes <> true constr
+R7273:7276 Corelib.Init.Peano <> ::nat_scope:x_'<='_x not
+R7247:7266 ArcTypes <> cap_delegation_depth proj
+R7268:7272 ArcDelegationProofs <> child:32 var
+R7277:7296 ArcDelegationProofs <> MAX_DELEGATION_DEPTH def
+R7340:7366 ArcDelegationProofs <> delegation_constraints_hold def
+R7391:7403 Stdlib.Bool.Bool <> andb_true_iff thm
+R7391:7403 Stdlib.Bool.Bool <> andb_true_iff thm
+R7391:7403 Stdlib.Bool.Bool <> andb_true_iff thm
+R7391:7403 Stdlib.Bool.Bool <> andb_true_iff thm
+R7391:7403 Stdlib.Bool.Bool <> andb_true_iff thm
+R7391:7403 Stdlib.Bool.Bool <> andb_true_iff thm
+R7391:7403 Stdlib.Bool.Bool <> andb_true_iff thm
+R7391:7403 Stdlib.Bool.Bool <> andb_true_iff thm
+R7477:7494 ArcDelegationProofs <> depth_within_limit def
+R7516:7525 Stdlib.Arith.PeanoNat Nat leb_le thm
+R7516:7525 Stdlib.Arith.PeanoNat Nat leb_le thm
+prf 7570:7618 <> stress_delegation_rights_escalation_contradiction
+binder 7631:7635 <> child:34
+binder 7637:7642 <> parent:35
+R7696:7703 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R7689:7691 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R7649:7675 ArcDelegationProofs <> delegation_constraints_hold def
+R7677:7681 ArcDelegationProofs <> child:34 var
+R7683:7688 ArcDelegationProofs <> parent:35 var
+R7692:7695 Corelib.Init.Datatypes <> true constr
+R7771:7778 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R7751:7754 Corelib.Init.Logic <> ::type_scope:x_'<>'_x not
+R7704:7711 Stdlib.Arith.PeanoNat Nat land def
+R7714:7723 ArcTypes <> cap_rights proj
+R7725:7729 ArcDelegationProofs <> child:34 var
+R7733:7742 ArcTypes <> cap_rights proj
+R7744:7749 ArcDelegationProofs <> parent:35 var
+R7755:7764 ArcTypes <> cap_rights proj
+R7766:7770 ArcDelegationProofs <> child:34 var
+R7779:7783 Corelib.Init.Logic <> False ind
+R7844:7888 ArcDelegationProofs <> stress_valid_delegation_implies_rights_subset thm
+R7844:7888 ArcDelegationProofs <> stress_valid_delegation_implies_rights_subset thm
+prf 7956:8008 <> stress_delegation_epoch_start_expansion_contradiction
+binder 8021:8025 <> child:36
+binder 8027:8032 <> parent:37
+R8086:8093 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R8079:8081 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R8039:8065 ArcDelegationProofs <> delegation_constraints_hold def
+R8067:8071 ArcDelegationProofs <> child:36 var
+R8073:8078 ArcDelegationProofs <> parent:37 var
+R8082:8085 Corelib.Init.Datatypes <> true constr
+R8140:8147 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R8115:8117 Corelib.Init.Peano <> ::nat_scope:x_'<'_x not
+R8094:8108 ArcTypes <> cap_epoch_start proj
+R8110:8114 ArcDelegationProofs <> child:36 var
+R8118:8132 ArcTypes <> cap_epoch_start proj
+R8134:8139 ArcDelegationProofs <> parent:37 var
+R8148:8152 Corelib.Init.Logic <> False ind
+R8213:8256 ArcDelegationProofs <> stress_valid_delegation_implies_epoch_subset thm
+R8213:8256 ArcDelegationProofs <> stress_valid_delegation_implies_epoch_subset thm
+prf 8317:8367 <> stress_delegation_epoch_end_expansion_contradiction
+binder 8380:8384 <> child:38
+binder 8386:8391 <> parent:39
+R8445:8452 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R8438:8440 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R8398:8424 ArcDelegationProofs <> delegation_constraints_hold def
+R8426:8430 ArcDelegationProofs <> child:38 var
+R8432:8437 ArcDelegationProofs <> parent:39 var
+R8441:8444 Corelib.Init.Datatypes <> true constr
+R8495:8502 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R8473:8475 Corelib.Init.Peano <> ::nat_scope:x_'<'_x not
+R8453:8465 ArcTypes <> cap_epoch_end proj
+R8467:8472 ArcDelegationProofs <> parent:39 var
+R8476:8488 ArcTypes <> cap_epoch_end proj
+R8490:8494 ArcDelegationProofs <> child:38 var
+R8503:8507 Corelib.Init.Logic <> False ind
+R8568:8611 ArcDelegationProofs <> stress_valid_delegation_implies_epoch_subset thm
+R8568:8611 ArcDelegationProofs <> stress_valid_delegation_implies_epoch_subset thm
+prf 8670:8715 <> stress_delegation_depth_overflow_contradiction
+binder 8728:8732 <> child:40
+binder 8734:8739 <> parent:41
+R8793:8800 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R8786:8788 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R8746:8772 ArcDelegationProofs <> delegation_constraints_hold def
+R8774:8778 ArcDelegationProofs <> child:40 var
+R8780:8785 ArcDelegationProofs <> parent:41 var
+R8789:8792 Corelib.Init.Datatypes <> true constr
+R8850:8857 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R8821:8823 Corelib.Init.Peano <> ::nat_scope:x_'<'_x not
+R8801:8820 ArcDelegationProofs <> MAX_DELEGATION_DEPTH def
+R8824:8843 ArcTypes <> cap_delegation_depth proj
+R8845:8849 ArcDelegationProofs <> child:40 var
+R8858:8862 Corelib.Init.Logic <> False ind
+R8923:8965 ArcDelegationProofs <> stress_valid_delegation_implies_depth_limit thm
+R8923:8965 ArcDelegationProofs <> stress_valid_delegation_implies_depth_limit thm
+prf 9022:9086 <> stress_valid_delegation_and_verified_open_preserves_authorization
+binder 9099:9101 <> obj:42
+binder 9103:9107 <> child:43
+binder 9109:9114 <> parent:44
+binder 9116:9120 <> state:45
+R9174:9181 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R9167:9169 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9127:9153 ArcDelegationProofs <> delegation_constraints_hold def
+R9155:9159 ArcDelegationProofs <> child:43 var
+R9161:9166 ArcDelegationProofs <> parent:44 var
+R9170:9173 Corelib.Init.Datatypes <> true constr
+R9224:9231 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R9217:9219 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9182:9200 ArcVerify <> verify_open_context def
+R9202:9204 ArcDelegationProofs <> obj:42 var
+R9206:9210 ArcDelegationProofs <> child:43 var
+R9212:9216 ArcDelegationProofs <> state:45 var
+R9220:9223 Corelib.Init.Datatypes <> true constr
+R9279:9286 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R9272:9274 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9232:9259 ArcMerkle <> capability_in_authority_root def
+R9261:9265 ArcDelegationProofs <> child:43 var
+R9267:9271 ArcDelegationProofs <> state:45 var
+R9275:9278 Corelib.Init.Datatypes <> true constr
+R9328:9335 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R9321:9323 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9287:9308 ArcMerkle <> capability_not_revoked def
+R9310:9314 ArcDelegationProofs <> child:43 var
+R9316:9320 ArcDelegationProofs <> state:45 var
+R9324:9327 Corelib.Init.Datatypes <> true constr
+R9367:9374 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R9360:9362 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9336:9349 ArcPolicy <> policy_accepts def
+R9351:9355 ArcDelegationProofs <> child:43 var
+R9357:9359 ArcDelegationProofs <> obj:42 var
+R9363:9366 Corelib.Init.Datatypes <> true constr
+R9413:9420 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R9406:9408 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9375:9395 ArcVerify <> object_bound_to_state def
+R9397:9399 ArcDelegationProofs <> obj:42 var
+R9401:9405 ArcDelegationProofs <> state:45 var
+R9409:9412 Corelib.Init.Datatypes <> true constr
+R9455:9462 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R9448:9450 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9421:9441 ArcAuthority <> authority_state_valid def
+R9443:9447 ArcDelegationProofs <> state:45 var
+R9451:9454 Corelib.Init.Datatypes <> true constr
+R9529:9536 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R9510:9512 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9463:9470 Stdlib.Arith.PeanoNat Nat land def
+R9473:9482 ArcTypes <> cap_rights proj
+R9484:9488 ArcDelegationProofs <> child:43 var
+R9492:9501 ArcTypes <> cap_rights proj
+R9503:9508 ArcDelegationProofs <> parent:44 var
+R9513:9522 ArcTypes <> cap_rights proj
+R9524:9528 ArcDelegationProofs <> child:43 var
+R9584:9591 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R9559:9562 Corelib.Init.Peano <> ::nat_scope:x_'<='_x not
+R9537:9551 ArcTypes <> cap_epoch_start proj
+R9553:9558 ArcDelegationProofs <> parent:44 var
+R9563:9577 ArcTypes <> cap_epoch_start proj
+R9579:9583 ArcDelegationProofs <> child:43 var
+R9635:9642 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R9611:9614 Corelib.Init.Peano <> ::nat_scope:x_'<='_x not
+R9592:9604 ArcTypes <> cap_epoch_end proj
+R9606:9610 ArcDelegationProofs <> child:43 var
+R9615:9627 ArcTypes <> cap_epoch_end proj
+R9629:9634 ArcDelegationProofs <> parent:44 var
+R9669:9672 Corelib.Init.Peano <> ::nat_scope:x_'<='_x not
+R9643:9662 ArcTypes <> cap_delegation_depth proj
+R9664:9668 ArcDelegationProofs <> child:43 var
+R9673:9692 ArcDelegationProofs <> MAX_DELEGATION_DEPTH def
+R9769:9792 ArcTheorems <> arc_verified_open_safety thm
+R9769:9792 ArcTheorems <> arc_verified_open_safety thm
+R9903:9947 ArcDelegationProofs <> stress_valid_delegation_implies_rights_subset thm
+R9903:9947 ArcDelegationProofs <> stress_valid_delegation_implies_rights_subset thm
+R10010:10053 ArcDelegationProofs <> stress_valid_delegation_implies_epoch_subset thm
+R10010:10053 ArcDelegationProofs <> stress_valid_delegation_implies_epoch_subset thm
+R10116:10158 ArcDelegationProofs <> stress_valid_delegation_implies_depth_limit thm
+R10116:10158 ArcDelegationProofs <> stress_valid_delegation_implies_depth_limit thm
+prf 10241:10289 <> stress_any_delegation_mutation_rejects_delegation
+binder 10302:10306 <> child:46
+binder 10308:10313 <> parent:47
+R10598:10605 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R10362:10369 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R10342:10345 Corelib.Init.Logic <> ::type_scope:x_'<>'_x not
+R10320:10335 ArcTypes <> cap_parent_stamp proj
+R10337:10341 ArcDelegationProofs <> child:46 var
+R10346:10354 ArcTypes <> cap_stamp proj
+R10356:10361 ArcDelegationProofs <> parent:47 var
+R10437:10444 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R10417:10420 Corelib.Init.Logic <> ::type_scope:x_'<>'_x not
+R10370:10377 Stdlib.Arith.PeanoNat Nat land def
+R10380:10389 ArcTypes <> cap_rights proj
+R10391:10395 ArcDelegationProofs <> child:46 var
+R10399:10408 ArcTypes <> cap_rights proj
+R10410:10415 ArcDelegationProofs <> parent:47 var
+R10421:10430 ArcTypes <> cap_rights proj
+R10432:10436 ArcDelegationProofs <> child:46 var
+R10491:10498 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R10466:10468 Corelib.Init.Peano <> ::nat_scope:x_'<'_x not
+R10445:10459 ArcTypes <> cap_epoch_start proj
+R10461:10465 ArcDelegationProofs <> child:46 var
+R10469:10483 ArcTypes <> cap_epoch_start proj
+R10485:10490 ArcDelegationProofs <> parent:47 var
+R10541:10548 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R10519:10521 Corelib.Init.Peano <> ::nat_scope:x_'<'_x not
+R10499:10511 ArcTypes <> cap_epoch_end proj
+R10513:10518 ArcDelegationProofs <> parent:47 var
+R10522:10534 ArcTypes <> cap_epoch_end proj
+R10536:10540 ArcDelegationProofs <> child:46 var
+R10569:10571 Corelib.Init.Peano <> ::nat_scope:x_'<'_x not
+R10549:10568 ArcDelegationProofs <> MAX_DELEGATION_DEPTH def
+R10572:10591 ArcTypes <> cap_delegation_depth proj
+R10593:10597 ArcDelegationProofs <> child:46 var
+R10646:10648 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R10606:10632 ArcDelegationProofs <> delegation_constraints_hold def
+R10634:10638 ArcDelegationProofs <> child:46 var
+R10640:10645 ArcDelegationProofs <> parent:47 var
+R10649:10653 Corelib.Init.Datatypes <> false constr
+R10770:10816 ArcDelegationProofs <> stress_parent_stamp_mismatch_rejects_delegation thm
+R10770:10816 ArcDelegationProofs <> stress_parent_stamp_mismatch_rejects_delegation thm
+R10844:10886 ArcDelegationProofs <> stress_rights_escalation_rejects_delegation thm
+R10844:10886 ArcDelegationProofs <> stress_rights_escalation_rejects_delegation thm
+R10915:10972 ArcDelegationProofs <> stress_child_epoch_starts_before_parent_rejects_delegation thm
+R10915:10972 ArcDelegationProofs <> stress_child_epoch_starts_before_parent_rejects_delegation thm
+R11000:11054 ArcDelegationProofs <> stress_child_epoch_ends_after_parent_rejects_delegation thm
+R11000:11054 ArcDelegationProofs <> stress_child_epoch_ends_after_parent_rejects_delegation thm
+R11080:11128 ArcDelegationProofs <> stress_child_depth_above_limit_rejects_delegation thm
+R11080:11128 ArcDelegationProofs <> stress_child_depth_above_limit_rejects_delegation thm

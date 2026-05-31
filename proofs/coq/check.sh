@@ -11,5 +11,6 @@ coqc ArcVerify.v
 coqc ArcSecurityGame.v
 coqc ArcTheorems.v
 coqc ArcStressProofs.v
+coqc ArcDelegationProofs.v
 
 echo "ARC Coq proofs compiled successfully."

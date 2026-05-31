@@ -1,0 +1,392 @@
+From Stdlib Require Import List Bool Arith.PeanoNat Lia.
+Import ListNotations.
+Require Import ArcTypes ArcMerkle ArcAuthority ArcPolicy ArcVerify ArcSecurityGame ArcTheorems ArcStressProofs ArcDelegationProofs.
+
+Inductive PrimitiveBreak : Type :=
+  | BreakAEAD
+  | BreakKEM
+  | BreakHKDF
+  | BreakSignature
+  | BreakHashBinding
+  | BreakMerkleBinding
+  | BreakTransparencyBinding.
+
+Definition primitive_break_eqb (a b : PrimitiveBreak) : bool :=
+  match a, b with
+  | BreakAEAD, BreakAEAD => true
+  | BreakKEM, BreakKEM => true
+  | BreakHKDF, BreakHKDF => true
+  | BreakSignature, BreakSignature => true
+  | BreakHashBinding, BreakHashBinding => true
+  | BreakMerkleBinding, BreakMerkleBinding => true
+  | BreakTransparencyBinding, BreakTransparencyBinding => true
+  | _, _ => false
+  end.
+
+Definition break_in_list (b : PrimitiveBreak) (breaks : list PrimitiveBreak) : bool :=
+  existsb (primitive_break_eqb b) breaks.
+
+Definition no_primitive_breaks (breaks : list PrimitiveBreak) : bool :=
+  negb
+    (break_in_list BreakAEAD breaks ||
+     break_in_list BreakKEM breaks ||
+     break_in_list BreakHKDF breaks ||
+     break_in_list BreakSignature breaks ||
+     break_in_list BreakHashBinding breaks ||
+     break_in_list BreakMerkleBinding breaks ||
+     break_in_list BreakTransparencyBinding breaks).
+
+Definition all_primitive_breaks_absent (breaks : list PrimitiveBreak) : Prop :=
+  break_in_list BreakAEAD breaks = false /\
+  break_in_list BreakKEM breaks = false /\
+  break_in_list BreakHKDF breaks = false /\
+  break_in_list BreakSignature breaks = false /\
+  break_in_list BreakHashBinding breaks = false /\
+  break_in_list BreakMerkleBinding breaks = false /\
+  break_in_list BreakTransparencyBinding breaks = false.
+
+Definition arc_authorized_open (obj : ArcObject) (cap : Capability) (state : AuthorityState) : bool :=
+  verify_open_context obj cap state.
+
+Definition arc_unauthorized_open_attempt (obj : ArcObject) (cap : Capability) (state : AuthorityState) : bool :=
+  verify_open_context obj cap state && unauthorized_capability cap obj.
+
+Definition arc_context_substitution_attempt (obj : ArcObject) (cap : Capability) (state : AuthorityState) : bool :=
+  verify_open_context obj cap state &&
+  negb (object_bound_to_state obj state).
+
+Definition arc_revocation_bypass_attempt (obj : ArcObject) (cap : Capability) (state : AuthorityState) : bool :=
+  verify_open_context obj cap state &&
+  negb (capability_not_revoked cap state).
+
+Definition arc_authority_inclusion_bypass_attempt (obj : ArcObject) (cap : Capability) (state : AuthorityState) : bool :=
+  verify_open_context obj cap state &&
+  negb (capability_in_authority_root cap state).
+
+Definition arc_policy_bypass_attempt (obj : ArcObject) (cap : Capability) (state : AuthorityState) : bool :=
+  verify_open_context obj cap state &&
+  negb (policy_accepts cap obj).
+
+Definition arc_confidentiality_break_without_primitives
+  (obj : ArcObject)
+  (cap : Capability)
+  (state : AuthorityState)
+  (breaks : list PrimitiveBreak)
+  : bool :=
+  verify_open_context obj cap state &&
+  unauthorized_capability cap obj &&
+  no_primitive_breaks breaks.
+
+Theorem primitive_break_eqb_refl :
+  forall b,
+    primitive_break_eqb b b = true.
+Proof.
+  intros b.
+  destruct b; reflexivity.
+Qed.
+
+Theorem break_in_list_cons_self :
+  forall b breaks,
+    break_in_list b (b :: breaks) = true.
+Proof.
+  intros b breaks.
+  unfold break_in_list.
+  simpl.
+  rewrite primitive_break_eqb_refl.
+  reflexivity.
+Qed.
+
+Theorem no_primitive_breaks_implies_all_absent :
+  forall breaks,
+    no_primitive_breaks breaks = true ->
+    all_primitive_breaks_absent breaks.
+Proof.
+  intros breaks H.
+  unfold no_primitive_breaks in H.
+  apply negb_true_iff in H.
+  repeat rewrite orb_false_iff in H.
+  destruct H as [[[[[[H_aead H_kem] H_hkdf] H_sig] H_hash] H_merkle] H_transparency].
+  repeat split; assumption.
+Qed.
+
+Theorem all_absent_implies_no_primitive_breaks :
+  forall breaks,
+    all_primitive_breaks_absent breaks ->
+    no_primitive_breaks breaks = true.
+Proof.
+  intros breaks H.
+  unfold all_primitive_breaks_absent in H.
+  destruct H as [H_aead [H_kem [H_hkdf [H_sig [H_hash [H_merkle H_transparency]]]]]].
+  unfold no_primitive_breaks.
+  rewrite H_aead.
+  rewrite H_kem.
+  rewrite H_hkdf.
+  rewrite H_sig.
+  rewrite H_hash.
+  rewrite H_merkle.
+  rewrite H_transparency.
+  reflexivity.
+Qed.
+
+Theorem no_primitive_breaks_excludes_aead_break :
+  forall breaks,
+    no_primitive_breaks breaks = true ->
+    break_in_list BreakAEAD breaks = false.
+Proof.
+  intros breaks H.
+  pose proof (no_primitive_breaks_implies_all_absent breaks H) as [H_aead _].
+  exact H_aead.
+Qed.
+
+Theorem no_primitive_breaks_excludes_kem_break :
+  forall breaks,
+    no_primitive_breaks breaks = true ->
+    break_in_list BreakKEM breaks = false.
+Proof.
+  intros breaks H.
+  pose proof (no_primitive_breaks_implies_all_absent breaks H) as [_ [H_kem _]].
+  exact H_kem.
+Qed.
+
+Theorem no_primitive_breaks_excludes_hkdf_break :
+  forall breaks,
+    no_primitive_breaks breaks = true ->
+    break_in_list BreakHKDF breaks = false.
+Proof.
+  intros breaks H.
+  pose proof (no_primitive_breaks_implies_all_absent breaks H) as [_ [_ [H_hkdf _]]].
+  exact H_hkdf.
+Qed.
+
+Theorem no_primitive_breaks_excludes_signature_break :
+  forall breaks,
+    no_primitive_breaks breaks = true ->
+    break_in_list BreakSignature breaks = false.
+Proof.
+  intros breaks H.
+  pose proof (no_primitive_breaks_implies_all_absent breaks H) as [_ [_ [_ [H_sig _]]]].
+  exact H_sig.
+Qed.
+
+Theorem no_primitive_breaks_excludes_hash_binding_break :
+  forall breaks,
+    no_primitive_breaks breaks = true ->
+    break_in_list BreakHashBinding breaks = false.
+Proof.
+  intros breaks H.
+  pose proof (no_primitive_breaks_implies_all_absent breaks H) as [_ [_ [_ [_ [H_hash _]]]]].
+  exact H_hash.
+Qed.
+
+Theorem no_primitive_breaks_excludes_merkle_binding_break :
+  forall breaks,
+    no_primitive_breaks breaks = true ->
+    break_in_list BreakMerkleBinding breaks = false.
+Proof.
+  intros breaks H.
+  pose proof (no_primitive_breaks_implies_all_absent breaks H) as [_ [_ [_ [_ [_ [H_merkle _]]]]]].
+  exact H_merkle.
+Qed.
+
+Theorem no_primitive_breaks_excludes_transparency_binding_break :
+  forall breaks,
+    no_primitive_breaks breaks = true ->
+    break_in_list BreakTransparencyBinding breaks = false.
+Proof.
+  intros breaks H.
+  pose proof (no_primitive_breaks_implies_all_absent breaks H) as [_ [_ [_ [_ [_ [_ H_transparency]]]]]].
+  exact H_transparency.
+Qed.
+
+Theorem arc_authorized_open_implies_policy_authorized :
+  forall obj cap state,
+    arc_authorized_open obj cap state = true ->
+    unauthorized_capability cap obj = false.
+Proof.
+  intros obj cap state H.
+  unfold arc_authorized_open in H.
+  apply no_unauthorized_verified_open with (state := state).
+  exact H.
+Qed.
+
+Theorem arc_unauthorized_open_attempt_impossible :
+  forall obj cap state,
+    arc_unauthorized_open_attempt obj cap state = false.
+Proof.
+  intros obj cap state.
+  unfold arc_unauthorized_open_attempt.
+  destruct (verify_open_context obj cap state) eqn:H_open.
+  - pose proof (arc_authorized_open_implies_policy_authorized obj cap state H_open) as H_unauth.
+    rewrite H_unauth.
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem arc_context_substitution_attempt_impossible :
+  forall obj cap state,
+    arc_context_substitution_attempt obj cap state = false.
+Proof.
+  intros obj cap state.
+  unfold arc_context_substitution_attempt.
+  destruct (verify_open_context obj cap state) eqn:H_open.
+  - pose proof (verify_open_context_implies_object_bound obj cap state H_open) as H_bound.
+    rewrite H_bound.
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem arc_revocation_bypass_attempt_impossible :
+  forall obj cap state,
+    arc_revocation_bypass_attempt obj cap state = false.
+Proof.
+  intros obj cap state.
+  unfold arc_revocation_bypass_attempt.
+  destruct (verify_open_context obj cap state) eqn:H_open.
+  - pose proof (verify_open_context_implies_not_revoked obj cap state H_open) as H_not_revoked.
+    rewrite H_not_revoked.
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem arc_authority_inclusion_bypass_attempt_impossible :
+  forall obj cap state,
+    arc_authority_inclusion_bypass_attempt obj cap state = false.
+Proof.
+  intros obj cap state.
+  unfold arc_authority_inclusion_bypass_attempt.
+  destruct (verify_open_context obj cap state) eqn:H_open.
+  - pose proof (verify_open_context_implies_capability_in_authority obj cap state H_open) as H_inclusion.
+    rewrite H_inclusion.
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem arc_policy_bypass_attempt_impossible :
+  forall obj cap state,
+    arc_policy_bypass_attempt obj cap state = false.
+Proof.
+  intros obj cap state.
+  unfold arc_policy_bypass_attempt.
+  destruct (verify_open_context obj cap state) eqn:H_open.
+  - pose proof (verify_open_context_implies_policy_accepts obj cap state H_open) as H_policy.
+    rewrite H_policy.
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem arc_confidentiality_break_without_primitives_impossible :
+  forall obj cap state breaks,
+    arc_confidentiality_break_without_primitives obj cap state breaks = false.
+Proof.
+  intros obj cap state breaks.
+  unfold arc_confidentiality_break_without_primitives.
+  destruct (verify_open_context obj cap state) eqn:H_open.
+  - pose proof (arc_authorized_open_implies_policy_authorized obj cap state H_open) as H_unauth.
+    rewrite H_unauth.
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem arc_verified_open_or_primitive_break_reduction_shape :
+  forall obj cap state breaks,
+    verify_open_context obj cap state = true ->
+    unauthorized_capability cap obj = true ->
+    no_primitive_breaks breaks = true ->
+    False.
+Proof.
+  intros obj cap state breaks H_open H_unauth H_no_breaks.
+  pose proof (arc_authorized_open_implies_policy_authorized obj cap state H_open) as H_not_unauth.
+  rewrite H_not_unauth in H_unauth.
+  discriminate.
+Qed.
+
+Theorem arc_context_binding_reduction_shape :
+  forall obj cap state breaks,
+    verify_open_context obj cap state = true ->
+    object_bound_to_state obj state = false ->
+    no_primitive_breaks breaks = true ->
+    False.
+Proof.
+  intros obj cap state breaks H_open H_unbound H_no_breaks.
+  pose proof (verify_open_context_implies_object_bound obj cap state H_open) as H_bound.
+  rewrite H_bound in H_unbound.
+  discriminate.
+Qed.
+
+Theorem arc_revocation_reduction_shape :
+  forall obj cap state breaks,
+    verify_open_context obj cap state = true ->
+    capability_not_revoked cap state = false ->
+    no_primitive_breaks breaks = true ->
+    False.
+Proof.
+  intros obj cap state breaks H_open H_revoked H_no_breaks.
+  pose proof (verify_open_context_implies_not_revoked obj cap state H_open) as H_not_revoked.
+  rewrite H_not_revoked in H_revoked.
+  discriminate.
+Qed.
+
+Theorem arc_authority_inclusion_reduction_shape :
+  forall obj cap state breaks,
+    verify_open_context obj cap state = true ->
+    capability_in_authority_root cap state = false ->
+    no_primitive_breaks breaks = true ->
+    False.
+Proof.
+  intros obj cap state breaks H_open H_missing H_no_breaks.
+  pose proof (verify_open_context_implies_capability_in_authority obj cap state H_open) as H_inclusion.
+  rewrite H_inclusion in H_missing.
+  discriminate.
+Qed.
+
+Theorem arc_policy_reduction_shape :
+  forall obj cap state breaks,
+    verify_open_context obj cap state = true ->
+    policy_accepts cap obj = false ->
+    no_primitive_breaks breaks = true ->
+    False.
+Proof.
+  intros obj cap state breaks H_open H_policy H_no_breaks.
+  pose proof (verify_open_context_implies_policy_accepts obj cap state H_open) as H_policy_true.
+  rewrite H_policy_true in H_policy.
+  discriminate.
+Qed.
+
+Theorem arc_successful_unauthorized_open_requires_failed_assumption_shape :
+  forall obj cap state breaks,
+    verify_open_context obj cap state = true ->
+    unauthorized_capability cap obj = true ->
+    break_in_list BreakAEAD breaks = true \/
+    break_in_list BreakKEM breaks = true \/
+    break_in_list BreakHKDF breaks = true \/
+    break_in_list BreakSignature breaks = true \/
+    break_in_list BreakHashBinding breaks = true \/
+    break_in_list BreakMerkleBinding breaks = true \/
+    break_in_list BreakTransparencyBinding breaks = true \/
+    False.
+Proof.
+  intros obj cap state breaks H_open H_unauth.
+  pose proof (arc_authorized_open_implies_policy_authorized obj cap state H_open) as H_not_unauth.
+  rewrite H_not_unauth in H_unauth.
+  discriminate.
+Qed.
+
+Theorem arc_no_auth_bypass_under_no_primitive_breaks :
+  forall obj cap state breaks,
+    no_primitive_breaks breaks = true ->
+    arc_unauthorized_open_attempt obj cap state = false /\
+    arc_context_substitution_attempt obj cap state = false /\
+    arc_revocation_bypass_attempt obj cap state = false /\
+    arc_authority_inclusion_bypass_attempt obj cap state = false /\
+    arc_policy_bypass_attempt obj cap state = false /\
+    arc_confidentiality_break_without_primitives obj cap state breaks = false.
+Proof.
+  intros obj cap state breaks H_no_breaks.
+  repeat split.
+  - apply arc_unauthorized_open_attempt_impossible.
+  - apply arc_context_substitution_attempt_impossible.
+  - apply arc_revocation_bypass_attempt_impossible.
+  - apply arc_authority_inclusion_bypass_attempt_impossible.
+  - apply arc_policy_bypass_attempt_impossible.
+  - apply arc_confidentiality_break_without_primitives_impossible.
+Qed.

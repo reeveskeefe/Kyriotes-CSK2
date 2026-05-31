@@ -1,0 +1,788 @@
+DIGEST 5263ff9d02149208179c575d21bb2691
+FArcCryptoReduction
+R27:30 Stdlib.Lists.List <> <> lib
+R32:35 Stdlib.Bool.Bool <> <> lib
+R37:50 Stdlib.Arith.PeanoNat <> <> lib
+R52:54 Stdlib.micromega.Lia <> <> lib
+R64:76 Stdlib.Lists.List ListNotations <> mod
+R94:101 ArcTypes <> <> lib
+R103:111 ArcMerkle <> <> lib
+R113:124 ArcAuthority <> <> lib
+R126:134 ArcPolicy <> <> lib
+R136:144 ArcVerify <> <> lib
+R146:160 ArcSecurityGame <> <> lib
+R162:172 ArcTheorems <> <> lib
+R174:188 ArcStressProofs <> <> lib
+R190:208 ArcDelegationProofs <> <> lib
+ind 222:235 <> PrimitiveBreak
+constr 251:259 <> BreakAEAD
+constr 265:272 <> BreakKEM
+constr 278:286 <> BreakHKDF
+constr 292:305 <> BreakSignature
+constr 311:326 <> BreakHashBinding
+constr 332:349 <> BreakMerkleBinding
+constr 355:378 <> BreakTransparencyBinding
+scheme 222:235 <> PrimitiveBreak_rect
+scheme 222:235 <> PrimitiveBreak_ind
+scheme 222:235 <> PrimitiveBreak_rec
+scheme 222:235 <> PrimitiveBreak_sind
+def 393:411 <> primitive_break_eqb
+R420:433 ArcCryptoReduction <> PrimitiveBreak ind
+binder 414:414 <> a:3
+binder 416:416 <> b:4
+R438:441 Corelib.Init.Datatypes <> bool ind
+R457:457 ArcCryptoReduction <> b:4 var
+R454:454 ArcCryptoReduction <> a:3 var
+R468:476 ArcCryptoReduction <> BreakAEAD constr
+R479:487 ArcCryptoReduction <> BreakAEAD constr
+R492:495 Corelib.Init.Datatypes <> true constr
+R501:508 ArcCryptoReduction <> BreakKEM constr
+R511:518 ArcCryptoReduction <> BreakKEM constr
+R523:526 Corelib.Init.Datatypes <> true constr
+R532:540 ArcCryptoReduction <> BreakHKDF constr
+R543:551 ArcCryptoReduction <> BreakHKDF constr
+R556:559 Corelib.Init.Datatypes <> true constr
+R565:578 ArcCryptoReduction <> BreakSignature constr
+R581:594 ArcCryptoReduction <> BreakSignature constr
+R599:602 Corelib.Init.Datatypes <> true constr
+R608:623 ArcCryptoReduction <> BreakHashBinding constr
+R626:641 ArcCryptoReduction <> BreakHashBinding constr
+R646:649 Corelib.Init.Datatypes <> true constr
+R655:672 ArcCryptoReduction <> BreakMerkleBinding constr
+R675:692 ArcCryptoReduction <> BreakMerkleBinding constr
+R697:700 Corelib.Init.Datatypes <> true constr
+R706:729 ArcCryptoReduction <> BreakTransparencyBinding constr
+R732:755 ArcCryptoReduction <> BreakTransparencyBinding constr
+R760:763 Corelib.Init.Datatypes <> true constr
+R777:781 Corelib.Init.Datatypes <> false constr
+def 802:814 <> break_in_list
+R821:834 ArcCryptoReduction <> PrimitiveBreak ind
+binder 817:817 <> b:7
+R847:850 Corelib.Init.Datatypes <> list ind
+R852:865 ArcCryptoReduction <> PrimitiveBreak ind
+binder 838:843 <> breaks:8
+R870:873 Corelib.Init.Datatypes <> bool ind
+R880:886 Stdlib.Lists.List <> existsb def
+R912:917 ArcCryptoReduction <> breaks:8 var
+R889:907 ArcCryptoReduction <> primitive_break_eqb def
+R909:909 ArcCryptoReduction <> b:7 var
+def 932:950 <> no_primitive_breaks
+R962:965 Corelib.Init.Datatypes <> list ind
+R967:980 ArcCryptoReduction <> PrimitiveBreak ind
+binder 953:958 <> breaks:9
+R985:988 Corelib.Init.Datatypes <> bool ind
+R995:998 Corelib.Init.Datatypes <> negb def
+R1250:1258 Corelib.Init.Datatypes <> ::bool_scope:x_'||'_x not
+R1202:1210 Corelib.Init.Datatypes <> ::bool_scope:x_'||'_x not
+R1156:1164 Corelib.Init.Datatypes <> ::bool_scope:x_'||'_x not
+R1112:1120 Corelib.Init.Datatypes <> ::bool_scope:x_'||'_x not
+R1073:1081 Corelib.Init.Datatypes <> ::bool_scope:x_'||'_x not
+R1035:1043 Corelib.Init.Datatypes <> ::bool_scope:x_'||'_x not
+R1005:1017 ArcCryptoReduction <> break_in_list def
+R1019:1027 ArcCryptoReduction <> BreakAEAD constr
+R1029:1034 ArcCryptoReduction <> breaks:9 var
+R1044:1056 ArcCryptoReduction <> break_in_list def
+R1058:1065 ArcCryptoReduction <> BreakKEM constr
+R1067:1072 ArcCryptoReduction <> breaks:9 var
+R1082:1094 ArcCryptoReduction <> break_in_list def
+R1096:1104 ArcCryptoReduction <> BreakHKDF constr
+R1106:1111 ArcCryptoReduction <> breaks:9 var
+R1121:1133 ArcCryptoReduction <> break_in_list def
+R1135:1148 ArcCryptoReduction <> BreakSignature constr
+R1150:1155 ArcCryptoReduction <> breaks:9 var
+R1165:1177 ArcCryptoReduction <> break_in_list def
+R1179:1194 ArcCryptoReduction <> BreakHashBinding constr
+R1196:1201 ArcCryptoReduction <> breaks:9 var
+R1211:1223 ArcCryptoReduction <> break_in_list def
+R1225:1242 ArcCryptoReduction <> BreakMerkleBinding constr
+R1244:1249 ArcCryptoReduction <> breaks:9 var
+R1259:1271 ArcCryptoReduction <> break_in_list def
+R1273:1296 ArcCryptoReduction <> BreakTransparencyBinding constr
+R1298:1303 ArcCryptoReduction <> breaks:9 var
+def 1319:1345 <> all_primitive_breaks_absent
+R1357:1360 Corelib.Init.Datatypes <> list ind
+R1362:1375 ArcCryptoReduction <> PrimitiveBreak ind
+binder 1348:1353 <> breaks:10
+R1428:1433 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R1420:1422 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1390:1402 ArcCryptoReduction <> break_in_list def
+R1404:1412 ArcCryptoReduction <> BreakAEAD constr
+R1414:1419 ArcCryptoReduction <> breaks:10 var
+R1423:1427 Corelib.Init.Datatypes <> false constr
+R1471:1476 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R1463:1465 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1434:1446 ArcCryptoReduction <> break_in_list def
+R1448:1455 ArcCryptoReduction <> BreakKEM constr
+R1457:1462 ArcCryptoReduction <> breaks:10 var
+R1466:1470 Corelib.Init.Datatypes <> false constr
+R1515:1520 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R1507:1509 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1477:1489 ArcCryptoReduction <> break_in_list def
+R1491:1499 ArcCryptoReduction <> BreakHKDF constr
+R1501:1506 ArcCryptoReduction <> breaks:10 var
+R1510:1514 Corelib.Init.Datatypes <> false constr
+R1564:1569 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R1556:1558 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1521:1533 ArcCryptoReduction <> break_in_list def
+R1535:1548 ArcCryptoReduction <> BreakSignature constr
+R1550:1555 ArcCryptoReduction <> breaks:10 var
+R1559:1563 Corelib.Init.Datatypes <> false constr
+R1615:1620 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R1607:1609 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1570:1582 ArcCryptoReduction <> break_in_list def
+R1584:1599 ArcCryptoReduction <> BreakHashBinding constr
+R1601:1606 ArcCryptoReduction <> breaks:10 var
+R1610:1614 Corelib.Init.Datatypes <> false constr
+R1668:1673 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R1660:1662 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1621:1633 ArcCryptoReduction <> break_in_list def
+R1635:1652 ArcCryptoReduction <> BreakMerkleBinding constr
+R1654:1659 ArcCryptoReduction <> breaks:10 var
+R1663:1667 Corelib.Init.Datatypes <> false constr
+R1719:1721 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1674:1686 ArcCryptoReduction <> break_in_list def
+R1688:1711 ArcCryptoReduction <> BreakTransparencyBinding constr
+R1713:1718 ArcCryptoReduction <> breaks:10 var
+R1722:1726 Corelib.Init.Datatypes <> false constr
+def 1741:1759 <> arc_authorized_open
+R1768:1776 ArcTypes <> ArcObject rec
+binder 1762:1764 <> obj:11
+R1786:1795 ArcTypes <> Capability rec
+binder 1780:1782 <> cap:12
+R1807:1820 ArcTypes <> AuthorityState rec
+binder 1799:1803 <> state:13
+R1825:1828 Corelib.Init.Datatypes <> bool ind
+R1835:1853 ArcVerify <> verify_open_context def
+R1855:1857 ArcCryptoReduction <> obj:11 var
+R1859:1861 ArcCryptoReduction <> cap:12 var
+R1863:1867 ArcCryptoReduction <> state:13 var
+def 1882:1910 <> arc_unauthorized_open_attempt
+R1919:1927 ArcTypes <> ArcObject rec
+binder 1913:1915 <> obj:14
+R1937:1946 ArcTypes <> Capability rec
+binder 1931:1933 <> cap:15
+R1958:1971 ArcTypes <> AuthorityState rec
+binder 1950:1954 <> state:16
+R1976:1979 Corelib.Init.Datatypes <> bool ind
+R2019:2022 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R1986:2004 ArcVerify <> verify_open_context def
+R2006:2008 ArcCryptoReduction <> obj:14 var
+R2010:2012 ArcCryptoReduction <> cap:15 var
+R2014:2018 ArcCryptoReduction <> state:16 var
+R2023:2045 ArcSecurityGame <> unauthorized_capability def
+R2047:2049 ArcCryptoReduction <> cap:15 var
+R2051:2053 ArcCryptoReduction <> obj:14 var
+def 2068:2099 <> arc_context_substitution_attempt
+R2108:2116 ArcTypes <> ArcObject rec
+binder 2102:2104 <> obj:17
+R2126:2135 ArcTypes <> Capability rec
+binder 2120:2122 <> cap:18
+R2147:2160 ArcTypes <> AuthorityState rec
+binder 2139:2143 <> state:19
+R2165:2168 Corelib.Init.Datatypes <> bool ind
+R2208:2213 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R2175:2193 ArcVerify <> verify_open_context def
+R2195:2197 ArcCryptoReduction <> obj:17 var
+R2199:2201 ArcCryptoReduction <> cap:18 var
+R2203:2207 ArcCryptoReduction <> state:19 var
+R2214:2217 Corelib.Init.Datatypes <> negb def
+R2220:2240 ArcVerify <> object_bound_to_state def
+R2242:2244 ArcCryptoReduction <> obj:17 var
+R2246:2250 ArcCryptoReduction <> state:19 var
+def 2266:2294 <> arc_revocation_bypass_attempt
+R2303:2311 ArcTypes <> ArcObject rec
+binder 2297:2299 <> obj:20
+R2321:2330 ArcTypes <> Capability rec
+binder 2315:2317 <> cap:21
+R2342:2355 ArcTypes <> AuthorityState rec
+binder 2334:2338 <> state:22
+R2360:2363 Corelib.Init.Datatypes <> bool ind
+R2403:2408 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R2370:2388 ArcVerify <> verify_open_context def
+R2390:2392 ArcCryptoReduction <> obj:20 var
+R2394:2396 ArcCryptoReduction <> cap:21 var
+R2398:2402 ArcCryptoReduction <> state:22 var
+R2409:2412 Corelib.Init.Datatypes <> negb def
+R2415:2436 ArcMerkle <> capability_not_revoked def
+R2438:2440 ArcCryptoReduction <> cap:21 var
+R2442:2446 ArcCryptoReduction <> state:22 var
+def 2462:2499 <> arc_authority_inclusion_bypass_attempt
+R2508:2516 ArcTypes <> ArcObject rec
+binder 2502:2504 <> obj:23
+R2526:2535 ArcTypes <> Capability rec
+binder 2520:2522 <> cap:24
+R2547:2560 ArcTypes <> AuthorityState rec
+binder 2539:2543 <> state:25
+R2565:2568 Corelib.Init.Datatypes <> bool ind
+R2608:2613 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R2575:2593 ArcVerify <> verify_open_context def
+R2595:2597 ArcCryptoReduction <> obj:23 var
+R2599:2601 ArcCryptoReduction <> cap:24 var
+R2603:2607 ArcCryptoReduction <> state:25 var
+R2614:2617 Corelib.Init.Datatypes <> negb def
+R2620:2647 ArcMerkle <> capability_in_authority_root def
+R2649:2651 ArcCryptoReduction <> cap:24 var
+R2653:2657 ArcCryptoReduction <> state:25 var
+def 2673:2697 <> arc_policy_bypass_attempt
+R2706:2714 ArcTypes <> ArcObject rec
+binder 2700:2702 <> obj:26
+R2724:2733 ArcTypes <> Capability rec
+binder 2718:2720 <> cap:27
+R2745:2758 ArcTypes <> AuthorityState rec
+binder 2737:2741 <> state:28
+R2763:2766 Corelib.Init.Datatypes <> bool ind
+R2806:2811 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R2773:2791 ArcVerify <> verify_open_context def
+R2793:2795 ArcCryptoReduction <> obj:26 var
+R2797:2799 ArcCryptoReduction <> cap:27 var
+R2801:2805 ArcCryptoReduction <> state:28 var
+R2812:2815 Corelib.Init.Datatypes <> negb def
+R2818:2831 ArcPolicy <> policy_accepts def
+R2833:2835 ArcCryptoReduction <> cap:27 var
+R2837:2839 ArcCryptoReduction <> obj:26 var
+def 2855:2898 <> arc_confidentiality_break_without_primitives
+R2909:2917 ArcTypes <> ArcObject rec
+binder 2903:2905 <> obj:29
+R2929:2938 ArcTypes <> Capability rec
+binder 2923:2925 <> cap:30
+R2952:2965 ArcTypes <> AuthorityState rec
+binder 2944:2948 <> state:31
+R2980:2983 Corelib.Init.Datatypes <> list ind
+R2985:2998 ArcCryptoReduction <> PrimitiveBreak ind
+binder 2971:2976 <> breaks:32
+R3005:3008 Corelib.Init.Datatypes <> bool ind
+R3085:3090 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3048:3053 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R3015:3033 ArcVerify <> verify_open_context def
+R3035:3037 ArcCryptoReduction <> obj:29 var
+R3039:3041 ArcCryptoReduction <> cap:30 var
+R3043:3047 ArcCryptoReduction <> state:31 var
+R3054:3076 ArcSecurityGame <> unauthorized_capability def
+R3078:3080 ArcCryptoReduction <> cap:30 var
+R3082:3084 ArcCryptoReduction <> obj:29 var
+R3091:3109 ArcCryptoReduction <> no_primitive_breaks def
+R3111:3116 ArcCryptoReduction <> breaks:32 var
+prf 3128:3151 <> primitive_break_eqb_refl
+binder 3164:3164 <> b:33
+R3194:3196 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R3171:3189 ArcCryptoReduction <> primitive_break_eqb def
+R3191:3191 ArcCryptoReduction <> b:33 var
+R3193:3193 ArcCryptoReduction <> b:33 var
+R3197:3200 Corelib.Init.Datatypes <> true constr
+prf 3263:3285 <> break_in_list_cons_self
+binder 3298:3298 <> b:34
+binder 3300:3305 <> breaks:35
+R3341:3343 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R3312:3324 ArcCryptoReduction <> break_in_list def
+R3326:3326 ArcCryptoReduction <> b:34 var
+R3330:3333 Corelib.Init.Datatypes <> ::list_scope:x_'::'_x not
+R3329:3329 ArcCryptoReduction <> b:34 var
+R3334:3339 ArcCryptoReduction <> breaks:35 var
+R3344:3347 Corelib.Init.Datatypes <> true constr
+R3385:3397 ArcCryptoReduction <> break_in_list def
+R3419:3442 ArcCryptoReduction <> primitive_break_eqb_refl thm
+R3419:3442 ArcCryptoReduction <> primitive_break_eqb_refl thm
+R3419:3442 ArcCryptoReduction <> primitive_break_eqb_refl thm
+prf 3474:3511 <> no_primitive_breaks_implies_all_absent
+binder 3524:3529 <> breaks:36
+R3569:3576 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R3562:3564 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R3536:3554 ArcCryptoReduction <> no_primitive_breaks def
+R3556:3561 ArcCryptoReduction <> breaks:36 var
+R3565:3568 Corelib.Init.Datatypes <> true constr
+R3577:3603 ArcCryptoReduction <> all_primitive_breaks_absent def
+R3605:3610 ArcCryptoReduction <> breaks:36 var
+R3648:3666 ArcCryptoReduction <> no_primitive_breaks def
+R3682:3694 Stdlib.Bool.Bool <> negb_true_iff thm
+R3682:3694 Stdlib.Bool.Bool <> negb_true_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+R3719:3731 Stdlib.Bool.Bool <> orb_false_iff thm
+prf 3867:3904 <> all_absent_implies_no_primitive_breaks
+binder 3917:3922 <> breaks:37
+R3963:3970 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R3929:3955 ArcCryptoReduction <> all_primitive_breaks_absent def
+R3957:3962 ArcCryptoReduction <> breaks:37 var
+R3997:3999 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R3971:3989 ArcCryptoReduction <> no_primitive_breaks def
+R3991:3996 ArcCryptoReduction <> breaks:37 var
+R4000:4003 Corelib.Init.Datatypes <> true constr
+R4041:4067 ArcCryptoReduction <> all_primitive_breaks_absent def
+R4170:4188 ArcCryptoReduction <> no_primitive_breaks def
+prf 4354:4392 <> no_primitive_breaks_excludes_aead_break
+binder 4405:4410 <> breaks:38
+R4450:4457 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R4443:4445 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R4417:4435 ArcCryptoReduction <> no_primitive_breaks def
+R4437:4442 ArcCryptoReduction <> breaks:38 var
+R4446:4449 Corelib.Init.Datatypes <> true constr
+R4488:4490 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R4458:4470 ArcCryptoReduction <> break_in_list def
+R4472:4480 ArcCryptoReduction <> BreakAEAD constr
+R4482:4487 ArcCryptoReduction <> breaks:38 var
+R4491:4495 Corelib.Init.Datatypes <> false constr
+R4538:4575 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+R4538:4575 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+prf 4632:4669 <> no_primitive_breaks_excludes_kem_break
+binder 4682:4687 <> breaks:39
+R4727:4734 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R4720:4722 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R4694:4712 ArcCryptoReduction <> no_primitive_breaks def
+R4714:4719 ArcCryptoReduction <> breaks:39 var
+R4723:4726 Corelib.Init.Datatypes <> true constr
+R4764:4766 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R4735:4747 ArcCryptoReduction <> break_in_list def
+R4749:4756 ArcCryptoReduction <> BreakKEM constr
+R4758:4763 ArcCryptoReduction <> breaks:39 var
+R4767:4771 Corelib.Init.Datatypes <> false constr
+R4814:4851 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+R4814:4851 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+prf 4910:4948 <> no_primitive_breaks_excludes_hkdf_break
+binder 4961:4966 <> breaks:40
+R5006:5013 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R4999:5001 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R4973:4991 ArcCryptoReduction <> no_primitive_breaks def
+R4993:4998 ArcCryptoReduction <> breaks:40 var
+R5002:5005 Corelib.Init.Datatypes <> true constr
+R5044:5046 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R5014:5026 ArcCryptoReduction <> break_in_list def
+R5028:5036 ArcCryptoReduction <> BreakHKDF constr
+R5038:5043 ArcCryptoReduction <> breaks:40 var
+R5047:5051 Corelib.Init.Datatypes <> false constr
+R5094:5131 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+R5094:5131 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+prf 5196:5239 <> no_primitive_breaks_excludes_signature_break
+binder 5252:5257 <> breaks:41
+R5297:5304 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R5290:5292 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R5264:5282 ArcCryptoReduction <> no_primitive_breaks def
+R5284:5289 ArcCryptoReduction <> breaks:41 var
+R5293:5296 Corelib.Init.Datatypes <> true constr
+R5340:5342 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R5305:5317 ArcCryptoReduction <> break_in_list def
+R5319:5332 ArcCryptoReduction <> BreakSignature constr
+R5334:5339 ArcCryptoReduction <> breaks:41 var
+R5343:5347 Corelib.Init.Datatypes <> false constr
+R5390:5427 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+R5390:5427 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+prf 5494:5540 <> no_primitive_breaks_excludes_hash_binding_break
+binder 5553:5558 <> breaks:42
+R5598:5605 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R5591:5593 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R5565:5583 ArcCryptoReduction <> no_primitive_breaks def
+R5585:5590 ArcCryptoReduction <> breaks:42 var
+R5594:5597 Corelib.Init.Datatypes <> true constr
+R5643:5645 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R5606:5618 ArcCryptoReduction <> break_in_list def
+R5620:5635 ArcCryptoReduction <> BreakHashBinding constr
+R5637:5642 ArcCryptoReduction <> breaks:42 var
+R5646:5650 Corelib.Init.Datatypes <> false constr
+R5693:5730 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+R5693:5730 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+prf 5803:5851 <> no_primitive_breaks_excludes_merkle_binding_break
+binder 5864:5869 <> breaks:43
+R5909:5916 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R5902:5904 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R5876:5894 ArcCryptoReduction <> no_primitive_breaks def
+R5896:5901 ArcCryptoReduction <> breaks:43 var
+R5905:5908 Corelib.Init.Datatypes <> true constr
+R5956:5958 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R5917:5929 ArcCryptoReduction <> break_in_list def
+R5931:5948 ArcCryptoReduction <> BreakMerkleBinding constr
+R5950:5955 ArcCryptoReduction <> breaks:43 var
+R5959:5963 Corelib.Init.Datatypes <> false constr
+R6006:6043 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+R6006:6043 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+prf 6124:6178 <> no_primitive_breaks_excludes_transparency_binding_break
+binder 6191:6196 <> breaks:44
+R6236:6243 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R6229:6231 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R6203:6221 ArcCryptoReduction <> no_primitive_breaks def
+R6223:6228 ArcCryptoReduction <> breaks:44 var
+R6232:6235 Corelib.Init.Datatypes <> true constr
+R6289:6291 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R6244:6256 ArcCryptoReduction <> break_in_list def
+R6258:6281 ArcCryptoReduction <> BreakTransparencyBinding constr
+R6283:6288 ArcCryptoReduction <> breaks:44 var
+R6292:6296 Corelib.Init.Datatypes <> false constr
+R6339:6376 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+R6339:6376 ArcCryptoReduction <> no_primitive_breaks_implies_all_absent thm
+prf 6469:6513 <> arc_authorized_open_implies_policy_authorized
+binder 6526:6528 <> obj:45
+binder 6530:6532 <> cap:46
+binder 6534:6538 <> state:47
+R6585:6592 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R6578:6580 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R6545:6563 ArcCryptoReduction <> arc_authorized_open def
+R6565:6567 ArcCryptoReduction <> obj:45 var
+R6569:6571 ArcCryptoReduction <> cap:46 var
+R6573:6577 ArcCryptoReduction <> state:47 var
+R6581:6584 Corelib.Init.Datatypes <> true constr
+R6624:6626 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R6593:6615 ArcSecurityGame <> unauthorized_capability def
+R6617:6619 ArcCryptoReduction <> cap:46 var
+R6621:6623 ArcCryptoReduction <> obj:45 var
+R6627:6631 Corelib.Init.Datatypes <> false constr
+R6676:6694 ArcCryptoReduction <> arc_authorized_open def
+R6710:6738 ArcSecurityGame <> no_unauthorized_verified_open thm
+R6710:6738 ArcSecurityGame <> no_unauthorized_verified_open thm
+prf 6788:6827 <> arc_unauthorized_open_attempt_impossible
+binder 6840:6842 <> obj:48
+binder 6844:6846 <> cap:49
+binder 6848:6852 <> state:50
+R6902:6904 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R6859:6887 ArcCryptoReduction <> arc_unauthorized_open_attempt def
+R6889:6891 ArcCryptoReduction <> obj:48 var
+R6893:6895 ArcCryptoReduction <> cap:49 var
+R6897:6901 ArcCryptoReduction <> state:50 var
+R6905:6909 Corelib.Init.Datatypes <> false constr
+R6952:6980 ArcCryptoReduction <> arc_unauthorized_open_attempt def
+R6995:7013 ArcVerify <> verify_open_context def
+R6995:7013 ArcVerify <> verify_open_context def
+R7058:7102 ArcCryptoReduction <> arc_authorized_open_implies_policy_authorized thm
+R7058:7102 ArcCryptoReduction <> arc_authorized_open_implies_policy_authorized thm
+prf 7209:7251 <> arc_context_substitution_attempt_impossible
+binder 7264:7266 <> obj:51
+binder 7268:7270 <> cap:52
+binder 7272:7276 <> state:53
+R7329:7331 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R7283:7314 ArcCryptoReduction <> arc_context_substitution_attempt def
+R7316:7318 ArcCryptoReduction <> obj:51 var
+R7320:7322 ArcCryptoReduction <> cap:52 var
+R7324:7328 ArcCryptoReduction <> state:53 var
+R7332:7336 Corelib.Init.Datatypes <> false constr
+R7379:7410 ArcCryptoReduction <> arc_context_substitution_attempt def
+R7425:7443 ArcVerify <> verify_open_context def
+R7425:7443 ArcVerify <> verify_open_context def
+R7488:7527 ArcVerify <> verify_open_context_implies_object_bound thm
+R7488:7527 ArcVerify <> verify_open_context_implies_object_bound thm
+prf 7632:7671 <> arc_revocation_bypass_attempt_impossible
+binder 7684:7686 <> obj:54
+binder 7688:7690 <> cap:55
+binder 7692:7696 <> state:56
+R7746:7748 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R7703:7731 ArcCryptoReduction <> arc_revocation_bypass_attempt def
+R7733:7735 ArcCryptoReduction <> obj:54 var
+R7737:7739 ArcCryptoReduction <> cap:55 var
+R7741:7745 ArcCryptoReduction <> state:56 var
+R7749:7753 Corelib.Init.Datatypes <> false constr
+R7796:7824 ArcCryptoReduction <> arc_revocation_bypass_attempt def
+R7839:7857 ArcVerify <> verify_open_context def
+R7839:7857 ArcVerify <> verify_open_context def
+R7902:7940 ArcVerify <> verify_open_context_implies_not_revoked thm
+R7902:7940 ArcVerify <> verify_open_context_implies_not_revoked thm
+prf 8057:8105 <> arc_authority_inclusion_bypass_attempt_impossible
+binder 8118:8120 <> obj:57
+binder 8122:8124 <> cap:58
+binder 8126:8130 <> state:59
+R8189:8191 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R8137:8174 ArcCryptoReduction <> arc_authority_inclusion_bypass_attempt def
+R8176:8178 ArcCryptoReduction <> obj:57 var
+R8180:8182 ArcCryptoReduction <> cap:58 var
+R8184:8188 ArcCryptoReduction <> state:59 var
+R8192:8196 Corelib.Init.Datatypes <> false constr
+R8239:8276 ArcCryptoReduction <> arc_authority_inclusion_bypass_attempt def
+R8291:8309 ArcVerify <> verify_open_context def
+R8291:8309 ArcVerify <> verify_open_context def
+R8354:8404 ArcVerify <> verify_open_context_implies_capability_in_authority thm
+R8354:8404 ArcVerify <> verify_open_context_implies_capability_in_authority thm
+prf 8517:8552 <> arc_policy_bypass_attempt_impossible
+binder 8565:8567 <> obj:60
+binder 8569:8571 <> cap:61
+binder 8573:8577 <> state:62
+R8623:8625 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R8584:8608 ArcCryptoReduction <> arc_policy_bypass_attempt def
+R8610:8612 ArcCryptoReduction <> obj:60 var
+R8614:8616 ArcCryptoReduction <> cap:61 var
+R8618:8622 ArcCryptoReduction <> state:62 var
+R8626:8630 Corelib.Init.Datatypes <> false constr
+R8673:8697 ArcCryptoReduction <> arc_policy_bypass_attempt def
+R8712:8730 ArcVerify <> verify_open_context def
+R8712:8730 ArcVerify <> verify_open_context def
+R8775:8816 ArcVerify <> verify_open_context_implies_policy_accepts thm
+R8775:8816 ArcVerify <> verify_open_context_implies_policy_accepts thm
+prf 8923:8977 <> arc_confidentiality_break_without_primitives_impossible
+binder 8990:8992 <> obj:63
+binder 8994:8996 <> cap:64
+binder 8998:9002 <> state:65
+binder 9004:9009 <> breaks:66
+R9081:9083 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9016:9059 ArcCryptoReduction <> arc_confidentiality_break_without_primitives def
+R9061:9063 ArcCryptoReduction <> obj:63 var
+R9065:9067 ArcCryptoReduction <> cap:64 var
+R9069:9073 ArcCryptoReduction <> state:65 var
+R9075:9080 ArcCryptoReduction <> breaks:66 var
+R9084:9088 Corelib.Init.Datatypes <> false constr
+R9138:9181 ArcCryptoReduction <> arc_confidentiality_break_without_primitives def
+R9196:9214 ArcVerify <> verify_open_context def
+R9196:9214 ArcVerify <> verify_open_context def
+R9259:9303 ArcCryptoReduction <> arc_authorized_open_implies_policy_authorized thm
+R9259:9303 ArcCryptoReduction <> arc_authorized_open_implies_policy_authorized thm
+prf 9410:9461 <> arc_verified_open_or_primitive_break_reduction_shape
+binder 9474:9476 <> obj:67
+binder 9478:9480 <> cap:68
+binder 9482:9486 <> state:69
+binder 9488:9493 <> breaks:70
+R9540:9547 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R9533:9535 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9500:9518 ArcVerify <> verify_open_context def
+R9520:9522 ArcCryptoReduction <> obj:67 var
+R9524:9526 ArcCryptoReduction <> cap:68 var
+R9528:9532 ArcCryptoReduction <> state:69 var
+R9536:9539 Corelib.Init.Datatypes <> true constr
+R9586:9593 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R9579:9581 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9548:9570 ArcSecurityGame <> unauthorized_capability def
+R9572:9574 ArcCryptoReduction <> cap:68 var
+R9576:9578 ArcCryptoReduction <> obj:67 var
+R9582:9585 Corelib.Init.Datatypes <> true constr
+R9627:9634 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R9620:9622 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9594:9612 ArcCryptoReduction <> no_primitive_breaks def
+R9614:9619 ArcCryptoReduction <> breaks:70 var
+R9623:9626 Corelib.Init.Datatypes <> true constr
+R9635:9639 Corelib.Init.Logic <> False ind
+R9722:9766 ArcCryptoReduction <> arc_authorized_open_implies_policy_authorized thm
+R9722:9766 ArcCryptoReduction <> arc_authorized_open_implies_policy_authorized thm
+prf 9873:9907 <> arc_context_binding_reduction_shape
+binder 9920:9922 <> obj:71
+binder 9924:9926 <> cap:72
+binder 9928:9932 <> state:73
+binder 9934:9939 <> breaks:74
+R9986:9993 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R9979:9981 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9946:9964 ArcVerify <> verify_open_context def
+R9966:9968 ArcCryptoReduction <> obj:71 var
+R9970:9972 ArcCryptoReduction <> cap:72 var
+R9974:9978 ArcCryptoReduction <> state:73 var
+R9982:9985 Corelib.Init.Datatypes <> true constr
+R10033:10040 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R10025:10027 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R9994:10014 ArcVerify <> object_bound_to_state def
+R10016:10018 ArcCryptoReduction <> obj:71 var
+R10020:10024 ArcCryptoReduction <> state:73 var
+R10028:10032 Corelib.Init.Datatypes <> false constr
+R10074:10081 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R10067:10069 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R10041:10059 ArcCryptoReduction <> no_primitive_breaks def
+R10061:10066 ArcCryptoReduction <> breaks:74 var
+R10070:10073 Corelib.Init.Datatypes <> true constr
+R10082:10086 Corelib.Init.Logic <> False ind
+R10170:10209 ArcVerify <> verify_open_context_implies_object_bound thm
+R10170:10209 ArcVerify <> verify_open_context_implies_object_bound thm
+prf 10307:10336 <> arc_revocation_reduction_shape
+binder 10349:10351 <> obj:75
+binder 10353:10355 <> cap:76
+binder 10357:10361 <> state:77
+binder 10363:10368 <> breaks:78
+R10415:10422 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R10408:10410 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R10375:10393 ArcVerify <> verify_open_context def
+R10395:10397 ArcCryptoReduction <> obj:75 var
+R10399:10401 ArcCryptoReduction <> cap:76 var
+R10403:10407 ArcCryptoReduction <> state:77 var
+R10411:10414 Corelib.Init.Datatypes <> true constr
+R10463:10470 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R10455:10457 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R10423:10444 ArcMerkle <> capability_not_revoked def
+R10446:10448 ArcCryptoReduction <> cap:76 var
+R10450:10454 ArcCryptoReduction <> state:77 var
+R10458:10462 Corelib.Init.Datatypes <> false constr
+R10504:10511 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R10497:10499 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R10471:10489 ArcCryptoReduction <> no_primitive_breaks def
+R10491:10496 ArcCryptoReduction <> breaks:78 var
+R10500:10503 Corelib.Init.Datatypes <> true constr
+R10512:10516 Corelib.Init.Logic <> False ind
+R10600:10638 ArcVerify <> verify_open_context_implies_not_revoked thm
+R10600:10638 ArcVerify <> verify_open_context_implies_not_revoked thm
+prf 10748:10786 <> arc_authority_inclusion_reduction_shape
+binder 10799:10801 <> obj:79
+binder 10803:10805 <> cap:80
+binder 10807:10811 <> state:81
+binder 10813:10818 <> breaks:82
+R10865:10872 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R10858:10860 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R10825:10843 ArcVerify <> verify_open_context def
+R10845:10847 ArcCryptoReduction <> obj:79 var
+R10849:10851 ArcCryptoReduction <> cap:80 var
+R10853:10857 ArcCryptoReduction <> state:81 var
+R10861:10864 Corelib.Init.Datatypes <> true constr
+R10919:10926 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R10911:10913 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R10873:10900 ArcMerkle <> capability_in_authority_root def
+R10902:10904 ArcCryptoReduction <> cap:80 var
+R10906:10910 ArcCryptoReduction <> state:81 var
+R10914:10918 Corelib.Init.Datatypes <> false constr
+R10960:10967 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R10953:10955 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R10927:10945 ArcCryptoReduction <> no_primitive_breaks def
+R10947:10952 ArcCryptoReduction <> breaks:82 var
+R10956:10959 Corelib.Init.Datatypes <> true constr
+R10968:10972 Corelib.Init.Logic <> False ind
+R11056:11106 ArcVerify <> verify_open_context_implies_capability_in_authority thm
+R11056:11106 ArcVerify <> verify_open_context_implies_capability_in_authority thm
+prf 11212:11237 <> arc_policy_reduction_shape
+binder 11250:11252 <> obj:83
+binder 11254:11256 <> cap:84
+binder 11258:11262 <> state:85
+binder 11264:11269 <> breaks:86
+R11316:11323 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R11309:11311 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R11276:11294 ArcVerify <> verify_open_context def
+R11296:11298 ArcCryptoReduction <> obj:83 var
+R11300:11302 ArcCryptoReduction <> cap:84 var
+R11304:11308 ArcCryptoReduction <> state:85 var
+R11312:11315 Corelib.Init.Datatypes <> true constr
+R11354:11361 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R11346:11348 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R11324:11337 ArcPolicy <> policy_accepts def
+R11339:11341 ArcCryptoReduction <> cap:84 var
+R11343:11345 ArcCryptoReduction <> obj:83 var
+R11349:11353 Corelib.Init.Datatypes <> false constr
+R11395:11402 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R11388:11390 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R11362:11380 ArcCryptoReduction <> no_primitive_breaks def
+R11382:11387 ArcCryptoReduction <> breaks:86 var
+R11391:11394 Corelib.Init.Datatypes <> true constr
+R11403:11407 Corelib.Init.Logic <> False ind
+R11490:11531 ArcVerify <> verify_open_context_implies_policy_accepts thm
+R11490:11531 ArcVerify <> verify_open_context_implies_policy_accepts thm
+prf 11640:11704 <> arc_successful_unauthorized_open_requires_failed_assumption_shape
+binder 11717:11719 <> obj:87
+binder 11721:11723 <> cap:88
+binder 11725:11729 <> state:89
+binder 11731:11736 <> breaks:90
+R11783:11790 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R11776:11778 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R11743:11761 ArcVerify <> verify_open_context def
+R11763:11765 ArcCryptoReduction <> obj:87 var
+R11767:11769 ArcCryptoReduction <> cap:88 var
+R11771:11775 ArcCryptoReduction <> state:89 var
+R11779:11782 Corelib.Init.Datatypes <> true constr
+R11829:11836 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R11822:11824 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R11791:11813 ArcSecurityGame <> unauthorized_capability def
+R11815:11817 ArcCryptoReduction <> cap:88 var
+R11819:11821 ArcCryptoReduction <> obj:87 var
+R11825:11828 Corelib.Init.Datatypes <> true constr
+R11874:11881 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R11867:11869 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R11837:11849 ArcCryptoReduction <> break_in_list def
+R11851:11859 ArcCryptoReduction <> BreakAEAD constr
+R11861:11866 ArcCryptoReduction <> breaks:90 var
+R11870:11873 Corelib.Init.Datatypes <> true constr
+R11918:11925 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R11911:11913 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R11882:11894 ArcCryptoReduction <> break_in_list def
+R11896:11903 ArcCryptoReduction <> BreakKEM constr
+R11905:11910 ArcCryptoReduction <> breaks:90 var
+R11914:11917 Corelib.Init.Datatypes <> true constr
+R11963:11970 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R11956:11958 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R11926:11938 ArcCryptoReduction <> break_in_list def
+R11940:11948 ArcCryptoReduction <> BreakHKDF constr
+R11950:11955 ArcCryptoReduction <> breaks:90 var
+R11959:11962 Corelib.Init.Datatypes <> true constr
+R12013:12020 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R12006:12008 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R11971:11983 ArcCryptoReduction <> break_in_list def
+R11985:11998 ArcCryptoReduction <> BreakSignature constr
+R12000:12005 ArcCryptoReduction <> breaks:90 var
+R12009:12012 Corelib.Init.Datatypes <> true constr
+R12065:12072 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R12058:12060 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R12021:12033 ArcCryptoReduction <> break_in_list def
+R12035:12050 ArcCryptoReduction <> BreakHashBinding constr
+R12052:12057 ArcCryptoReduction <> breaks:90 var
+R12061:12064 Corelib.Init.Datatypes <> true constr
+R12119:12126 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R12112:12114 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R12073:12085 ArcCryptoReduction <> break_in_list def
+R12087:12104 ArcCryptoReduction <> BreakMerkleBinding constr
+R12106:12111 ArcCryptoReduction <> breaks:90 var
+R12115:12118 Corelib.Init.Datatypes <> true constr
+R12179:12186 Corelib.Init.Logic <> ::type_scope:x_'\/'_x not
+R12172:12174 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R12127:12139 ArcCryptoReduction <> break_in_list def
+R12141:12164 ArcCryptoReduction <> BreakTransparencyBinding constr
+R12166:12171 ArcCryptoReduction <> breaks:90 var
+R12175:12178 Corelib.Init.Datatypes <> true constr
+R12187:12191 Corelib.Init.Logic <> False ind
+R12262:12306 ArcCryptoReduction <> arc_authorized_open_implies_policy_authorized thm
+R12262:12306 ArcCryptoReduction <> arc_authorized_open_implies_policy_authorized thm
+prf 12413:12456 <> arc_no_auth_bypass_under_no_primitive_breaks
+binder 12469:12471 <> obj:91
+binder 12473:12475 <> cap:92
+binder 12477:12481 <> state:93
+binder 12483:12488 <> breaks:94
+R12528:12535 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R12521:12523 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R12495:12513 ArcCryptoReduction <> no_primitive_breaks def
+R12515:12520 ArcCryptoReduction <> breaks:94 var
+R12524:12527 Corelib.Init.Datatypes <> true constr
+R12587:12594 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R12579:12581 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R12536:12564 ArcCryptoReduction <> arc_unauthorized_open_attempt def
+R12566:12568 ArcCryptoReduction <> obj:91 var
+R12570:12572 ArcCryptoReduction <> cap:92 var
+R12574:12578 ArcCryptoReduction <> state:93 var
+R12582:12586 Corelib.Init.Datatypes <> false constr
+R12649:12656 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R12641:12643 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R12595:12626 ArcCryptoReduction <> arc_context_substitution_attempt def
+R12628:12630 ArcCryptoReduction <> obj:91 var
+R12632:12634 ArcCryptoReduction <> cap:92 var
+R12636:12640 ArcCryptoReduction <> state:93 var
+R12644:12648 Corelib.Init.Datatypes <> false constr
+R12708:12715 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R12700:12702 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R12657:12685 ArcCryptoReduction <> arc_revocation_bypass_attempt def
+R12687:12689 ArcCryptoReduction <> obj:91 var
+R12691:12693 ArcCryptoReduction <> cap:92 var
+R12695:12699 ArcCryptoReduction <> state:93 var
+R12703:12707 Corelib.Init.Datatypes <> false constr
+R12776:12783 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R12768:12770 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R12716:12753 ArcCryptoReduction <> arc_authority_inclusion_bypass_attempt def
+R12755:12757 ArcCryptoReduction <> obj:91 var
+R12759:12761 ArcCryptoReduction <> cap:92 var
+R12763:12767 ArcCryptoReduction <> state:93 var
+R12771:12775 Corelib.Init.Datatypes <> false constr
+R12831:12838 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R12823:12825 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R12784:12808 ArcCryptoReduction <> arc_policy_bypass_attempt def
+R12810:12812 ArcCryptoReduction <> obj:91 var
+R12814:12816 ArcCryptoReduction <> cap:92 var
+R12818:12822 ArcCryptoReduction <> state:93 var
+R12826:12830 Corelib.Init.Datatypes <> false constr
+R12904:12906 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R12839:12882 ArcCryptoReduction <> arc_confidentiality_break_without_primitives def
+R12884:12886 ArcCryptoReduction <> obj:91 var
+R12888:12890 ArcCryptoReduction <> cap:92 var
+R12892:12896 ArcCryptoReduction <> state:93 var
+R12898:12903 ArcCryptoReduction <> breaks:94 var
+R12907:12911 Corelib.Init.Datatypes <> false constr
+R12990:13029 ArcCryptoReduction <> arc_unauthorized_open_attempt_impossible thm
+R12990:13029 ArcCryptoReduction <> arc_unauthorized_open_attempt_impossible thm
+R13042:13084 ArcCryptoReduction <> arc_context_substitution_attempt_impossible thm
+R13042:13084 ArcCryptoReduction <> arc_context_substitution_attempt_impossible thm
+R13097:13136 ArcCryptoReduction <> arc_revocation_bypass_attempt_impossible thm
+R13097:13136 ArcCryptoReduction <> arc_revocation_bypass_attempt_impossible thm
+R13149:13197 ArcCryptoReduction <> arc_authority_inclusion_bypass_attempt_impossible thm
+R13149:13197 ArcCryptoReduction <> arc_authority_inclusion_bypass_attempt_impossible thm
+R13210:13245 ArcCryptoReduction <> arc_policy_bypass_attempt_impossible thm
+R13210:13245 ArcCryptoReduction <> arc_policy_bypass_attempt_impossible thm
+R13258:13312 ArcCryptoReduction <> arc_confidentiality_break_without_primitives_impossible thm
+R13258:13312 ArcCryptoReduction <> arc_confidentiality_break_without_primitives_impossible thm

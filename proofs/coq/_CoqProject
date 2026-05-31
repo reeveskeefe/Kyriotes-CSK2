@@ -8,3 +8,4 @@ ArcSecurityGame.v
 ArcTheorems.v
 ArcStressProofs.v
 ArcDelegationProofs.v
+ArcCryptoReduction.v

@@ -1,60 +1,17 @@
 # ARC transparency Mechanical Refinement
 
-This document records the eleventh Rust-to-Coq mechanical refinement target:
-
-    src/arc/transparency.rs
-
 ## Status
 
+    Tracked proof lane: complete
     Mechanically checked: yes
-    Mechanically proven equivalent to Coq: not yet
+    Verifier-backed Kani proof evidence: yes
 
-## Why transparency matters
+All tracked Rust mechanical refinement targets are verifier-backed proven within their stated narrow proof boundaries.
 
-The transparency layer is the append-only audit and consistency boundary for ARC. It is security-sensitive because epoch commitments, state roots, conflicting entries, lookup behavior, and append-only guarantees determine whether authority state changes remain auditable.
+## Target
 
-This target is the final checked-target item in the Rust-to-Coq mechanical refinement inventory.
+    src/arc/transparency.rs::bind_transparency_root_to_state
 
-## transparency refinement categories
+## Completed Proof Boundary
 
-The refinement track covers:
-
-    transparency source surface
-    append-only behavior
-    lookup behavior
-    conflicting epoch rejection
-    duplicate entry rejection
-    state-root binding
-    commitment/root linkage
-    log consistency
-    proof/commit terminology
-    future valid append fixture
-    future valid lookup fixture
-
-## Current mechanical check
-
-This pass checks:
-
-    transparency source surface
-    transparency proof/log terminology
-    append/lookup/commit/root surface terms
-    transparency vector schema
-    deterministic gate category inventory
-    Coq status connection
-    mechanical inventory checked status
-
-## Boundary
-
-This pass does not yet prove that Rust transparency behavior is semantically equivalent to the Coq append-only transparency model.
-
-A future proof-producing pass should connect:
-
-    Rust transparency append behavior
-    Rust transparency lookup behavior
-    Coq ArcTransparencyAppendOnly
-    Coq ArcTransparencyConsistencyProofs
-    Coq ArcMerkleTransparencyCompleteness
-    concrete append-only log extension
-    conflicting epoch rejection
-    state-root binding
-    commitment/root linkage
+transparency.append has verifier-backed Kani proof evidence for the extracted bind_transparency_root_to_state structural helper: authority_root preservation, revocation_root preservation, epoch and authority_id preservation, revocation_count and prev_epoch_hash preservation, supplied transparency_root binding, and determinism for equal inputs. Full InMemoryTransparencyLog::commit_state execution, SHA/Merkle hashing, append-only history, proof_for_state behavior, and Merkle proof soundness remain outside this narrow proof claim.

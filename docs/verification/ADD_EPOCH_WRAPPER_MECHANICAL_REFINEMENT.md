@@ -1,59 +1,19 @@
 # ARC add_epoch_wrapper Mechanical Refinement
 
-This document records the seventh Rust-to-Coq mechanical refinement target:
-
-    src/arc/engine.rs::add_epoch_wrapper
-
 ## Status
 
+    Tracked proof lane: complete
     Mechanically checked: yes
-    Mechanically proven equivalent to Coq: not yet
+    Verifier-backed Kani proof evidence: yes
 
-## Why add_epoch_wrapper matters
+All tracked Rust mechanical refinement targets are verifier-backed proven within their stated narrow proof boundaries.
 
-add_epoch_wrapper is the rewrap/epoch-wrapper boundary. It is security-sensitive because an ARC object may gain an additional epoch wrapper only when the previous authorization state, next authorization state, capability proof, transparency proof, and recipient key material line up correctly.
+## Target
 
-This target comes after seal and open because wrapper addition depends on the sealed object lifecycle and the authorization model.
+    src/arc/engine.rs::add_epoch_wrapper_with_verifier
 
-## add_epoch_wrapper refinement categories
+## Completed Proof Boundary
 
-The refinement track covers:
+add_epoch_wrapper_with_verifier has verifier-backed Kani proof evidence for fail-closed authority-verifier behavior: authority rejection propagation, deterministic rejection, rejection before capability validation can succeed, and wrapper-count preservation on rejection.
 
-    recipient secret key requirement
-    recipient public key requirement
-    mutable ARC object requirement
-    capability requirement
-    capability proof requirement
-    previous authority state requirement
-    next authority state requirement
-    transparency proof requirement
-    epoch regression rejection
-    wrapper binding preservation
-    future rewrap round-trip fixture
-
-## Current mechanical check
-
-This pass checks:
-
-    add_epoch_wrapper source surface
-    add_epoch_wrapper symbol presence
-    expected API surface terms
-    epoch-wrapper vector schema
-    deterministic gate category inventory
-    Coq status connection
-    mechanical inventory checked status
-
-## Boundary
-
-This pass does not yet prove that Rust add_epoch_wrapper is semantically equivalent to the Coq rewrap/epoch-wrapper model.
-
-A future proof-producing pass should connect:
-
-    Rust add_epoch_wrapper
-    Coq ArcStateMachineCompleteness
-    Coq ArcLifecycleProofs
-    concrete old authority state
-    concrete new authority state
-    concrete wrapper addition
-    no epoch regression
-    wrapper binding preservation
+This lane proves selected implementation-level rejection behavior. Full cryptographic rewrap equivalence, full wrapper binding preservation for successful rewraps, and full seal/verify/add_epoch_wrapper/open lifecycle equivalence remain outside this narrow proof claim.

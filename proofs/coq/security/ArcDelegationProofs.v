@@ -1,0 +1,319 @@
+From Stdlib Require Import List Bool Arith.PeanoNat Lia.
+Import ListNotations.
+From ArcProofs Require Import ArcTypes ArcMerkle ArcAuthority ArcPolicy ArcVerify ArcSecurityGame ArcTheorems ArcStressProofs.
+
+Definition MAX_DELEGATION_DEPTH : nat := 255.
+
+Definition nonzero_stamp (stamp : nat) : bool :=
+  negb (Nat.eqb stamp 0).
+
+Definition depth_within_limit (depth : nat) : bool :=
+  Nat.leb depth MAX_DELEGATION_DEPTH.
+
+Definition rights_subset (child parent : Rights) : bool :=
+  Nat.eqb (Nat.land child parent) child.
+
+Definition epoch_window_subset
+  (child_start child_end parent_start parent_end : Epoch) : bool :=
+  Nat.leb parent_start child_start &&
+  Nat.leb child_end parent_end.
+
+Definition delegated_capability_shape_valid (cap : Capability) : bool :=
+  nonzero_stamp (cap_parent_stamp cap) &&
+  depth_within_limit (cap_delegation_depth cap).
+
+Definition delegation_constraints_hold (child parent : Capability) : bool :=
+  Nat.eqb (cap_parent_stamp child) (cap_stamp parent) &&
+  rights_subset (cap_rights child) (cap_rights parent) &&
+  epoch_window_subset
+    (cap_epoch_start child)
+    (cap_epoch_end child)
+    (cap_epoch_start parent)
+    (cap_epoch_end parent) &&
+  depth_within_limit (cap_delegation_depth child).
+
+Theorem stress_zero_parent_stamp_rejects_delegated_shape :
+  forall cap,
+    cap_parent_stamp cap = 0 ->
+    delegated_capability_shape_valid cap = false.
+Proof.
+  intros cap H.
+  unfold delegated_capability_shape_valid.
+  unfold nonzero_stamp.
+  rewrite H.
+  simpl.
+  reflexivity.
+Qed.
+
+Theorem stress_depth_above_limit_rejects_delegated_shape :
+  forall cap,
+    MAX_DELEGATION_DEPTH < cap_delegation_depth cap ->
+    delegated_capability_shape_valid cap = false.
+Proof.
+  intros cap H.
+  unfold delegated_capability_shape_valid.
+  unfold depth_within_limit.
+  destruct (nonzero_stamp (cap_parent_stamp cap)); simpl.
+  - apply Nat.leb_gt. exact H.
+  - reflexivity.
+Qed.
+
+Theorem stress_valid_delegated_shape_implies_nonzero_parent_stamp :
+  forall cap,
+    delegated_capability_shape_valid cap = true ->
+    cap_parent_stamp cap <> 0.
+Proof.
+  intros cap H.
+  unfold delegated_capability_shape_valid in H.
+  apply andb_true_iff in H.
+  destruct H as [H_stamp _].
+  unfold nonzero_stamp in H_stamp.
+  apply negb_true_iff in H_stamp.
+  apply Nat.eqb_neq in H_stamp.
+  exact H_stamp.
+Qed.
+
+Theorem stress_valid_delegated_shape_implies_depth_limit :
+  forall cap,
+    delegated_capability_shape_valid cap = true ->
+    cap_delegation_depth cap <= MAX_DELEGATION_DEPTH.
+Proof.
+  intros cap H.
+  unfold delegated_capability_shape_valid in H.
+  apply andb_true_iff in H.
+  destruct H as [_ H_depth].
+  unfold depth_within_limit in H_depth.
+  apply Nat.leb_le in H_depth.
+  exact H_depth.
+Qed.
+
+Theorem stress_parent_stamp_mismatch_rejects_delegation :
+  forall child parent,
+    cap_parent_stamp child <> cap_stamp parent ->
+    delegation_constraints_hold child parent = false.
+Proof.
+  intros child parent H.
+  unfold delegation_constraints_hold.
+  apply Nat.eqb_neq in H.
+  rewrite H.
+  reflexivity.
+Qed.
+
+Theorem stress_rights_escalation_rejects_delegation :
+  forall child parent,
+    Nat.land (cap_rights child) (cap_rights parent) <> cap_rights child ->
+    delegation_constraints_hold child parent = false.
+Proof.
+  intros child parent H.
+  unfold delegation_constraints_hold.
+  destruct (Nat.eqb (cap_parent_stamp child) (cap_stamp parent)); simpl.
+  - unfold rights_subset.
+    apply Nat.eqb_neq in H.
+    rewrite H.
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem stress_child_epoch_starts_before_parent_rejects_delegation :
+  forall child parent,
+    cap_epoch_start child < cap_epoch_start parent ->
+    delegation_constraints_hold child parent = false.
+Proof.
+  intros child parent H.
+  unfold delegation_constraints_hold.
+  destruct (Nat.eqb (cap_parent_stamp child) (cap_stamp parent)); simpl.
+  - destruct (rights_subset (cap_rights child) (cap_rights parent)); simpl.
+    + unfold epoch_window_subset.
+      assert (Nat.leb (cap_epoch_start parent) (cap_epoch_start child) = false) as H_start.
+      { apply Nat.leb_gt. exact H. }
+      rewrite H_start.
+      reflexivity.
+    + reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem stress_child_epoch_ends_after_parent_rejects_delegation :
+  forall child parent,
+    cap_epoch_end parent < cap_epoch_end child ->
+    delegation_constraints_hold child parent = false.
+Proof.
+  intros child parent H.
+  unfold delegation_constraints_hold.
+  destruct (Nat.eqb (cap_parent_stamp child) (cap_stamp parent)); simpl.
+  - destruct (rights_subset (cap_rights child) (cap_rights parent)); simpl.
+    + unfold epoch_window_subset.
+      destruct (Nat.leb (cap_epoch_start parent) (cap_epoch_start child)); simpl.
+      * assert (Nat.leb (cap_epoch_end child) (cap_epoch_end parent) = false) as H_end.
+        { apply Nat.leb_gt. exact H. }
+        rewrite H_end.
+        reflexivity.
+      * reflexivity.
+    + reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem stress_child_depth_above_limit_rejects_delegation :
+  forall child parent,
+    MAX_DELEGATION_DEPTH < cap_delegation_depth child ->
+    delegation_constraints_hold child parent = false.
+Proof.
+  intros child parent H.
+  unfold delegation_constraints_hold.
+  destruct (Nat.eqb (cap_parent_stamp child) (cap_stamp parent)); simpl.
+  - destruct (rights_subset (cap_rights child) (cap_rights parent)); simpl.
+    + destruct (epoch_window_subset
+          (cap_epoch_start child)
+          (cap_epoch_end child)
+          (cap_epoch_start parent)
+          (cap_epoch_end parent)); simpl.
+      * unfold depth_within_limit.
+        apply Nat.leb_gt.
+        exact H.
+      * reflexivity.
+    + reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem stress_valid_delegation_implies_parent_stamp_binding :
+  forall child parent,
+    delegation_constraints_hold child parent = true ->
+    cap_parent_stamp child = cap_stamp parent.
+Proof.
+  intros child parent H.
+  unfold delegation_constraints_hold in H.
+  repeat rewrite andb_true_iff in H.
+  destruct H as [[[H_stamp H_rights] H_window] H_depth].
+  apply Nat.eqb_eq.
+  exact H_stamp.
+Qed.
+
+Theorem stress_valid_delegation_implies_rights_subset :
+  forall child parent,
+    delegation_constraints_hold child parent = true ->
+    Nat.land (cap_rights child) (cap_rights parent) = cap_rights child.
+Proof.
+  intros child parent H.
+  unfold delegation_constraints_hold in H.
+  repeat rewrite andb_true_iff in H.
+  destruct H as [[[H_stamp H_rights] H_window] H_depth].
+  unfold rights_subset in H_rights.
+  apply Nat.eqb_eq.
+  exact H_rights.
+Qed.
+
+Theorem stress_valid_delegation_implies_epoch_subset :
+  forall child parent,
+    delegation_constraints_hold child parent = true ->
+    cap_epoch_start parent <= cap_epoch_start child /\
+    cap_epoch_end child <= cap_epoch_end parent.
+Proof.
+  intros child parent H.
+  unfold delegation_constraints_hold in H.
+  repeat rewrite andb_true_iff in H.
+  destruct H as [[[H_stamp H_rights] H_window] H_depth].
+  unfold epoch_window_subset in H_window.
+  apply andb_true_iff in H_window.
+  destruct H_window as [H_start H_end].
+  apply Nat.leb_le in H_start.
+  apply Nat.leb_le in H_end.
+  split; assumption.
+Qed.
+
+Theorem stress_valid_delegation_implies_depth_limit :
+  forall child parent,
+    delegation_constraints_hold child parent = true ->
+    cap_delegation_depth child <= MAX_DELEGATION_DEPTH.
+Proof.
+  intros child parent H.
+  unfold delegation_constraints_hold in H.
+  repeat rewrite andb_true_iff in H.
+  destruct H as [[[H_stamp H_rights] H_window] H_depth].
+  unfold depth_within_limit in H_depth.
+  apply Nat.leb_le in H_depth.
+  exact H_depth.
+Qed.
+
+Theorem stress_delegation_rights_escalation_contradiction :
+  forall child parent,
+    delegation_constraints_hold child parent = true ->
+    Nat.land (cap_rights child) (cap_rights parent) <> cap_rights child ->
+    False.
+Proof.
+  intros child parent H_valid H_bad.
+  pose proof (stress_valid_delegation_implies_rights_subset child parent H_valid) as H_subset.
+  contradiction.
+Qed.
+
+Theorem stress_delegation_epoch_start_expansion_contradiction :
+  forall child parent,
+    delegation_constraints_hold child parent = true ->
+    cap_epoch_start child < cap_epoch_start parent ->
+    False.
+Proof.
+  intros child parent H_valid H_bad.
+  pose proof (stress_valid_delegation_implies_epoch_subset child parent H_valid) as [H_start _].
+  lia.
+Qed.
+
+Theorem stress_delegation_epoch_end_expansion_contradiction :
+  forall child parent,
+    delegation_constraints_hold child parent = true ->
+    cap_epoch_end parent < cap_epoch_end child ->
+    False.
+Proof.
+  intros child parent H_valid H_bad.
+  pose proof (stress_valid_delegation_implies_epoch_subset child parent H_valid) as [_ H_end].
+  lia.
+Qed.
+
+Theorem stress_delegation_depth_overflow_contradiction :
+  forall child parent,
+    delegation_constraints_hold child parent = true ->
+    MAX_DELEGATION_DEPTH < cap_delegation_depth child ->
+    False.
+Proof.
+  intros child parent H_valid H_bad.
+  pose proof (stress_valid_delegation_implies_depth_limit child parent H_valid) as H_depth.
+  lia.
+Qed.
+
+Theorem stress_valid_delegation_and_verified_open_preserves_authorization :
+  forall obj child parent state,
+    delegation_constraints_hold child parent = true ->
+    verify_open_context obj child state = true ->
+    capability_in_authority_root child state = true /\
+    capability_not_revoked child state = true /\
+    policy_accepts child obj = true /\
+    object_bound_to_state obj state = true /\
+    authority_state_valid state = true /\
+    Nat.land (cap_rights child) (cap_rights parent) = cap_rights child /\
+    cap_epoch_start parent <= cap_epoch_start child /\
+    cap_epoch_end child <= cap_epoch_end parent /\
+    cap_delegation_depth child <= MAX_DELEGATION_DEPTH.
+Proof.
+  intros obj child parent state H_delegation H_open.
+  pose proof (arc_verified_open_safety obj child state H_open)
+    as [H_inclusion [H_not_revoked [H_policy [H_bound H_authority]]]].
+  pose proof (stress_valid_delegation_implies_rights_subset child parent H_delegation) as H_rights_subset.
+  pose proof (stress_valid_delegation_implies_epoch_subset child parent H_delegation) as [H_start H_end].
+  pose proof (stress_valid_delegation_implies_depth_limit child parent H_delegation) as H_depth.
+  repeat split; assumption.
+Qed.
+
+Theorem stress_any_delegation_mutation_rejects_delegation :
+  forall child parent,
+    cap_parent_stamp child <> cap_stamp parent \/
+    Nat.land (cap_rights child) (cap_rights parent) <> cap_rights child \/
+    cap_epoch_start child < cap_epoch_start parent \/
+    cap_epoch_end parent < cap_epoch_end child \/
+    MAX_DELEGATION_DEPTH < cap_delegation_depth child ->
+    delegation_constraints_hold child parent = false.
+Proof.
+  intros child parent H.
+  destruct H as [H_stamp | [H_rights | [H_start | [H_end | H_depth]]]].
+  - apply stress_parent_stamp_mismatch_rejects_delegation. exact H_stamp.
+  - apply stress_rights_escalation_rejects_delegation. exact H_rights.
+  - apply stress_child_epoch_starts_before_parent_rejects_delegation. exact H_start.
+  - apply stress_child_epoch_ends_after_parent_rejects_delegation. exact H_end.
+  - apply stress_child_depth_above_limit_rejects_delegation. exact H_depth.
+Qed.

@@ -2,15 +2,15 @@
 
 ARC now has machine-checked Coq closure for the current abstract protocol, design-model, state-machine, Merkle/transparency, and symbolic crypto-reduction checklists.
 
-This document defines the next verification layer: Rust-to-Coq refinement evidence.
+ARC's tracked Rust mechanical refinement inventory is complete at 11 / 11 verifier-backed proof lanes, with each lane scoped and recorded by explicit proof-boundary language.
 
 ## Purpose
 
 The Coq model proves ARC's protocol rules at the abstract design level. Rust-to-Coq refinement evidence tracks how the actual Rust implementation relates to those Coq concepts.
 
-This is not the same as full implementation-level formal verification.
+The tracked Rust mechanical refinement inventory is now complete. All 11 declared targets have mechanical check coverage and verifier-backed Kani proof evidence within their recorded proof boundaries. These proof lanes cover bounded parser rejection, encoding surface stability, context transcript binding, fail-closed engine behavior, epoch transition structure, transparency commit failure boundaries, transparency-root state binding, and selected capability-tree non-revocation behavior.
 
-The goal of this layer is to make each Rust implementation surface explicit, map it to the Coq model, and attach executable evidence that the Rust behavior matches the intended model behavior for deterministic witness cases.
+This milestone should not be read as full end-to-end cryptographic verification of ARC. Several completed lanes intentionally prove narrowed implementation properties rather than full protocol semantics. In particular, full SHA/Merkle soundness, full capability-tree non-empty witness soundness, full encode/decode canonical round-trip equivalence, and full seal/open cryptographic semantic equivalence remain future verification-expansion targets.
 
 ## Refinement Levels
 
@@ -40,68 +40,42 @@ This is stronger than executable witness evidence, but still not a full proof.
 
 ### MechanicallyRefined
 
-The Rust symbol is mechanically proven to refine the Coq model through a verification toolchain, extraction bridge, verified subset, or proof-carrying artifact.
+The Rust symbol is mechanically checked by a repeatable verifier-backed or proof-producing path within a stated proof boundary.
 
-This is the target state for full implementation-level verification.
+For the current tracked Rust mechanical refinement inventory:
 
-## Current Boundary
+    Mechanically checked targets: 11 / 11
+    Verifier-backed proven targets: 11 / 11
 
-ARC currently claims:
+All tracked Rust mechanical refinement targets are verifier-backed proven within their stated narrow proof boundaries.
 
-    Rust-to-Coq refinement evidence exists.
+## Tracked Mechanical Targets
 
-ARC does not yet claim:
-
-    The Rust implementation is mechanically proven equivalent to the Coq model.
-
-## Initial Refinement Targets
-
-| Rust file | Rust symbol | Coq concept |
-|---|---|---|
-| src/encoding/codec.rs | decode_arc_object | encoding safety and object decoding model |
-| src/encoding/codec.rs | encode_arc_object | canonical object encoding model |
-| src/arc/model.rs | context_hash | context/AAD/transcript binding |
-| src/arc/engine.rs | seal | lifecycle seal transition |
-| src/arc/engine.rs | open | lifecycle open transition and master invariant |
-| src/arc/engine.rs | verify | verification gate composition |
-| src/arc/engine.rs | add_epoch_wrapper | rewrap/epoch wrapper transition |
-| src/arc/engine.rs | open_and_reseal | open followed by reseal lifecycle transition |
-| src/arc/engine.rs | rotate_epoch | authority epoch transition |
-| src/arc/engine.rs | rotate_epoch_full | authority epoch transition with transparency state |
-| src/arc/capability_tree.rs | capability tree verification | Merkle membership/revocation model |
-| src/arc/transparency.rs | transparency append/lookup | append-only transparency model |
-| src/arc/authority.rs | verify_compromise_notice | compromise notice validation model |
-| src/core/temporal.rs | TemporalPolicy | temporal policy acceptance model |
-
-## Evidence JSON
-
-The refinement scanner writes:
-
-    tests/refinement/rust_coq_refinement_evidence.json
-
-Each entry contains:
-
-    id
-    rust_file
-    rust_symbol
-    coq_concept
-    refinement_level
-    source_present
-    symbol_present
-    coq_witness
-    notes
+| Rust surface | Completed lane |
+|---|---|
+| src/encoding/codec.rs::decode_arc_object | bounded malformed-input parser rejection |
+| src/encoding/codec.rs::encode_arc_object | selected encoding surface stability |
+| src/arc/model.rs::context_hash | transcript-model binding checks |
+| src/arc/engine.rs::verify_with_verifier | fail-closed authority rejection behavior |
+| src/arc/engine.rs::seal_with_verifier | fail-closed authority rejection behavior |
+| src/arc/engine.rs::open_with_verifier | fail-closed authority rejection behavior |
+| src/arc/engine.rs::add_epoch_wrapper_with_verifier | fail-closed wrapper rejection behavior |
+| src/arc/engine.rs::rotated_authority_state | extracted epoch transition structure |
+| src/arc/engine.rs::begin_epoch_rotation_commit | extracted rotate_epoch_full commit/finalization boundary |
+| src/arc/capability_tree.rs::verify_non_revocation | selected empty-set non-revocation behavior |
+| src/arc/transparency.rs::bind_transparency_root_to_state | extracted transparency-root state binding |
 
 ## Coq Evidence Layer
 
 The Coq evidence layer is:
 
-    proofs/coq/ArcRustRefinementEvidence.v
+    proofs/coq/rust_refinement/ArcRustRefinementEvidence.v
 
-It defines a checklist for the refinement evidence surface and proves that the current evidence layer is closed at the executable-witness level.
+It defines the refinement evidence surface and records the current executable evidence layer. The Rust mechanical refinement inventory closure is tracked separately by the generated refinement inventory and the Kani proof-status artifacts.
 
 ## CI Recommendation
 
-A complete verification CI job should run:
+A verification CI job should run:
 
     cargo test
     cargo +nightly fuzz build fuzz_decode_arc_object
@@ -109,3 +83,10 @@ A complete verification CI job should run:
     ./proofs/coq/check.sh
 
 The evidence layer should be considered stale if Rust symbols change without updating the refinement evidence map.
+
+## Next Verification Expansion Targets
+
+1. Full transparency append and Merkle soundness.
+2. Capability-tree non-empty witness and Merkle-path soundness.
+3. Encode/decode canonical round-trip equivalence.
+4. Seal/open cryptographic semantic equivalence over a model crypto backend.

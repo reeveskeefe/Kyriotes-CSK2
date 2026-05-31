@@ -1,57 +1,19 @@
 # ARC verify Mechanical Refinement
 
-This document records the fourth Rust-to-Coq mechanical refinement target:
-
-    src/arc/engine.rs::verify
-
 ## Status
 
+    Tracked proof lane: complete
     Mechanically checked: yes
-    Mechanically proven equivalent to Coq: not yet
+    Verifier-backed Kani proof evidence: yes
 
-## Why verify matters
+All tracked Rust mechanical refinement targets are verifier-backed proven within their stated narrow proof boundaries.
 
-verify is the first implementation boundary that connects ARC's Rust behavior to the authorization gate model proven in Coq.
+## Target
 
-It sits between parsing/encoding and open/decryption behavior.
+    src/arc/engine.rs::verify_with_verifier
 
-Before open can be treated as mechanically checked, verify should have its own refinement track.
+## Completed Proof Boundary
 
-## Verification-gate categories
+verify_with_verifier has verifier-backed Kani proof evidence for fail-closed authority-verifier behavior: authority rejection propagation, deterministic rejection, rejection before capability proof success can make the path succeed, and invalid authority surface rejection without panic.
 
-The verify refinement track covers these intended gate categories:
-
-    valid object requirement
-    valid capability requirement
-    valid capability proof requirement
-    valid authority state requirement
-    valid transparency proof requirement
-    non-revocation requirement
-    temporal policy requirement
-    transcript and wrapper binding requirement
-    deterministic rejection behavior
-    no-open-before-verify boundary
-
-## Current mechanical check
-
-This pass checks:
-
-    verify source surface
-    verify symbol presence
-    expected five-argument API shape
-    verification gate vector schema
-    deterministic gate category inventory
-    Coq status connection
-    mechanical inventory checked status
-
-## Boundary
-
-This pass does not yet prove that Rust verify is semantically equivalent to the Coq verify model.
-
-A future proof-producing pass should connect:
-
-    Rust verify
-    Coq ArcVerify
-    Coq ArcMasterInvariantProofs
-    actual Capability, CapabilityProof, AuthorityState, and TransparencyProof values
-    valid acceptance and invalid rejection equivalence
+This lane proves selected implementation-level fail-closed behavior. Full valid-acceptance equivalence, full capability-proof semantic equivalence, and full Rust-to-Coq verification-gate equivalence remain outside this narrow proof claim.

@@ -1,58 +1,19 @@
 # ARC capability_tree Mechanical Refinement
 
-This document records the tenth Rust-to-Coq mechanical refinement target:
-
-    src/arc/capability_tree.rs
-
 ## Status
 
+    Tracked proof lane: complete
     Mechanically checked: yes
-    Mechanically proven equivalent to Coq: not yet
+    Verifier-backed Kani proof evidence: yes
 
-## Why capability_tree matters
+All tracked Rust mechanical refinement targets are verifier-backed proven within their stated narrow proof boundaries.
 
-The capability tree is the Merkle-style authorization proof boundary for ARC. It is security-sensitive because membership, revocation, non-revocation, sibling ordering, root binding, and proof tampering directly affect whether a capability is accepted or rejected.
+## Target
 
-This target comes after the engine lifecycle and epoch-rotation targets because capability-tree proof behavior is one of the remaining low-level authorization proof surfaces.
+    src/arc/capability_tree.rs::verify_non_revocation
 
-## capability_tree refinement categories
+## Completed Proof Boundary
 
-The refinement track covers:
+capability_tree.proofs has verifier-backed Kani proof evidence for verify_non_revocation empty-set witness behavior: empty revocation set acceptance under zero root, rejection under non-zero root, rejection when witness.total_revoked disagrees with the authenticated revocation_count, and deterministic acceptance/rejection for equal inputs.
 
-    capability proof surface
-    membership proof surface
-    revocation witness surface
-    non-revocation witness surface
-    Merkle sibling/path terminology
-    root mismatch rejection track
-    tampered proof rejection track
-    sibling ordering track
-    empty proof rejection track
-    valid proof fixture reserved
-
-## Current mechanical check
-
-This pass checks:
-
-    capability_tree source surface
-    capability_tree proof terminology
-    Merkle/path/root/sibling surface terms
-    capability tree vector schema
-    deterministic gate category inventory
-    Coq status connection
-    mechanical inventory checked status
-
-## Boundary
-
-This pass does not yet prove that Rust capability_tree behavior is semantically equivalent to the Coq concrete Merkle/capability model.
-
-A future proof-producing pass should connect:
-
-    Rust capability_tree proof verification
-    Coq ArcConcreteMerkleProofs
-    Coq ArcMerkleConcreteTree
-    Coq ArcMerkleTransparencyCompleteness
-    concrete membership proofs
-    concrete non-revocation witnesses
-    root mismatch rejection
-    sibling-order preservation
+Full Merkle path soundness, non-empty boundary witnesses, issuance-signature verification, and full capability-tree semantic equivalence remain outside this narrow proof claim.

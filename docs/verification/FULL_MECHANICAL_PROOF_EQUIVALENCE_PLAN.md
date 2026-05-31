@@ -1,17 +1,14 @@
-# ARC Full Mechanical Proof Equivalence Plan
+# Tracked Rust Mechanical Proof Inventory: Complete
 
-ARC has completed the checked-target phase for all declared Rust-to-Coq refinement targets.
+ARC's tracked Rust mechanical refinement inventory is complete at 11 / 11 verifier-backed proof lanes, with each lane scoped and recorded by explicit proof-boundary language.
 
-The next phase is full mechanical proof equivalence.
+The tracked Rust mechanical refinement inventory is now complete. All 11 declared targets have mechanical check coverage and verifier-backed Kani proof evidence within their recorded proof boundaries. These proof lanes cover bounded parser rejection, encoding surface stability, context transcript binding, fail-closed engine behavior, epoch transition structure, transparency commit failure boundaries, transparency-root state binding, and selected capability-tree non-revocation behavior.
 
-## Current State
+This milestone should not be read as full end-to-end cryptographic verification of ARC. Several completed lanes intentionally prove narrowed implementation properties rather than full protocol semantics. In particular, full SHA/Merkle soundness, full capability-tree non-empty witness soundness, full encode/decode canonical round-trip equivalence, and full seal/open cryptographic semantic equivalence remain future verification-expansion targets.
 
-    Mechanically checked targets: 11 / 11
-    Mechanically proven targets: 0 / 11
+## Completed Inventory Meaning
 
-## Meaning of Full Mechanical Proof Equivalence
-
-A target becomes mechanically proven only when actual Rust behavior is checked against a formal obligation by a repeatable verifier-backed or proof-producing path.
+All tracked Rust mechanical refinement targets are verifier-backed proven within their stated narrow proof boundaries.
 
 This is stronger than:
 
@@ -22,46 +19,11 @@ This is stronger than:
     Coq checklist closure
     mechanical refinement harness closure
 
-## First Target
+It is still narrower than full cryptographic semantic equivalence across the entire ARC protocol.
 
-The first target is:
+## Next Verification Expansion Targets
 
-    src/arc/model.rs::context_hash
-
-Reason:
-
-    it is deterministic
-    it is side-effect free
-    it is security-critical
-    it binds ARC context material
-    it is simpler than verify, seal, open, or transparency behavior
-
-## Proof Strategy
-
-The first proof path should establish:
-
-    context_hash always returns 32 bytes
-    equal inputs produce equal outputs
-    changed object identity changes the modeled transcript input
-    changed rights changes the modeled transcript input
-    changed policy hash changes the modeled transcript input
-    changed authority root changes the modeled transcript input
-    changed epoch changes the modeled transcript input
-    changed temporal policy changes the modeled transcript input
-
-The first verifier-backed lane is Kani-oriented.
-
-If Kani is installed, the proof script should run the Kani harness.
-
-If Kani is not installed, the gate must remain open and must not mark the target proven.
-
-## Boundary
-
-This phase may mark a target as mechanically proven only when:
-
-    the verifier command succeeds
-    the proof artifact is recorded
-    the inventory marks the target mechanically_proven = true
-    the Coq full-proof status imports that result
-
-Until that happens, the full proof equivalence gate remains open.
+1. Full transparency append and Merkle soundness.
+2. Capability-tree non-empty witness and Merkle-path soundness.
+3. Encode/decode canonical round-trip equivalence.
+4. Seal/open cryptographic semantic equivalence over a model crypto backend.

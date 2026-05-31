@@ -1,58 +1,19 @@
 # ARC rotate_epoch Mechanical Refinement
 
-This document records the eighth Rust-to-Coq mechanical refinement target:
-
-    src/arc/engine.rs::rotate_epoch
-
 ## Status
 
+    Tracked proof lane: complete
     Mechanically checked: yes
-    Mechanically proven equivalent to Coq: not yet
+    Verifier-backed Kani proof evidence: yes
 
-## Why rotate_epoch matters
+All tracked Rust mechanical refinement targets are verifier-backed proven within their stated narrow proof boundaries.
 
-rotate_epoch is the basic authority epoch transition boundary. It is security-sensitive because ARC authority state must move forward, never backward, and epoch transitions must preserve the chain of trust used by verification, sealing, opening, and rewrapping.
+## Target
 
-This target comes after add_epoch_wrapper because wrapper addition depends on valid authority epoch movement.
+    src/arc/engine.rs::rotated_authority_state
 
-## rotate_epoch refinement categories
+## Completed Proof Boundary
 
-The refinement track covers:
+rotate_epoch has verifier-backed Kani proof evidence for the extracted pure authority-state transition helper: requested epoch setting, authority-root and root-key preservation, authority identity and revocation-count preservation, transparency-root reset, validity-flag setting, previous-epoch hash binding, and determinism for equal inputs.
 
-    previous authority state requirement
-    next authority state requirement
-    previous epoch requirement
-    next epoch requirement
-    epoch strict-advance requirement
-    epoch regression rejection
-    same-epoch rotation rejection
-    authority root continuity requirement
-    chain hash linkage requirement
-    future rotate to verify fixture
-
-## Current mechanical check
-
-This pass checks:
-
-    rotate_epoch source surface
-    rotate_epoch symbol presence
-    expected API surface terms
-    epoch-rotation vector schema
-    deterministic gate category inventory
-    Coq status connection
-    mechanical inventory checked status
-
-## Boundary
-
-This pass does not yet prove that Rust rotate_epoch is semantically equivalent to the Coq authority state-machine model.
-
-A future proof-producing pass should connect:
-
-    Rust rotate_epoch
-    Coq ArcStateMachineCompleteness
-    Coq ArcAuthority
-    previous AuthorityState
-    next AuthorityState
-    strict epoch advance
-    authority root continuity
-    chain hash linkage
+This lane proves selected state-transition structure. Fresh epoch key generation, certificate cryptographic correctness, epoch signature correctness, and full log-chain correctness remain outside this narrow proof claim.

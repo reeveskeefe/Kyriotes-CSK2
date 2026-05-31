@@ -3,58 +3,73 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-coqc ArcTypes.v
-coqc ArcMerkle.v
-coqc ArcAuthority.v
-coqc ArcPolicy.v
-coqc ArcVerify.v
-coqc ArcSecurityGame.v
-coqc ArcTheorems.v
-coqc ArcStressProofs.v
-coqc ArcDelegationProofs.v
-coqc ArcCryptoReduction.v
-coqc ArcTemporalProofs.v
-coqc ArcTranscriptProofs.v
-coqc ArcRevocationCompromiseProofs.v
-coqc ArcTransparencyProofs.v
-coqc ArcEncodingProofs.v
-coqc ArcWrapperProofs.v
-coqc ArcKemAeadAssumptions.v
-coqc ArcEndToEndTheorems.v
-coqc ArcStateTransitionProofs.v
-coqc ArcConcreteMerkleProofs.v
-coqc ArcTransparencyConsistencyProofs.v
-coqc ArcProtocolStateMachineProofs.v
-coqc ArcInvalidTransitionProofs.v
-coqc ArcTightSecurityGameProofs.v
-coqc ArcAssumptionReductionProofs.v
-coqc ArcRustRefinementMap.v
-coqc ArcMasterInvariantProofs.v
+coq_flags=(
+  -Q core ArcProofs
+  -Q merkle_transparency ArcProofs
+  -Q security ArcProofs
+  -Q lifecycle ArcProofs
+  -Q completeness ArcProofs
+  -Q rust_refinement ArcProofs
+)
 
-coqc ArcMerkleConcreteTree.v
-coqc ArcTransparencyAppendOnly.v
-coqc ArcLifecycleProofs.v
-coqc ArcPredicateRefinementProofs.v
-coqc ArcAdversaryGame.v
-coqc ArcRustRefinementObligations.v
-coqc ArcAbstractInvariantCompleteness.v
-coqc ArcDesignModelCompleteness.v
-coqc ArcStateMachineCompleteness.v
-coqc ArcMerkleTransparencyCompleteness.v
-coqc ArcCryptoReductionCompleteness.v
-coqc ArcRustRefinementEvidence.v
-coqc ArcRustMechanicalRefinement.v
-coqc ArcRustFullMechanicalProofGate.v
-coqc ArcContextHashRustRefinement.v
-coqc ArcDecodeArcObjectRustRefinement.v
-coqc ArcEncodeArcObjectRustRefinement.v
-coqc ArcVerifyRustRefinement.v
-coqc ArcSealRustRefinement.v
-coqc ArcOpenRustRefinement.v
-coqc ArcAddEpochWrapperRustRefinement.v
-coqc ArcRotateEpochRustRefinement.v
-coqc ArcRotateEpochFullRustRefinement.v
-coqc ArcCapabilityTreeRustRefinement.v
-coqc ArcTransparencyRustRefinement.v
-coqc ArcFullMechanicalProofEquivalence.v
+proofs=(
+  core/ArcTypes.v
+  merkle_transparency/ArcMerkle.v
+  core/ArcAuthority.v
+  core/ArcPolicy.v
+  core/ArcVerify.v
+  security/ArcSecurityGame.v
+  security/ArcTheorems.v
+  security/ArcStressProofs.v
+  security/ArcDelegationProofs.v
+  security/ArcCryptoReduction.v
+  lifecycle/ArcTemporalProofs.v
+  lifecycle/ArcTranscriptProofs.v
+  lifecycle/ArcRevocationCompromiseProofs.v
+  merkle_transparency/ArcTransparencyProofs.v
+  lifecycle/ArcEncodingProofs.v
+  lifecycle/ArcWrapperProofs.v
+  security/ArcKemAeadAssumptions.v
+  lifecycle/ArcEndToEndTheorems.v
+  lifecycle/ArcStateTransitionProofs.v
+  merkle_transparency/ArcConcreteMerkleProofs.v
+  merkle_transparency/ArcTransparencyConsistencyProofs.v
+  lifecycle/ArcProtocolStateMachineProofs.v
+  lifecycle/ArcInvalidTransitionProofs.v
+  security/ArcTightSecurityGameProofs.v
+  security/ArcAssumptionReductionProofs.v
+  rust_refinement/ArcRustRefinementMap.v
+  completeness/ArcMasterInvariantProofs.v
+  merkle_transparency/ArcMerkleConcreteTree.v
+  merkle_transparency/ArcTransparencyAppendOnly.v
+  lifecycle/ArcLifecycleProofs.v
+  lifecycle/ArcPredicateRefinementProofs.v
+  security/ArcAdversaryGame.v
+  rust_refinement/ArcRustRefinementObligations.v
+  completeness/ArcAbstractInvariantCompleteness.v
+  completeness/ArcDesignModelCompleteness.v
+  completeness/ArcStateMachineCompleteness.v
+  merkle_transparency/ArcMerkleTransparencyCompleteness.v
+  security/ArcCryptoReductionCompleteness.v
+  rust_refinement/ArcRustRefinementEvidence.v
+  rust_refinement/ArcRustMechanicalRefinement.v
+  rust_refinement/ArcRustFullMechanicalProofGate.v
+  rust_refinement/ArcContextHashRustRefinement.v
+  rust_refinement/ArcDecodeArcObjectRustRefinement.v
+  rust_refinement/ArcEncodeArcObjectRustRefinement.v
+  rust_refinement/ArcVerifyRustRefinement.v
+  rust_refinement/ArcSealRustRefinement.v
+  rust_refinement/ArcOpenRustRefinement.v
+  rust_refinement/ArcAddEpochWrapperRustRefinement.v
+  rust_refinement/ArcRotateEpochRustRefinement.v
+  rust_refinement/ArcRotateEpochFullRustRefinement.v
+  rust_refinement/ArcCapabilityTreeRustRefinement.v
+  rust_refinement/ArcTransparencyRustRefinement.v
+  rust_refinement/ArcFullMechanicalProofEquivalence.v
+)
+
+for proof in "${proofs[@]}"; do
+  coqc "${coq_flags[@]}" "$proof"
+done
+
 echo "ARC Coq proofs compiled successfully."

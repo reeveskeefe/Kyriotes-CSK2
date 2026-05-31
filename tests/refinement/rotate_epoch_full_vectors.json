@@ -1,0 +1,104 @@
+{
+  "claim_boundary": "Full authority epoch-rotation refinement track; not full Coq/Rust semantic equivalence.",
+  "schema": "arc.rotate_epoch_full.refinement_vectors.v1",
+  "target": "src/arc/engine.rs::rotate_epoch_full",
+  "vector_count": 12,
+  "vectors": [
+    {
+      "category": "missing-transparency-log-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "transparency_log",
+      "id": "rotate_epoch_full.f1b8515054e24b1b",
+      "notes": "rotate_epoch_full must require a transparency log surface."
+    },
+    {
+      "category": "missing-previous-authority-state-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "previous_authority_state",
+      "id": "rotate_epoch_full.ddca5f4b7bc69228",
+      "notes": "rotate_epoch_full must require the previous authority state."
+    },
+    {
+      "category": "missing-next-authority-state-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "next_authority_state",
+      "id": "rotate_epoch_full.ad4fb511223244c3",
+      "notes": "rotate_epoch_full must require the next authority state."
+    },
+    {
+      "category": "missing-previous-epoch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "previous_epoch",
+      "id": "rotate_epoch_full.bc7bf25925666d80",
+      "notes": "rotate_epoch_full must require the previous epoch."
+    },
+    {
+      "category": "missing-next-epoch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "next_epoch",
+      "id": "rotate_epoch_full.1366b1eef1253cc9",
+      "notes": "rotate_epoch_full must require the next epoch."
+    },
+    {
+      "category": "epoch-regression-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "epoch_regression",
+      "id": "rotate_epoch_full.4433a0d403866e22",
+      "notes": "rotate_epoch_full must reject transitions where the next epoch is less than the previous epoch."
+    },
+    {
+      "category": "same-epoch-rotation-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "same_epoch_rotation",
+      "id": "rotate_epoch_full.ea10100953f21d52",
+      "notes": "rotate_epoch_full must reject rotation that does not strictly advance the epoch."
+    },
+    {
+      "category": "authority-root-continuity-required",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "authority_root_continuity",
+      "id": "rotate_epoch_full.88032bb6cdaf4237",
+      "notes": "Reserved for future authority-root continuity fixture."
+    },
+    {
+      "category": "state-root-consistency-required",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "state_root_consistency",
+      "id": "rotate_epoch_full.b78119057146f0ab",
+      "notes": "Reserved for future state-root consistency fixture."
+    },
+    {
+      "category": "chain-hash-linkage-required",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "chain_hash_linkage",
+      "id": "rotate_epoch_full.8886df8a27d3a8db",
+      "notes": "Reserved for future chain-hash linkage fixture."
+    },
+    {
+      "category": "transparency-commit-linkage-required",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "transparency_commit_linkage",
+      "id": "rotate_epoch_full.73072178f5c3f2ff",
+      "notes": "Reserved for future transparency commit linkage fixture."
+    },
+    {
+      "category": "full-rotation-verify-roundtrip-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "full_rotation_verify_roundtrip",
+      "id": "rotate_epoch_full.3695abe3bb9a69a5",
+      "notes": "Reserved for future rotate_epoch_full then verify fixture."
+    }
+  ]
+}

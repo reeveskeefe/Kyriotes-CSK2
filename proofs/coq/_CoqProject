@@ -48,3 +48,4 @@ ArcSealRustRefinement.v
 ArcOpenRustRefinement.v
 ArcAddEpochWrapperRustRefinement.v
 ArcRotateEpochRustRefinement.v
+ArcRotateEpochFullRustRefinement.v

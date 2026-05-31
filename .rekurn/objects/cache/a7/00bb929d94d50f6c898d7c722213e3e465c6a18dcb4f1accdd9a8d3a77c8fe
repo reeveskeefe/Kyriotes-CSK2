@@ -1,7 +1,0 @@
-rekurn-commit
-tree 78842788fa532e0f8fb71886ec73f73a3522e254e04373d77fc1694c95f5da25
-parent b8216e3bb86a0a0b91138951853b8b532e51597caf77ea19688474b251fad6e6
-author reeveskeefe <reeveskeefe@outlook.com> 1780252683
-committer reeveskeefe <reeveskeefe@outlook.com> 1780252683
-
-did some formal verification and fuzzing, and i also wrote the software design document as the software stands

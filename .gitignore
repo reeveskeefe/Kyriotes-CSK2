@@ -9,3 +9,6 @@
 *.glob
 *.aux
 .coq-native/
+
+# Rekurn local versioning data
+.rekurn/

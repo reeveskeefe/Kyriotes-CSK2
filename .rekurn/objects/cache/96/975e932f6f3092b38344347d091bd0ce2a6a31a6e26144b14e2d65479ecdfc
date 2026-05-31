@@ -1,7 +1,0 @@
-rekurn-commit
-tree 8efa224c03afe0e35426244f3e2d6982e99b78e54c7c2ca9caaeb9979c0ff6eb
-parent 33803305bf81f81b3f4ca37fad1765ed07e88ad3217d63a6dd0574c9b905021a
-author reeveskeefe <reeveskeefe@outlook.com> 1779938087
-committer reeveskeefe <reeveskeefe@outlook.com> 1779938087
-
-some updates to the readme, documentation, and minor things like the cargo.toml for crate creation

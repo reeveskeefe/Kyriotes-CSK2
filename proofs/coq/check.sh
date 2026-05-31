@@ -49,4 +49,6 @@ coqc ArcContextHashRustRefinement.v
 coqc ArcDecodeArcObjectRustRefinement.v
 coqc ArcEncodeArcObjectRustRefinement.v
 coqc ArcVerifyRustRefinement.v
+coqc ArcSealRustRefinement.v
+coqc ArcOpenRustRefinement.v
 echo "ARC Coq proofs compiled successfully."

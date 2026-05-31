@@ -1,0 +1,88 @@
+{
+  "claim_boundary": "Seal lifecycle refinement track; not full Coq/Rust semantic equivalence.",
+  "schema": "arc.seal.refinement_vectors.v1",
+  "target": "src/arc/engine.rs::seal",
+  "vector_count": 10,
+  "vectors": [
+    {
+      "category": "missing-recipient-key-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "recipient_public_key",
+      "id": "seal.070d355e9975b26f",
+      "notes": "seal must require a recipient public key."
+    },
+    {
+      "category": "missing-message-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "message",
+      "id": "seal.ad561ad48cb54785",
+      "notes": "seal must require message input."
+    },
+    {
+      "category": "missing-capability-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "capability",
+      "id": "seal.18df589bd70027b2",
+      "notes": "seal must require a valid capability."
+    },
+    {
+      "category": "missing-capability-proof-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "capability_proof",
+      "id": "seal.066757161a328a17",
+      "notes": "seal must require capability proof evidence."
+    },
+    {
+      "category": "missing-authority-state-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "authority_state",
+      "id": "seal.e7ecdd16ebf1d622",
+      "notes": "seal must require authority state."
+    },
+    {
+      "category": "missing-transparency-proof-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "transparency_proof",
+      "id": "seal.cabf39e034c64bb7",
+      "notes": "seal must require transparency proof linkage."
+    },
+    {
+      "category": "temporal-policy-required",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "temporal_policy",
+      "id": "seal.a17f838e1df32d6e",
+      "notes": "seal must carry temporal policy context."
+    },
+    {
+      "category": "lifecycle-seal-transition",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "lifecycle_seal",
+      "id": "seal.a51c4d852f0559cb",
+      "notes": "Reserved for future concrete valid seal fixture."
+    },
+    {
+      "category": "seal-verify-roundtrip-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "seal_verify_roundtrip",
+      "id": "seal.4fefab746d94e670",
+      "notes": "Reserved for future seal followed by verify fixture."
+    },
+    {
+      "category": "seal-open-roundtrip-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "seal_open_roundtrip",
+      "id": "seal.8785dbe70cc9e1d3",
+      "notes": "Reserved for future seal followed by open fixture."
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "claim_boundary": "Open authorization refinement track; not full Coq/Rust semantic equivalence.",
+  "schema": "arc.open.refinement_vectors.v1",
+  "target": "src/arc/engine.rs::open",
+  "vector_count": 10,
+  "vectors": [
+    {
+      "category": "missing-recipient-secret-key-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "recipient_secret_key",
+      "id": "open.2603e2a180c21ee3",
+      "notes": "open must require recipient secret key material."
+    },
+    {
+      "category": "missing-object-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "arc_object",
+      "id": "open.db6cc7945d5c83f7",
+      "notes": "open must require an ARC object."
+    },
+    {
+      "category": "missing-capability-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "capability",
+      "id": "open.18df589bd70027b2",
+      "notes": "open must require a valid capability."
+    },
+    {
+      "category": "missing-capability-proof-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "capability_proof",
+      "id": "open.066757161a328a17",
+      "notes": "open must require capability proof evidence."
+    },
+    {
+      "category": "missing-authority-state-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "authority_state",
+      "id": "open.e7ecdd16ebf1d622",
+      "notes": "open must require authority state."
+    },
+    {
+      "category": "revoked-capability-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "nonrevocation",
+      "id": "open.0317bca42453ee51",
+      "notes": "open must reject revoked capabilities."
+    },
+    {
+      "category": "temporal-policy-mismatch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "temporal_policy",
+      "id": "open.b9f1a122444791cb",
+      "notes": "open must reject temporal policy mismatches."
+    },
+    {
+      "category": "wrapper-binding-mismatch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "wrapper_binding",
+      "id": "open.3224ba2934eb1f6e",
+      "notes": "open must reject wrapper binding mismatches."
+    },
+    {
+      "category": "decrypt-failure-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "cryptographic_open",
+      "id": "open.cb50144de59ae255",
+      "notes": "open must reject cryptographic unwrap/decrypt failure."
+    },
+    {
+      "category": "seal-verify-open-roundtrip-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "seal_verify_open_roundtrip",
+      "id": "open.ad6c4e99b0cd4423",
+      "notes": "Reserved for future concrete valid seal -> verify -> open fixture."
+    }
+  ]
+}

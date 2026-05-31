@@ -44,3 +44,5 @@ ArcContextHashRustRefinement.v
 ArcDecodeArcObjectRustRefinement.v
 ArcEncodeArcObjectRustRefinement.v
 ArcVerifyRustRefinement.v
+ArcSealRustRefinement.v
+ArcOpenRustRefinement.v

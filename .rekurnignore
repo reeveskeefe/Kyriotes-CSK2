@@ -1,10 +1,18 @@
 .rekurn/
+.git/
 
 proofs/coq/*.vo
 proofs/coq/*.vos
 proofs/coq/*.vok
 proofs/coq/*.glob
 proofs/coq/*.aux
+proofs/coq/.*.aux
+
+**/*.vo
+**/*.vos
+**/*.vok
+**/*.glob
+**/*.aux
 
 fuzz/artifacts/
 fuzz/corpus/

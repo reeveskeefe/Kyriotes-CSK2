@@ -15,3 +15,31 @@
 
 # Local fuzz build logs
 fuzz-build-*.log
+proofs/coq/*.vo
+proofs/coq/*.vos
+proofs/coq/*.vok
+proofs/coq/*.glob
+proofs/coq/*.aux
+proofs/coq/.*.aux
+**/*.vo
+**/*.vos
+**/*.vok
+**/*.glob
+**/*.aux
+fuzz/artifacts/
+fuzz/corpus/
+fuzz/target/
+target/
+debug/
+release/
+*.swp
+*.swo
+*.tmp
+*.temp
+*.log
+node_modules/
+dist/
+build/
+.next/
+.vercel/
+Cargo.lock.bak

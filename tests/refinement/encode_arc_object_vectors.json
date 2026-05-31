@@ -1,0 +1,54 @@
+{
+  "claim_boundary": "Round-trip refinement track established; valid-object fixtures are reserved until generated from real Rust objects.",
+  "paired_decoder": "src/encoding/codec.rs::decode_arc_object",
+  "schema": "arc.encode_arc_object.refinement_vectors.v1",
+  "target": "src/encoding/codec.rs::encode_arc_object",
+  "vector_count": 5,
+  "vectors": [
+    {
+      "canonical_required": true,
+      "category": "roundtrip-valid-object-reserved",
+      "decode_pairing_required": true,
+      "expected_result": "reserved",
+      "id": "encode.40b948ad32add8b3",
+      "notes": "Reserved until generated from real Rust ARC object constructors and encode_arc_object.",
+      "object_fixture_id": "minimal-valid-object-reserved"
+    },
+    {
+      "canonical_required": true,
+      "category": "roundtrip-valid-object-reserved",
+      "decode_pairing_required": true,
+      "expected_result": "reserved",
+      "id": "encode.5d699a0065b3bb46",
+      "notes": "Reserved until generated from real Rust ARC object constructors and encode_arc_object.",
+      "object_fixture_id": "multi-wrapper-valid-object-reserved"
+    },
+    {
+      "canonical_required": true,
+      "category": "roundtrip-valid-object-reserved",
+      "decode_pairing_required": true,
+      "expected_result": "reserved",
+      "id": "encode.a954d9f277c3b36d",
+      "notes": "Reserved until generated from real Rust ARC object constructors and encode_arc_object.",
+      "object_fixture_id": "temporal-policy-valid-object-reserved"
+    },
+    {
+      "canonical_required": true,
+      "category": "roundtrip-valid-object-reserved",
+      "decode_pairing_required": true,
+      "expected_result": "reserved",
+      "id": "encode.cf29544aad2ee47a",
+      "notes": "Reserved until generated from real Rust ARC object constructors and encode_arc_object.",
+      "object_fixture_id": "revocation-proof-valid-object-reserved"
+    },
+    {
+      "canonical_required": true,
+      "category": "roundtrip-valid-object-reserved",
+      "decode_pairing_required": true,
+      "expected_result": "reserved",
+      "id": "encode.f7540fc8f9706e70",
+      "notes": "Reserved until generated from real Rust ARC object constructors and encode_arc_object.",
+      "object_fixture_id": "transparency-bound-valid-object-reserved"
+    }
+  ]
+}

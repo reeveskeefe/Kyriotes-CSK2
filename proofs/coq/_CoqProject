@@ -40,3 +40,4 @@ ArcCryptoReductionCompleteness.v
 ArcRustRefinementEvidence.v
 ArcRustMechanicalRefinement.v
 ArcRustFullMechanicalProofGate.v
+ArcContextHashRustRefinement.v

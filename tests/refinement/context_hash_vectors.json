@@ -1,0 +1,53 @@
+{
+  "claim_boundary": "Deterministic mechanical check vectors; not full Coq/Rust semantic equivalence.",
+  "hash_size_bytes": 32,
+  "schema": "arc.context_hash.refinement_vectors.v1",
+  "target": "src/arc/model.rs::context_hash",
+  "vector_count": 4,
+  "vectors": [
+    {
+      "authority_root_hex": "1d1e7944820c6645afd5a923c1dcdecac40fe30be073a8ff6665559ad2f985c9",
+      "epoch": 0,
+      "expected_hash_hex": "30cb1b7a8ada9a7c1baaa5fcbd8d99e114dfa7f4ba60a56248c4088235c8c89e",
+      "id": "context.empty-read-epoch0",
+      "object_id": "",
+      "policy_hash_hex": "bfe4363f0fff4041023f43e2c57979b66105d01241997e6d4295fbf164cfebf2",
+      "required_rights": 1,
+      "temporal_end": 0,
+      "temporal_start": 0
+    },
+    {
+      "authority_root_hex": "fce0b0dcc528059e3155d426655213da643d73645536606f6fefbab0e8fd56ba",
+      "epoch": 1,
+      "expected_hash_hex": "b96d17e3bce2ebb8d9a2a0bc8b65a290a536f5f267081e96036a3f9df08a2efc",
+      "id": "context.object-alpha-read-write",
+      "object_id": "object-alpha",
+      "policy_hash_hex": "b268d908b517ec0bdd9ac12ef60448c339e5cdf946b238dbf801326cd8597446",
+      "required_rights": 3,
+      "temporal_end": 100,
+      "temporal_start": 1
+    },
+    {
+      "authority_root_hex": "9a1b51e64d041102851bc0c8458c4a3c9838bb9fa6756231d7b6ee3339f58f06",
+      "epoch": 42,
+      "expected_hash_hex": "acabfb1fa117d00f4d5086c50b0b48951c8a87b355cbeaf99460b016a4d2f89f",
+      "id": "context.object-beta-admin",
+      "object_id": "object-beta",
+      "policy_hash_hex": "b3cccc82a5c717b6c9265b6fbae121ff03aa1270a7b41a8ee84af01989edba3d",
+      "required_rights": 7,
+      "temporal_end": 50,
+      "temporal_start": 40
+    },
+    {
+      "authority_root_hex": "4d49f8c781059df6480ad7b9164a880da29f89feb9dfbe06ec45091c0e381c57",
+      "epoch": 18446744073709551615,
+      "expected_hash_hex": "0ea50bc1606ccd158156d54a0e8ba6a40857550a6e907c87e3a58fa61399c667",
+      "id": "context.long-object-id",
+      "object_id": "arc-object-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "policy_hash_hex": "4c2daaacdab2c05536c453fc9123e86a8ddccc79c0de85be405fa95554003beb",
+      "required_rights": 15,
+      "temporal_end": 18446744073709551615,
+      "temporal_start": 0
+    }
+  ]
+}

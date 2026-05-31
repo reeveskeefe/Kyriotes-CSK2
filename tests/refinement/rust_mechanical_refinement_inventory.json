@@ -1,5 +1,5 @@
 {
-  "boundary": "Mechanical refinement harness inventory; mechanically_checked and mechanically_proven remain false until a verifier or proof-producing pipeline is attached.",
+  "boundary": "Mechanical refinement inventory with first checked target; full proof remains open until all targets are mechanically proven.",
   "entries": [
     {
       "boundary": "Harnessed inventory only; not a proof of Rust behavioral equivalence.",
@@ -28,11 +28,11 @@
       "symbol_present": false
     },
     {
-      "boundary": "Harnessed inventory only; not a proof of Rust behavioral equivalence.",
+      "boundary": "Context hash has deterministic mechanical vector evidence; not yet a full semantic proof.",
       "coq_model": "ArcTranscriptProofs",
       "harness_level": "MechanicallyHarnessed",
       "id": "model.context_hash",
-      "mechanically_checked": false,
+      "mechanically_checked": true,
       "mechanically_proven": false,
       "obligation": "Rust context_hash must bind object, rights, policy, authority, and temporal context as modeled in Coq.",
       "rust_file": "src/arc/model.rs",
@@ -146,7 +146,7 @@
     }
   ],
   "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
-  "mechanically_checked_count": 0,
+  "mechanically_checked_count": 1,
   "mechanically_proven_count": 0,
   "schema": "arc.rust_mechanical_refinement_inventory.v1",
   "source_present_count": 11,

@@ -34,3 +34,4 @@ ArcAdversaryGame.v
 ArcRustRefinementObligations.v
 ArcAbstractInvariantCompleteness.v
 ArcDesignModelCompleteness.v
+ArcStateMachineCompleteness.v

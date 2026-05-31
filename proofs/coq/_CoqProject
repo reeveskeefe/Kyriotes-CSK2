@@ -41,3 +41,4 @@ ArcRustRefinementEvidence.v
 ArcRustMechanicalRefinement.v
 ArcRustFullMechanicalProofGate.v
 ArcContextHashRustRefinement.v
+ArcDecodeArcObjectRustRefinement.v

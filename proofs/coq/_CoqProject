@@ -39,3 +39,4 @@ ArcMerkleTransparencyCompleteness.v
 ArcCryptoReductionCompleteness.v
 ArcRustRefinementEvidence.v
 ArcRustMechanicalRefinement.v
+ArcRustFullMechanicalProofGate.v

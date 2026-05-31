@@ -33,3 +33,4 @@ ArcPredicateRefinementProofs.v
 ArcAdversaryGame.v
 ArcRustRefinementObligations.v
 ArcAbstractInvariantCompleteness.v
+ArcDesignModelCompleteness.v

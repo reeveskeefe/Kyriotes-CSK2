@@ -38,4 +38,5 @@ coqc ArcPredicateRefinementProofs.v
 coqc ArcAdversaryGame.v
 coqc ArcRustRefinementObligations.v
 coqc ArcAbstractInvariantCompleteness.v
+coqc ArcDesignModelCompleteness.v
 echo "ARC Coq proofs compiled successfully."

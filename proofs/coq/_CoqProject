@@ -26,3 +26,9 @@ ArcTightSecurityGameProofs.v
 ArcAssumptionReductionProofs.v
 ArcRustRefinementMap.v
 ArcMasterInvariantProofs.v
+ArcMerkleConcreteTree.v
+ArcTransparencyAppendOnly.v
+ArcLifecycleProofs.v
+ArcPredicateRefinementProofs.v
+ArcAdversaryGame.v
+ArcRustRefinementObligations.v

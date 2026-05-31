@@ -31,4 +31,10 @@ coqc ArcAssumptionReductionProofs.v
 coqc ArcRustRefinementMap.v
 coqc ArcMasterInvariantProofs.v
 
+coqc ArcMerkleConcreteTree.v
+coqc ArcTransparencyAppendOnly.v
+coqc ArcLifecycleProofs.v
+coqc ArcPredicateRefinementProofs.v
+coqc ArcAdversaryGame.v
+coqc ArcRustRefinementObligations.v
 echo "ARC Coq proofs compiled successfully."

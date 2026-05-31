@@ -1369,26 +1369,24 @@ impl EpochRotation {
 /// # Errors
 ///
 /// Returns `Err` if the transparency log rejects the commit.
-pub fn rotate_epoch_full<L: TransparencyLog>(
+pub(crate) fn begin_epoch_rotation_commit<L: TransparencyLog>(
     log: &mut L,
-    root_kp: &AuthorityRootKeyPair,
-    base_state: &AuthorityState,
+    new_state: &AuthorityState,
+) -> Result<TransparencyStateCommit, ArcError> {
+    log.commit_state(new_state)
+}
+
+pub(crate) fn finalize_epoch_rotation_commit<L: TransparencyLog>(
+    log: &mut L,
+    epoch_kp: EpochSigningKeyPair,
+    epoch_cert: EpochKeyCert,
+    new_state: &AuthorityState,
     new_epoch: u64,
-    validity_window: u64,
     prev_epoch_hash: &[u8; 32],
 ) -> Result<EpochRotation, ArcError> {
-    let (epoch_kp, epoch_cert, new_state) = rotate_epoch(
-        root_kp,
-        base_state,
-        new_epoch,
-        validity_window,
-        prev_epoch_hash,
-    );
+    let mut commit = begin_epoch_rotation_commit(log, new_state)?;
     let epoch_pk = epoch_kp.verifying_key_bytes();
 
-    let mut commit = log.commit_state(&new_state)?;
-
-    // Sign sigma_e with the real transparency_root now that T_e is known.
     let sigma_e = epoch_kp.sign_epoch_root(
         &commit.state.authority_root,
         &commit.state.revocation_root,
@@ -1405,6 +1403,7 @@ pub fn rotate_epoch_full<L: TransparencyLog>(
         &epoch_pk,
         &sigma_e,
     );
+
     commit.chain_hash = chain_hash;
     log.store_chain_hash(&commit.state.authority_id, commit.state.epoch, chain_hash);
 
@@ -1417,4 +1416,30 @@ pub fn rotate_epoch_full<L: TransparencyLog>(
         transparency_proof: commit.proof,
         chain_hash,
     })
+}
+
+pub fn rotate_epoch_full<L: TransparencyLog>(
+    log: &mut L,
+    root_kp: &AuthorityRootKeyPair,
+    base_state: &AuthorityState,
+    new_epoch: u64,
+    validity_window: u64,
+    prev_epoch_hash: &[u8; 32],
+) -> Result<EpochRotation, ArcError> {
+    let (epoch_kp, epoch_cert, new_state) = rotate_epoch(
+        root_kp,
+        base_state,
+        new_epoch,
+        validity_window,
+        prev_epoch_hash,
+    );
+
+    finalize_epoch_rotation_commit(
+        log,
+        epoch_kp,
+        epoch_cert,
+        &new_state,
+        new_epoch,
+        prev_epoch_hash,
+    )
 }

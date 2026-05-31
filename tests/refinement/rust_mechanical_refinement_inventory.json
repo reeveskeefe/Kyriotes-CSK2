@@ -1,5 +1,5 @@
 {
-  "boundary": "Mechanical refinement inventory has all declared targets checked and rotate_epoch state-transition proof lane complete within its stated narrow scope.",
+  "boundary": "Mechanical refinement inventory has all declared targets checked and rotate_epoch_full transparency-commit fail-closed proof lane complete within its stated narrow scope.",
   "entries": [
     {
       "boundary": "decode_arc_object has verifier-backed Kani proof evidence for bounded malformed parser rejection and deterministic rejection behavior. Full parser equivalence remains outside this narrow proof claim.",
@@ -106,12 +106,12 @@
       "symbol_present": true
     },
     {
-      "boundary": "rotate_epoch_full has a mechanical full authority-rotation refinement track and source-surface check; not yet full semantic proof.",
+      "boundary": "rotate_epoch_full has verifier-backed Kani proof evidence for its extracted commit/finalization phase for fail-closed transparency-log commit rejection propagation, deterministic rejection, non-observability of successful commit material when commit_state fails, and store_chain_hash non-reachability on commit failure. Full successful transparency-commit semantic equivalence remains outside this narrow proof claim.",
       "coq_model": "ArcStateMachineCompleteness",
       "harness_level": "MechanicallyHarnessed",
       "id": "engine.rotate_epoch_full",
       "mechanically_checked": true,
-      "mechanically_proven": false,
+      "mechanically_proven": true,
       "obligation": "Rust rotate_epoch_full must preserve authority transition and transparency linkage obligations.",
       "rust_file": "src/arc/engine.rs",
       "rust_symbol": "rotate_epoch_full",
@@ -147,7 +147,7 @@
   ],
   "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
   "mechanically_checked_count": 11,
-  "mechanically_proven_count": 8,
+  "mechanically_proven_count": 9,
   "schema": "arc.rust_mechanical_refinement_inventory.v1",
   "source_present_count": 11,
   "symbol_present_count": 8,

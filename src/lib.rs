@@ -88,3 +88,6 @@ mod kani_add_epoch_wrapper_equivalence;
 
 #[cfg(kani)]
 mod kani_rotate_epoch_equivalence;
+
+#[cfg(kani)]
+mod kani_rotate_epoch_full_equivalence;

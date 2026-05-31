@@ -38,3 +38,4 @@ ArcStateMachineCompleteness.v
 ArcMerkleTransparencyCompleteness.v
 ArcCryptoReductionCompleteness.v
 ArcRustRefinementEvidence.v
+ArcRustMechanicalRefinement.v

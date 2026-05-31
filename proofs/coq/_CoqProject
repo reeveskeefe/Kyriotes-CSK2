@@ -11,3 +11,4 @@ ArcDelegationProofs.v
 ArcCryptoReduction.v
 ArcTemporalProofs.v
 ArcTranscriptProofs.v
+ArcRevocationCompromiseProofs.v

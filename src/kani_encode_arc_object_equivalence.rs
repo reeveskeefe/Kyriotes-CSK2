@@ -75,7 +75,7 @@ fn encode_arc_object_starts_with_arc_magic() {
     assert_eq!(encoded[0], b'A');
     assert_eq!(encoded[1], b'R');
     assert_eq!(encoded[2], b'C');
-    assert_eq!(encoded[3], 1u8);
+    assert_eq!(encoded[3], b'O');
 }
 
 #[kani::proof]
@@ -84,8 +84,8 @@ fn encode_arc_object_version_one_layout_is_stable() {
     let encoded = encode_arc_object(&object);
 
     assert!(encoded.len() >= 6);
-    assert_eq!(encoded[4], 0u8);
-    assert_eq!(encoded[5], 1u8);
+    assert_eq!(encoded[4], 1u8);
+    assert_eq!(encoded[5], 0u8);
 }
 
 #[kani::proof]

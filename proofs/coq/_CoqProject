@@ -50,3 +50,4 @@ ArcAddEpochWrapperRustRefinement.v
 ArcRotateEpochRustRefinement.v
 ArcRotateEpochFullRustRefinement.v
 ArcCapabilityTreeRustRefinement.v
+ArcTransparencyRustRefinement.v

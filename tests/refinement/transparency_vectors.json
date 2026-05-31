@@ -1,0 +1,104 @@
+{
+  "claim_boundary": "Transparency append/lookup/conflict refinement track; not full Coq/Rust semantic equivalence.",
+  "schema": "arc.transparency.refinement_vectors.v1",
+  "target": "src/arc/transparency.rs",
+  "vector_count": 12,
+  "vectors": [
+    {
+      "category": "missing-log-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "transparency_log",
+      "id": "transparency.43f88c86f6cc471d",
+      "notes": "transparency operations must require a log surface."
+    },
+    {
+      "category": "missing-entry-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "transparency_entry",
+      "id": "transparency.8f7a1189b39f8100",
+      "notes": "transparency append must require an entry."
+    },
+    {
+      "category": "missing-epoch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "epoch",
+      "id": "transparency.902424f8708a8678",
+      "notes": "transparency entries must bind an epoch."
+    },
+    {
+      "category": "missing-state-root-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "state_root",
+      "id": "transparency.ee1a005e0a8afd18",
+      "notes": "transparency entries must bind a state root."
+    },
+    {
+      "category": "missing-commitment-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "commitment",
+      "id": "transparency.efee6a9d47b941c7",
+      "notes": "transparency entries must bind a commitment or equivalent root."
+    },
+    {
+      "category": "conflicting-epoch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "conflicting_epoch",
+      "id": "transparency.ea73cab9aff350f5",
+      "notes": "transparency must reject conflicting epoch entries."
+    },
+    {
+      "category": "duplicate-conflicting-entry-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "duplicate_conflict",
+      "id": "transparency.836a46c1547bbf3e",
+      "notes": "transparency must reject duplicate entries that conflict with existing state."
+    },
+    {
+      "category": "append-only-regression-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "append_only",
+      "id": "transparency.3306dbda5a778d44",
+      "notes": "transparency must reject log regressions or non-append mutations."
+    },
+    {
+      "category": "lookup-missing-entry-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "lookup",
+      "id": "transparency.fe9e67e1317cebc8",
+      "notes": "transparency lookup should reject or miss absent entries deterministically."
+    },
+    {
+      "category": "state-root-binding-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "state_root_binding",
+      "id": "transparency.a2e1792f30d1e4d3",
+      "notes": "Reserved for future concrete state-root binding fixture."
+    },
+    {
+      "category": "valid-append-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "valid_append",
+      "id": "transparency.09d5949cad42efb3",
+      "notes": "Reserved for future concrete valid append fixture."
+    },
+    {
+      "category": "valid-lookup-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "valid_lookup",
+      "id": "transparency.1ff16949955a35a9",
+      "notes": "Reserved for future concrete valid lookup fixture."
+    }
+  ]
+}

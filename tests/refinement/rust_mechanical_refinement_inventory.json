@@ -1,5 +1,5 @@
 {
-  "boundary": "Mechanical refinement inventory with checked engine, encoding, context, and capability_tree targets; full proof remains open until all targets are mechanically proven.",
+  "boundary": "Mechanical refinement inventory has all declared targets mechanically checked; full proof remains open until all targets are mechanically proven.",
   "entries": [
     {
       "boundary": "decode_arc_object has parser-refinement rejection vectors and Rust rejection tests; not yet full byte-level semantic proof.",
@@ -132,11 +132,11 @@
       "symbol_present": true
     },
     {
-      "boundary": "Harnessed inventory only; not a proof of Rust behavioral equivalence.",
+      "boundary": "transparency has a mechanical append/lookup/conflict refinement track and source-surface check; not yet full semantic proof.",
       "coq_model": "ArcTransparencyAppendOnly",
       "harness_level": "MechanicallyHarnessed",
       "id": "transparency.append",
-      "mechanically_checked": false,
+      "mechanically_checked": true,
       "mechanically_proven": false,
       "obligation": "Rust transparency append or equivalent log extension logic must refine Coq append-only behavior.",
       "rust_file": "src/arc/transparency.rs",
@@ -146,7 +146,7 @@
     }
   ],
   "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
-  "mechanically_checked_count": 10,
+  "mechanically_checked_count": 11,
   "mechanically_proven_count": 0,
   "schema": "arc.rust_mechanical_refinement_inventory.v1",
   "source_present_count": 11,

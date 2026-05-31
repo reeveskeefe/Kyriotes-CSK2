@@ -2,7 +2,7 @@
   "claim_boundary": "Round-trip refinement track established; valid-object fixtures are reserved until generated from real Rust objects.",
   "paired_decoder": "src/encoding/wire.rs::decode_arc_object",
   "schema": "arc.encode_arc_object.refinement_vectors.v1",
-  "target": "src/encoding/codec.rs::encode_arc_object",
+  "target": "src/encoding/wire.rs::encode_arc_object",
   "vector_count": 5,
   "vectors": [
     {

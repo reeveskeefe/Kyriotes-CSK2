@@ -70,3 +70,6 @@ mod kani_context_hash_equivalence;
 
 #[cfg(kani)]
 mod kani_decode_arc_object_equivalence;
+
+#[cfg(kani)]
+mod kani_encode_arc_object_equivalence;

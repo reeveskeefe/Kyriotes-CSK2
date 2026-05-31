@@ -15,7 +15,7 @@
       "symbol_present": false
     },
     {
-      "boundary": "encode_arc_object has a mechanical round-trip refinement track and encode/decode surface check; not yet full byte-level semantic proof.",
+      "boundary": "encode_arc_object has mechanical check evidence, but verifier-backed encoding proof remains open until all required Kani harnesses pass.",
       "coq_model": "ArcEncodingProofs",
       "harness_level": "MechanicallyHarnessed",
       "id": "codec.encode_arc_object",

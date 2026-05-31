@@ -1,5 +1,5 @@
 {
-  "boundary": "Mechanical refinement inventory has all declared targets checked and at least one verifier-backed proven target.",
+  "boundary": "Mechanical refinement inventory has all declared targets checked and context_hash verifier-backed transcript-model proof complete.",
   "entries": [
     {
       "boundary": "decode_arc_object has parser-refinement rejection vectors and Rust rejection tests; not yet full byte-level semantic proof.",
@@ -28,7 +28,7 @@
       "symbol_present": false
     },
     {
-      "boundary": "context_hash has verifier-backed Kani proof evidence for the first deterministic equivalence harness.",
+      "boundary": "context_hash has verifier-backed Kani proof evidence for all four context transcript model harnesses: determinism, policy-hash binding, epoch binding, and capability-stamp binding.",
       "coq_model": "ArcTranscriptProofs",
       "harness_level": "MechanicallyHarnessed",
       "id": "model.context_hash",

@@ -1,5 +1,5 @@
 {
-  "boundary": "Mechanical refinement inventory has all declared targets checked and the add_epoch_wrapper verifier-backed fail-closed proof lane is complete within its stated narrow scope.",
+  "boundary": "Mechanical refinement inventory has all declared targets checked and rotate_epoch state-transition proof lane complete within its stated narrow scope.",
   "entries": [
     {
       "boundary": "decode_arc_object has verifier-backed Kani proof evidence for bounded malformed parser rejection and deterministic rejection behavior. Full parser equivalence remains outside this narrow proof claim.",
@@ -93,12 +93,12 @@
       "symbol_present": true
     },
     {
-      "boundary": "rotate_epoch has a mechanical authority-epoch refinement track and source-surface check; not yet full semantic proof.",
+      "boundary": "rotate_epoch has verifier-backed Kani proof evidence for the pure authority-state transition used by rotate_epoch: requested epoch binding, authority root preservation, revocation root preservation, root key preservation, authority identity preservation, revocation count preservation, transparency-root reset, previous-epoch-hash binding, validity flag initialization, and determinism. Fresh epoch key generation and certificate cryptographic correctness remain outside this narrow proof claim.",
       "coq_model": "ArcStateMachineCompleteness",
       "harness_level": "MechanicallyHarnessed",
       "id": "engine.rotate_epoch",
       "mechanically_checked": true,
-      "mechanically_proven": false,
+      "mechanically_proven": true,
       "obligation": "Rust rotate_epoch must strictly advance epoch state.",
       "rust_file": "src/arc/engine.rs",
       "rust_symbol": "rotate_epoch",
@@ -147,7 +147,7 @@
   ],
   "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
   "mechanically_checked_count": 11,
-  "mechanically_proven_count": 7,
+  "mechanically_proven_count": 8,
   "schema": "arc.rust_mechanical_refinement_inventory.v1",
   "source_present_count": 11,
   "symbol_present_count": 8,

@@ -1215,17 +1215,12 @@ fn enforce_compromise_notices(
 ///
 /// Use [`rotate_epoch_and_commit`] to atomically commit the new epoch state
 /// to a transparency log in a single call.
-pub fn rotate_epoch(
-    root_kp: &AuthorityRootKeyPair,
+pub(crate) fn rotated_authority_state(
     base_state: &AuthorityState,
     new_epoch: u64,
-    validity_window: u64,
     prev_epoch_hash: &[u8; 32],
-) -> (EpochSigningKeyPair, EpochKeyCert, AuthorityState) {
-    let epoch_kp = EpochSigningKeyPair::generate(&mut rand::rngs::OsRng);
-    let epoch_cert =
-        root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), new_epoch, validity_window);
-    let new_state = AuthorityState {
+) -> AuthorityState {
+    AuthorityState {
         authority_root: base_state.authority_root,
         revocation_root: base_state.revocation_root,
         transparency_root: [0u8; 32],
@@ -1237,7 +1232,20 @@ pub fn rotate_epoch(
         root_pk: base_state.root_pk,
         revocation_count: base_state.revocation_count,
         prev_epoch_hash: *prev_epoch_hash,
-    };
+    }
+}
+
+pub fn rotate_epoch(
+    root_kp: &AuthorityRootKeyPair,
+    base_state: &AuthorityState,
+    new_epoch: u64,
+    validity_window: u64,
+    prev_epoch_hash: &[u8; 32],
+) -> (EpochSigningKeyPair, EpochKeyCert, AuthorityState) {
+    let epoch_kp = EpochSigningKeyPair::generate(&mut rand::rngs::OsRng);
+    let epoch_cert =
+        root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), new_epoch, validity_window);
+    let new_state = rotated_authority_state(base_state, new_epoch, prev_epoch_hash);
     (epoch_kp, epoch_cert, new_state)
 }
 

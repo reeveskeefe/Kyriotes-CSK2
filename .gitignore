@@ -12,3 +12,6 @@
 
 # Rekurn local versioning data
 .rekurn/
+
+# Local fuzz build logs
+fuzz-build-*.log

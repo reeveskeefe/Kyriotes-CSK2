@@ -2,19 +2,148 @@
 name = "arc-fuzz"
 version = "0.0.0"
 publish = false
-edition = "2024"
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
 
 [dependencies]
 arc_core = { path = "..", package = "ARCencryption" }
 libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
 
-[package.metadata]
-cargo-fuzz = true
+[profile.release]
+debug = 1
 
 [[bin]]
 name = "fuzz_decode_arc_object"
 path = "fuzz_targets/fuzz_decode_arc_object.rs"
 test = false
 doc = false
+bench = false
 
-# repeat for each target
+[[bin]]
+name = "fuzz_capability_decode"
+path = "fuzz_targets/fuzz_capability_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_verify"
+path = "fuzz_targets/fuzz_verify.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_open"
+path = "fuzz_targets/fuzz_open.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_merkle_proofs"
+path = "fuzz_targets/fuzz_merkle_proofs.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_temporal_policy"
+path = "fuzz_targets/fuzz_temporal_policy.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_rewrap"
+path = "fuzz_targets/fuzz_rewrap.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_reseal"
+path = "fuzz_targets/fuzz_reseal.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_delegation"
+path = "fuzz_targets/fuzz_delegation.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_tsig"
+path = "fuzz_targets/fuzz_tsig.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_compromise_notice"
+path = "fuzz_targets/fuzz_compromise_notice.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_authority_rotate"
+path = "fuzz_targets/fuzz_authority_rotate.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_transparency"
+path = "fuzz_targets/fuzz_transparency.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_rights_policy"
+path = "fuzz_targets/fuzz_rights_policy.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_seal_and_commit"
+path = "fuzz_targets/fuzz_seal_and_commit.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_decode_profile"
+path = "fuzz_targets/fuzz_decode_profile.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_hybrid_kem"
+path = "fuzz_targets/fuzz_hybrid_kem.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_aad_binding"
+path = "fuzz_targets/fuzz_aad_binding.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_full_lifecycle"
+path = "fuzz_targets/fuzz_full_lifecycle.rs"
+test = false
+doc = false
+bench = false

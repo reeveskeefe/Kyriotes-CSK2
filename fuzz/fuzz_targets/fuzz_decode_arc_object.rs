@@ -1,24 +1,9 @@
 #![no_main]
 
-use arc_core::{decode_arc_object, DecodeLimits, DecodeProfile};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let _ = decode_arc_object(data);
-
-    for limits in [
-        DecodeLimits::strict_default(),
-        DecodeLimits::embedded_profile(),
-        DecodeLimits::server_profile(),
-    ] {
-        let _ = limits;
-        let _ = decode_arc_object(data);
-    }
-
-    for value in ["strict", "embedded", "server", "", "foo", "embedded123"] {
-        let _ = DecodeProfile::from_cli_value(value);
-    }
-
+    arc_fuzz::drive_parser_like_targets(data, |candidate| {
+        let _ = arc_core::decode_arc_object(candidate);
+    });
 });
-
-

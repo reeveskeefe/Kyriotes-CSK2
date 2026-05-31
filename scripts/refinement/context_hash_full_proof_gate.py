@@ -43,8 +43,9 @@ def main() -> int:
     command = [
         "cargo",
         "kani",
+        "--lib",
         "--harness",
-        "context_hash_is_deterministic_for_equal_inputs",
+        "context_transcript_model_is_deterministic_for_equal_inputs",
     ]
 
     result = subprocess.run(

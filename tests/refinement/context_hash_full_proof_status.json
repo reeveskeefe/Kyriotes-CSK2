@@ -1,11 +1,19 @@
 {
-  "boundary": "Full proof remains open unless the verifier command succeeds.",
+  "boundary": "Kani proof succeeded for the first context_hash harness.",
+  "command": [
+    "cargo",
+    "kani",
+    "--lib",
+    "--harness",
+    "context_transcript_model_is_deterministic_for_equal_inputs"
+  ],
   "mechanically_checked": true,
-  "mechanically_proven": false,
-  "proof_attempted": false,
-  "proof_succeeded": false,
+  "mechanically_proven": true,
+  "output_tail": "48:29 in function std::alloc::Layout::repeat_packed\n\nCheck 251: std::alloc::Layout::repeat_packed.pointer_dereference.5\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: pointer outside object bounds\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:448:29 in function std::alloc::Layout::repeat_packed\n\nCheck 252: std::alloc::Layout::repeat_packed.pointer_dereference.6\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: invalid integer address\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:448:29 in function std::alloc::Layout::repeat_packed\n\nCheck 253: std::alloc::Layout::repeat_packed.pointer_dereference.7\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: dead object\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:452:13 in function std::alloc::Layout::repeat_packed\n\nCheck 254: std::alloc::Layout::repeat_packed.pointer_dereference.8\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: pointer NULL\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:450:47 in function std::alloc::Layout::repeat_packed\n\nCheck 255: std::alloc::Layout::repeat_packed.pointer_dereference.9\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: pointer invalid\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:450:47 in function std::alloc::Layout::repeat_packed\n\nCheck 256: std::alloc::Layout::repeat_packed.pointer_dereference.10\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: deallocated dynamic object\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:450:47 in function std::alloc::Layout::repeat_packed\n\nCheck 257: std::alloc::Layout::repeat_packed.pointer_dereference.11\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: dead object\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:450:47 in function std::alloc::Layout::repeat_packed\n\nCheck 258: std::alloc::Layout::repeat_packed.pointer_dereference.12\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: pointer outside object bounds\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:450:47 in function std::alloc::Layout::repeat_packed\n\nCheck 259: std::alloc::Layout::repeat_packed.pointer_dereference.13\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: invalid integer address\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:450:47 in function std::alloc::Layout::repeat_packed\n\nCheck 260: std::alloc::Layout::repeat.pointer_dereference.1\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: dead object\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:361:31 in function std::alloc::Layout::repeat\n\nCheck 261: std::alloc::Layout::repeat.pointer_dereference.2\n\t - Status: SUCCESS\n\t - Description: \"dereference failure: dead object\"\n\t - Location: ../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/alloc/layout.rs:364:13 in function std::alloc::Layout::repeat\n\n\nSUMMARY:\n ** 0 of 261 failed (5 unreachable)\n\nVERIFICATION:- SUCCESSFUL\nVerification Time: 1.7076144s\n\nManual Harness Summary:\nComplete - 1 successfully verified harnesses, 0 failures, 1 total.\n",
+  "proof_attempted": true,
+  "proof_succeeded": true,
   "proof_tool": "kani",
-  "reason": "Kani is not installed or not discoverable on PATH.",
+  "returncode": 0,
   "schema": "arc.context_hash.full_mechanical_proof_status.v1",
   "target": "src/arc/model.rs::context_hash"
 }

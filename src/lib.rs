@@ -64,3 +64,6 @@ mod smoke {
         assert!(!grant.contains_all(Rights::WRITE));
     }
 }
+
+#[cfg(kani)]
+mod kani_context_hash_equivalence;

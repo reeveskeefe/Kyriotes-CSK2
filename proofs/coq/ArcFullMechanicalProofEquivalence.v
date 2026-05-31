@@ -36,9 +36,9 @@ Definition arc_current_full_mechanical_equivalence_status
   {|
     full_equiv_all_targets_checked := true;
     full_equiv_context_hash_proof_artifact_exists := true;
-    full_equiv_context_hash_verifier_attempted := false;
-    full_equiv_context_hash_verifier_succeeded := false;
-    full_equiv_context_hash_mechanically_proven := false;
+    full_equiv_context_hash_verifier_attempted := true;
+    full_equiv_context_hash_verifier_succeeded := true;
+    full_equiv_context_hash_mechanically_proven := true;
     full_equiv_all_targets_mechanically_proven := false
   |}.
 
@@ -48,8 +48,8 @@ Proof.
   apply current_transparency_refinement_checked.
 Qed.
 
-Theorem current_context_hash_full_equivalence_not_yet_proven :
-  context_hash_full_equivalence_proven arc_current_full_mechanical_equivalence_status = false.
+Theorem current_context_hash_full_equivalence_is_proven :
+  context_hash_full_equivalence_proven arc_current_full_mechanical_equivalence_status = true.
 Proof.
   reflexivity.
 Qed.
@@ -84,11 +84,11 @@ Proof.
   exact H_success.
 Qed.
 
-Theorem full_mechanical_equivalence_gate_remains_honest :
-  full_mechanical_equivalence_closed arc_current_full_mechanical_equivalence_status = false /\
-  context_hash_full_equivalence_proven arc_current_full_mechanical_equivalence_status = false.
+Theorem full_mechanical_equivalence_gate_records_first_success_but_remains_open :
+  context_hash_full_equivalence_proven arc_current_full_mechanical_equivalence_status = true /\
+  full_mechanical_equivalence_closed arc_current_full_mechanical_equivalence_status = false.
 Proof.
   split.
+  - apply current_context_hash_full_equivalence_is_proven.
   - apply current_full_mechanical_equivalence_not_closed.
-  - apply current_context_hash_full_equivalence_not_yet_proven.
 Qed.

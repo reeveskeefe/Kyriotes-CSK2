@@ -1,5 +1,5 @@
 {
-  "boundary": "Mechanical refinement inventory has all declared targets checked and context_hash, decode_arc_object, encode_arc_object, verify, and seal verifier-backed proof lanes complete within their stated narrow scopes.",
+  "boundary": "Mechanical refinement inventory has all declared targets checked and context_hash, decode_arc_object, encode_arc_object, verify, seal, and open verifier-backed proof lanes complete within their stated narrow scopes.",
   "entries": [
     {
       "boundary": "decode_arc_object has verifier-backed Kani proof evidence for bounded malformed parser rejection and deterministic rejection behavior. Full parser equivalence remains outside this narrow proof claim.",
@@ -54,12 +54,12 @@
       "symbol_present": true
     },
     {
-      "boundary": "open has a mechanical authorization refinement track and source-surface check; not yet full semantic proof.",
+      "boundary": "open has verifier-backed Kani proof evidence for fail-closed authority-verifier rejection propagation, deterministic rejection, early rejection before capability validation/decryption, and no-panic behavior on a bounded invalid authority surface. Full cryptographic open/decryption equivalence remains outside this narrow proof claim.",
       "coq_model": "ArcMasterInvariantProofs",
       "harness_level": "MechanicallyHarnessed",
       "id": "engine.open",
       "mechanically_checked": true,
-      "mechanically_proven": false,
+      "mechanically_proven": true,
       "obligation": "Rust open must refine the Coq master open invariant and reject missing authorization gates.",
       "rust_file": "src/arc/engine.rs",
       "rust_symbol": "open",
@@ -147,7 +147,7 @@
   ],
   "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
   "mechanically_checked_count": 11,
-  "mechanically_proven_count": 5,
+  "mechanically_proven_count": 6,
   "schema": "arc.rust_mechanical_refinement_inventory.v1",
   "source_present_count": 11,
   "symbol_present_count": 8,

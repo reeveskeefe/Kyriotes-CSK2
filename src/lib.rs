@@ -79,3 +79,6 @@ mod kani_verify_equivalence;
 
 #[cfg(kani)]
 mod kani_seal_equivalence;
+
+#[cfg(kani)]
+mod kani_open_equivalence;

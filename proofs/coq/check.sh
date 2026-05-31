@@ -16,5 +16,10 @@ coqc ArcCryptoReduction.v
 coqc ArcTemporalProofs.v
 coqc ArcTranscriptProofs.v
 coqc ArcRevocationCompromiseProofs.v
+coqc ArcTransparencyProofs.v
+coqc ArcEncodingProofs.v
+coqc ArcWrapperProofs.v
+coqc ArcKemAeadAssumptions.v
+coqc ArcEndToEndTheorems.v
 
 echo "ARC Coq proofs compiled successfully."

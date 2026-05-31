@@ -12,3 +12,8 @@ ArcCryptoReduction.v
 ArcTemporalProofs.v
 ArcTranscriptProofs.v
 ArcRevocationCompromiseProofs.v
+ArcTransparencyProofs.v
+ArcEncodingProofs.v
+ArcWrapperProofs.v
+ArcKemAeadAssumptions.v
+ArcEndToEndTheorems.v

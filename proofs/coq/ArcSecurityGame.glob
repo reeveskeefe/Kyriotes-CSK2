@@ -1,0 +1,70 @@
+DIGEST 64c3303e38e3ef3ca417335219fa077d
+FArcSecurityGame
+R27:30 Stdlib.Lists.List <> <> lib
+R32:35 Stdlib.Bool.Bool <> <> lib
+R37:50 Stdlib.Arith.PeanoNat <> <> lib
+R52:54 Stdlib.micromega.Lia <> <> lib
+R64:76 Stdlib.Lists.List ListNotations <> mod
+R94:101 ArcTypes <> <> lib
+R103:111 ArcMerkle <> <> lib
+R113:124 ArcAuthority <> <> lib
+R126:134 ArcPolicy <> <> lib
+R136:144 ArcVerify <> <> lib
+ax 158:181 <> adversary_outputs_object
+R185:193 ArcTypes <> ArcObject rec
+ax 206:233 <> adversary_outputs_capability
+R237:246 ArcTypes <> Capability rec
+ax 259:281 <> adversary_outputs_state
+R285:298 ArcTypes <> AuthorityState rec
+def 313:345 <> adversary_wins_authorization_game
+R349:352 Corelib.Init.Datatypes <> bool ind
+R359:377 ArcVerify <> verify_open_context def
+R383:406 ArcSecurityGame <> adversary_outputs_object defax
+R412:439 ArcSecurityGame <> adversary_outputs_capability defax
+R445:467 ArcSecurityGame <> adversary_outputs_state defax
+def 482:504 <> unauthorized_capability
+R513:522 ArcTypes <> Capability rec
+binder 507:509 <> cap:7
+R532:540 ArcTypes <> ArcObject rec
+binder 526:528 <> obj:8
+R545:548 Corelib.Init.Datatypes <> bool ind
+R555:558 Corelib.Init.Datatypes <> negb def
+R561:574 ArcPolicy <> policy_accepts def
+R576:578 ArcSecurityGame <> cap:7 var
+R580:582 ArcSecurityGame <> obj:8 var
+prf 595:623 <> no_unauthorized_verified_open
+binder 636:638 <> obj:9
+binder 640:642 <> cap:10
+binder 644:648 <> state:11
+R695:702 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R688:690 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R655:673 ArcVerify <> verify_open_context def
+R675:677 ArcSecurityGame <> obj:9 var
+R679:681 ArcSecurityGame <> cap:10 var
+R683:687 ArcSecurityGame <> state:11 var
+R691:694 Corelib.Init.Datatypes <> true constr
+R734:736 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R703:725 ArcSecurityGame <> unauthorized_capability def
+R727:729 ArcSecurityGame <> cap:10 var
+R731:733 ArcSecurityGame <> obj:9 var
+R737:741 Corelib.Init.Datatypes <> false constr
+R786:808 ArcSecurityGame <> unauthorized_capability def
+R819:832 Stdlib.Bool.Bool <> negb_false_iff thm
+R819:832 Stdlib.Bool.Bool <> negb_false_iff thm
+R843:884 ArcVerify <> verify_open_context_implies_policy_accepts thm
+R843:884 ArcVerify <> verify_open_context_implies_policy_accepts thm
+prf 934:979 <> adversary_authorization_win_implies_authorized
+R1025:1030 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R1018:1020 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R985:1017 ArcSecurityGame <> adversary_wins_authorization_game def
+R1021:1024 Corelib.Init.Datatypes <> true constr
+R1108:1110 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1031:1053 ArcSecurityGame <> unauthorized_capability def
+R1055:1082 ArcSecurityGame <> adversary_outputs_capability defax
+R1084:1107 ArcSecurityGame <> adversary_outputs_object defax
+R1111:1115 Corelib.Init.Datatypes <> false constr
+R1145:1177 ArcSecurityGame <> adversary_wins_authorization_game def
+R1238:1260 ArcSecurityGame <> adversary_outputs_state defax
+R1193:1221 ArcSecurityGame <> no_unauthorized_verified_open thm
+R1238:1260 ArcSecurityGame <> adversary_outputs_state defax
+R1193:1221 ArcSecurityGame <> no_unauthorized_verified_open thm

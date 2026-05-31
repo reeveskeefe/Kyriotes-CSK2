@@ -1,0 +1,106 @@
+DIGEST 8f837b13df76de2bd828a84ef08b88e8
+FArcMerkle
+R27:30 Stdlib.Lists.List <> <> lib
+R32:35 Stdlib.Bool.Bool <> <> lib
+R37:50 Stdlib.Arith.PeanoNat <> <> lib
+R52:54 Stdlib.micromega.Lia <> <> lib
+R64:76 Stdlib.Lists.List ListNotations <> mod
+R94:101 ArcTypes <> <> lib
+ax 115:129 <> hash_capability
+R143:146 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R133:142 ArcTypes <> Capability rec
+R147:150 ArcTypes <> Hash def
+ax 163:183 <> hash_revocation_stamp
+R190:193 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R187:189 Corelib.Init.Datatypes <> nat ind
+R194:197 ArcTypes <> Hash def
+ax 210:232 <> included_in_merkle_root
+R240:243 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R236:239 ArcTypes <> Hash def
+R248:251 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R244:247 ArcTypes <> Hash def
+R252:255 Corelib.Init.Datatypes <> bool ind
+ax 268:289 <> not_in_revocation_root
+R296:299 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R293:295 Corelib.Init.Datatypes <> nat ind
+R304:307 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R300:303 ArcTypes <> Hash def
+R308:311 Corelib.Init.Datatypes <> bool ind
+ax 321:344 <> merkle_inclusion_binding
+binder 357:360 <> leaf:9
+binder 362:367 <> root_a:10
+binder 369:374 <> root_b:11
+R423:430 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R416:418 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R381:403 ArcMerkle <> included_in_merkle_root defax
+R405:408 ArcMerkle <> leaf:9 var
+R410:415 ArcMerkle <> root_a:10 var
+R419:422 Corelib.Init.Datatypes <> true constr
+R473:480 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R466:468 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R431:453 ArcMerkle <> included_in_merkle_root defax
+R455:458 ArcMerkle <> leaf:9 var
+R460:465 ArcMerkle <> root_b:11 var
+R469:472 Corelib.Init.Datatypes <> true constr
+R497:504 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R487:490 Corelib.Init.Logic <> ::type_scope:x_'<>'_x not
+R481:486 ArcMerkle <> root_a:10 var
+R491:496 ArcMerkle <> root_b:11 var
+R505:509 Corelib.Init.Logic <> False ind
+ax 519:538 <> revocation_soundness
+binder 551:555 <> stamp:14
+binder 557:560 <> root:15
+R607:614 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R600:602 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R567:588 ArcMerkle <> not_in_revocation_root defax
+R590:594 ArcMerkle <> stamp:14 var
+R596:599 ArcMerkle <> root:15 var
+R603:606 Corelib.Init.Datatypes <> true constr
+R673:675 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R615:637 ArcMerkle <> included_in_merkle_root defax
+R640:660 ArcMerkle <> hash_revocation_stamp defax
+R662:666 ArcMerkle <> stamp:14 var
+R669:672 ArcMerkle <> root:15 var
+R676:680 Corelib.Init.Datatypes <> false constr
+def 695:722 <> capability_in_authority_root
+R731:740 ArcTypes <> Capability rec
+binder 725:727 <> cap:18
+R752:765 ArcTypes <> AuthorityState rec
+binder 744:748 <> state:19
+R770:773 Corelib.Init.Datatypes <> bool ind
+R780:802 ArcMerkle <> included_in_merkle_root defax
+R805:819 ArcMerkle <> hash_capability defax
+R821:823 ArcMerkle <> cap:18 var
+R827:840 ArcTypes <> authority_root proj
+R842:846 ArcMerkle <> state:19 var
+def 862:883 <> capability_not_revoked
+R892:901 ArcTypes <> Capability rec
+binder 886:888 <> cap:20
+R913:926 ArcTypes <> AuthorityState rec
+binder 905:909 <> state:21
+R931:934 Corelib.Init.Datatypes <> bool ind
+R941:962 ArcMerkle <> not_in_revocation_root defax
+R965:973 ArcTypes <> cap_stamp proj
+R975:977 ArcMerkle <> cap:20 var
+R981:995 ArcTypes <> revocation_root proj
+R997:1001 ArcMerkle <> state:21 var
+prf 1014:1052 <> non_revocation_excludes_revocation_leaf
+binder 1065:1067 <> cap:22
+binder 1069:1073 <> state:23
+R1119:1126 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R1112:1114 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1080:1101 ArcMerkle <> capability_not_revoked def
+R1103:1105 ArcMerkle <> cap:22 var
+R1107:1111 ArcMerkle <> state:23 var
+R1115:1118 Corelib.Init.Datatypes <> true constr
+R1214:1216 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1127:1149 ArcMerkle <> included_in_merkle_root defax
+R1152:1172 ArcMerkle <> hash_revocation_stamp defax
+R1175:1183 ArcTypes <> cap_stamp proj
+R1185:1187 ArcMerkle <> cap:22 var
+R1192:1206 ArcTypes <> revocation_root proj
+R1208:1212 ArcMerkle <> state:23 var
+R1217:1221 Corelib.Init.Datatypes <> false constr
+R1262:1283 ArcMerkle <> capability_not_revoked def
+R1299:1318 ArcMerkle <> revocation_soundness prfax
+R1299:1318 ArcMerkle <> revocation_soundness prfax

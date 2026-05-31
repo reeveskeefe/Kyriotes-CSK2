@@ -1,0 +1,8 @@
+-R . ArcProofs
+ArcTypes.v
+ArcMerkle.v
+ArcAuthority.v
+ArcPolicy.v
+ArcVerify.v
+ArcSecurityGame.v
+ArcTheorems.v

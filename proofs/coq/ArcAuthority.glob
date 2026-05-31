@@ -1,0 +1,90 @@
+DIGEST a781ce5ddeaed0de7a2d48c96b2794ff
+FArcAuthority
+R27:30 Stdlib.Lists.List <> <> lib
+R32:35 Stdlib.Bool.Bool <> <> lib
+R37:50 Stdlib.Arith.PeanoNat <> <> lib
+R52:54 Stdlib.micromega.Lia <> <> lib
+R64:76 Stdlib.Lists.List ListNotations <> mod
+R94:101 ArcTypes <> <> lib
+R103:111 ArcMerkle <> <> lib
+ax 125:146 <> verify_epoch_signature
+R164:167 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R150:163 ArcTypes <> AuthorityState rec
+R168:171 Corelib.Init.Datatypes <> bool ind
+ax 184:209 <> verify_transparency_commit
+R227:230 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R213:226 ArcTypes <> AuthorityState rec
+R231:234 Corelib.Init.Datatypes <> bool ind
+ax 244:270 <> epoch_signature_unforgeable
+binder 283:287 <> state:5
+R329:336 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R322:324 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R294:315 ArcAuthority <> verify_epoch_signature defax
+R317:321 ArcAuthority <> state:5 var
+R325:328 Corelib.Init.Datatypes <> true constr
+R359:362 Corelib.Init.Logic <> ::type_scope:x_'<>'_x not
+R337:352 ArcTypes <> epoch_public_key proj
+R354:358 ArcAuthority <> state:5 var
+ax 373:399 <> transparency_commit_binding
+binder 412:416 <> state:8
+R462:469 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R455:457 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R423:448 ArcAuthority <> verify_transparency_commit defax
+R450:454 ArcAuthority <> state:8 var
+R458:461 Corelib.Init.Datatypes <> true constr
+R493:495 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R470:486 ArcTypes <> transparency_root proj
+R488:492 ArcAuthority <> state:8 var
+R496:512 ArcTypes <> transparency_root proj
+R514:518 ArcAuthority <> state:8 var
+def 533:553 <> authority_state_valid
+R564:577 ArcTypes <> AuthorityState rec
+binder 556:560 <> state:11
+R582:585 Corelib.Init.Datatypes <> bool ind
+R620:623 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R592:613 ArcAuthority <> verify_epoch_signature defax
+R615:619 ArcAuthority <> state:11 var
+R624:649 ArcAuthority <> verify_transparency_commit defax
+R651:655 ArcAuthority <> state:11 var
+prf 665:709 <> authority_state_valid_implies_epoch_signature
+binder 722:726 <> state:12
+R767:774 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R760:762 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R733:753 ArcAuthority <> authority_state_valid def
+R755:759 ArcAuthority <> state:12 var
+R763:766 Corelib.Init.Datatypes <> true constr
+R803:805 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R775:796 ArcAuthority <> verify_epoch_signature defax
+R798:802 ArcAuthority <> state:12 var
+R806:809 Corelib.Init.Datatypes <> true constr
+R846:866 ArcAuthority <> authority_state_valid def
+R882:894 Stdlib.Bool.Bool <> andb_true_iff thm
+R882:894 Stdlib.Bool.Bool <> andb_true_iff thm
+prf 956:997 <> authority_state_valid_implies_transparency
+binder 1010:1014 <> state:13
+R1055:1062 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R1048:1050 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1021:1041 ArcAuthority <> authority_state_valid def
+R1043:1047 ArcAuthority <> state:13 var
+R1051:1054 Corelib.Init.Datatypes <> true constr
+R1095:1097 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1063:1088 ArcAuthority <> verify_transparency_commit defax
+R1090:1094 ArcAuthority <> state:13 var
+R1098:1101 Corelib.Init.Datatypes <> true constr
+R1138:1158 ArcAuthority <> authority_state_valid def
+R1174:1186 Stdlib.Bool.Bool <> andb_true_iff thm
+R1174:1186 Stdlib.Bool.Bool <> andb_true_iff thm
+prf 1266:1312 <> authority_state_valid_implies_nonzero_epoch_key
+binder 1325:1329 <> state:14
+R1370:1377 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R1363:1365 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1336:1356 ArcAuthority <> authority_state_valid def
+R1358:1362 ArcAuthority <> state:14 var
+R1366:1369 Corelib.Init.Datatypes <> true constr
+R1400:1403 Corelib.Init.Logic <> ::type_scope:x_'<>'_x not
+R1378:1393 ArcTypes <> epoch_public_key proj
+R1395:1399 ArcAuthority <> state:14 var
+R1440:1466 ArcAuthority <> epoch_signature_unforgeable prfax
+R1440:1466 ArcAuthority <> epoch_signature_unforgeable prfax
+R1477:1521 ArcAuthority <> authority_state_valid_implies_epoch_signature thm
+R1477:1521 ArcAuthority <> authority_state_valid_implies_epoch_signature thm

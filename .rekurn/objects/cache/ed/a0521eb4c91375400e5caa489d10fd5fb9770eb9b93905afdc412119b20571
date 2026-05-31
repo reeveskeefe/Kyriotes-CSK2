@@ -1,0 +1,134 @@
+rekurn-blob
+4848
+DIGEST 6e78fa8bb6e228e2495a58dde6fbf461
+FArcTypes
+R27:30 Stdlib.Lists.List <> <> lib
+R32:35 Stdlib.Bool.Bool <> <> lib
+R37:50 Stdlib.Arith.PeanoNat <> <> lib
+R52:54 Stdlib.micromega.Lia <> <> lib
+R64:76 Stdlib.Lists.List ListNotations <> mod
+def 91:95 <> Bytes
+R100:103 Corelib.Init.Datatypes <> list ind
+R105:107 Corelib.Init.Datatypes <> nat ind
+def 121:124 <> Hash
+R129:131 Corelib.Init.Datatypes <> nat ind
+def 145:153 <> Signature
+R158:160 Corelib.Init.Datatypes <> nat ind
+def 174:182 <> PublicKey
+R187:189 Corelib.Init.Datatypes <> nat ind
+def 203:210 <> ObjectId
+R215:217 Corelib.Init.Datatypes <> nat ind
+def 231:235 <> Epoch
+R240:242 Corelib.Init.Datatypes <> nat ind
+def 256:261 <> Rights
+R266:268 Corelib.Init.Datatypes <> nat ind
+rec 279:288 <> Capability
+proj 297:307 <> cap_subject
+proj 320:332 <> cap_object_id
+proj 348:357 <> cap_rights
+proj 371:385 <> cap_epoch_start
+proj 398:410 <> cap_epoch_end
+proj 423:431 <> cap_stamp
+proj 442:457 <> cap_parent_stamp
+proj 468:487 <> cap_delegation_depth
+R311:315 ArcTypes <> Bytes def
+R336:343 ArcTypes <> ObjectId def
+R361:366 ArcTypes <> Rights def
+R389:393 ArcTypes <> Epoch def
+R414:418 ArcTypes <> Epoch def
+R435:437 Corelib.Init.Datatypes <> nat ind
+R461:463 Corelib.Init.Datatypes <> nat ind
+R491:493 Corelib.Init.Datatypes <> nat ind
+rec 506:519 <> AuthorityState
+proj 528:541 <> authority_root
+proj 553:567 <> revocation_root
+proj 579:595 <> transparency_root
+proj 607:611 <> epoch
+proj 624:639 <> epoch_public_key
+proj 656:670 <> root_public_key
+R545:548 ArcTypes <> Hash def
+R571:574 ArcTypes <> Hash def
+R599:602 ArcTypes <> Hash def
+R615:619 ArcTypes <> Epoch def
+R643:651 ArcTypes <> PublicKey def
+R674:682 ArcTypes <> PublicKey def
+rec 695:703 <> ArcObject
+proj 712:720 <> object_id
+proj 736:750 <> required_rights
+proj 764:783 <> bound_authority_root
+proj 795:815 <> bound_revocation_root
+proj 827:849 <> bound_transparency_root
+proj 861:871 <> bound_epoch
+proj 884:899 <> aad_context_hash
+R724:731 ArcTypes <> ObjectId def
+R754:759 ArcTypes <> Rights def
+R787:790 ArcTypes <> Hash def
+R819:822 ArcTypes <> Hash def
+R853:856 ArcTypes <> Hash def
+R875:879 ArcTypes <> Epoch def
+R903:906 ArcTypes <> Hash def
+def 923:932 <> has_rights
+R954:959 ArcTypes <> Rights def
+binder 935:941 <> granted:25
+binder 943:950 <> required:26
+R964:967 Corelib.Init.Datatypes <> bool ind
+R974:980 Stdlib.Arith.PeanoNat Nat eqb def
+R983:990 Stdlib.Arith.PeanoNat Nat land def
+R992:998 ArcTypes <> granted:25 var
+R1000:1007 ArcTypes <> required:26 var
+R1010:1017 ArcTypes <> required:26 var
+def 1032:1046 <> epoch_in_window
+R1066:1070 ArcTypes <> Epoch def
+binder 1049:1049 <> e:27
+binder 1051:1055 <> start:28
+binder 1057:1062 <> finish:29
+R1075:1078 Corelib.Init.Datatypes <> bool ind
+R1100:1103 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R1085:1091 Stdlib.Arith.PeanoNat Nat leb def
+R1093:1097 ArcTypes <> start:28 var
+R1099:1099 ArcTypes <> e:27 var
+R1104:1110 Stdlib.Arith.PeanoNat Nat leb def
+R1112:1112 ArcTypes <> e:27 var
+R1114:1119 ArcTypes <> finish:29 var
+prf 1129:1155 <> epoch_in_window_true_bounds
+binder 1168:1168 <> e:30
+binder 1170:1174 <> start:31
+binder 1176:1181 <> finish:32
+R1225:1232 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R1218:1220 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1188:1202 ArcTypes <> epoch_in_window def
+R1204:1204 ArcTypes <> e:30 var
+R1206:1210 ArcTypes <> start:31 var
+R1212:1217 ArcTypes <> finish:32 var
+R1221:1224 Corelib.Init.Datatypes <> true constr
+R1243:1246 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R1238:1241 Corelib.Init.Peano <> ::nat_scope:x_'<='_x not
+R1233:1237 ArcTypes <> start:31 var
+R1242:1242 ArcTypes <> e:30 var
+R1248:1251 Corelib.Init.Peano <> ::nat_scope:x_'<='_x not
+R1247:1247 ArcTypes <> e:30 var
+R1252:1257 ArcTypes <> finish:32 var
+R1303:1317 ArcTypes <> epoch_in_window def
+R1333:1345 Stdlib.Bool.Bool <> andb_true_iff thm
+R1333:1345 Stdlib.Bool.Bool <> andb_true_iff thm
+R1397:1406 Stdlib.Arith.PeanoNat Nat leb_le thm
+R1397:1406 Stdlib.Arith.PeanoNat Nat leb_le thm
+R1428:1437 Stdlib.Arith.PeanoNat Nat leb_le thm
+R1428:1437 Stdlib.Arith.PeanoNat Nat leb_le thm
+prf 1485:1499 <> has_rights_true
+binder 1512:1518 <> granted:33
+binder 1520:1527 <> required:34
+R1568:1575 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R1561:1563 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1534:1543 ArcTypes <> has_rights def
+R1545:1551 ArcTypes <> granted:33 var
+R1553:1560 ArcTypes <> required:34 var
+R1564:1567 Corelib.Init.Datatypes <> true constr
+R1601:1603 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1576:1583 Stdlib.Arith.PeanoNat Nat land def
+R1585:1591 ArcTypes <> granted:33 var
+R1593:1600 ArcTypes <> required:34 var
+R1604:1611 ArcTypes <> required:34 var
+R1659:1668 ArcTypes <> has_rights def
+R1684:1693 Stdlib.Arith.PeanoNat Nat eqb_eq thm
+R1684:1693 Stdlib.Arith.PeanoNat Nat eqb_eq thm

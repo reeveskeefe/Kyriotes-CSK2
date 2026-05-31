@@ -1,0 +1,9 @@
+rekurn-blob
+306
+COQAUX1 8f837b13df76de2bd828a84ef08b88e8 /Users/keefereeves/Desktop/ARC /proofs/coq/ArcMerkle.v
+0 0 VernacProof "tac:no using:no"
+1332 1336 proof_build_time "0.001"
+0 0 non_revocation_excludes_revocation_leaf "0.001"
+1323 1331 context_used ""
+1332 1336 proof_check_time "0.000"
+0 0 vo_compile_time "0.210"

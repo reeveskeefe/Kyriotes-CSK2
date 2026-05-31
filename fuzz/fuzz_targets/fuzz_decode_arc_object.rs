@@ -18,6 +18,7 @@ fuzz_target!(|data: &[u8]| {
     for value in ["strict", "embedded", "server", "", "foo", "embedded123"] {
         let _ = DecodeProfile::from_cli_value(value);
     }
+
 });
 
 

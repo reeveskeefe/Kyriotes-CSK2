@@ -1,0 +1,248 @@
+rekurn-blob
+10787
+DIGEST 4aa22478478f2183c47af3810bcd22e9
+FArcVerify
+R27:30 Stdlib.Lists.List <> <> lib
+R32:35 Stdlib.Bool.Bool <> <> lib
+R37:50 Stdlib.Arith.PeanoNat <> <> lib
+R52:54 Stdlib.micromega.Lia <> <> lib
+R64:76 Stdlib.Lists.List ListNotations <> mod
+R94:101 ArcTypes <> <> lib
+R103:111 ArcMerkle <> <> lib
+R113:124 ArcAuthority <> <> lib
+R126:134 ArcPolicy <> <> lib
+def 149:169 <> object_bound_to_state
+R178:186 ArcTypes <> ArcObject rec
+binder 172:174 <> obj:1
+R198:211 ArcTypes <> AuthorityState rec
+binder 190:194 <> state:2
+R216:219 Corelib.Init.Datatypes <> bool ind
+R417:422 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R348:353 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R283:288 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R226:232 Stdlib.Arith.PeanoNat Nat eqb def
+R235:254 ArcTypes <> bound_authority_root proj
+R256:258 ArcVerify <> obj:1 var
+R262:275 ArcTypes <> authority_root proj
+R277:281 ArcVerify <> state:2 var
+R289:295 Stdlib.Arith.PeanoNat Nat eqb def
+R298:318 ArcTypes <> bound_revocation_root proj
+R320:322 ArcVerify <> obj:1 var
+R326:340 ArcTypes <> revocation_root proj
+R342:346 ArcVerify <> state:2 var
+R354:360 Stdlib.Arith.PeanoNat Nat eqb def
+R363:385 ArcTypes <> bound_transparency_root proj
+R387:389 ArcVerify <> obj:1 var
+R393:409 ArcTypes <> transparency_root proj
+R411:415 ArcVerify <> state:2 var
+R423:429 Stdlib.Arith.PeanoNat Nat eqb def
+R432:442 ArcTypes <> bound_epoch proj
+R444:446 ArcVerify <> obj:1 var
+R450:454 ArcTypes <> epoch proj
+R456:460 ArcVerify <> state:2 var
+def 476:494 <> verify_open_context
+R503:511 ArcTypes <> ArcObject rec
+binder 497:499 <> obj:3
+R521:530 ArcTypes <> Capability rec
+binder 515:517 <> cap:4
+R542:555 ArcTypes <> AuthorityState rec
+binder 534:538 <> state:5
+R560:563 Corelib.Init.Datatypes <> bool ind
+R716:721 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R678:683 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R634:639 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R597:602 Corelib.Init.Datatypes <> ::bool_scope:x_'&&'_x not
+R570:590 ArcAuthority <> authority_state_valid def
+R592:596 ArcVerify <> state:5 var
+R603:623 ArcVerify <> object_bound_to_state def
+R625:627 ArcVerify <> obj:3 var
+R629:633 ArcVerify <> state:5 var
+R640:667 ArcMerkle <> capability_in_authority_root def
+R669:671 ArcVerify <> cap:4 var
+R673:677 ArcVerify <> state:5 var
+R684:705 ArcMerkle <> capability_not_revoked def
+R707:709 ArcVerify <> cap:4 var
+R711:715 ArcVerify <> state:5 var
+R722:735 ArcPolicy <> policy_accepts def
+R737:739 ArcVerify <> cap:4 var
+R741:743 ArcVerify <> obj:3 var
+prf 753:797 <> object_bound_to_state_implies_roots_and_epoch
+binder 810:812 <> obj:6
+binder 814:818 <> state:7
+R863:870 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R856:858 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R825:845 ArcVerify <> object_bound_to_state def
+R847:849 ArcVerify <> obj:6 var
+R851:855 ArcVerify <> state:7 var
+R859:862 Corelib.Init.Datatypes <> true constr
+R918:925 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R895:897 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R871:890 ArcTypes <> bound_authority_root proj
+R892:894 ArcVerify <> obj:6 var
+R898:911 ArcTypes <> authority_root proj
+R913:917 ArcVerify <> state:7 var
+R975:982 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R951:953 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R926:946 ArcTypes <> bound_revocation_root proj
+R948:950 ArcVerify <> obj:6 var
+R954:968 ArcTypes <> revocation_root proj
+R970:974 ArcVerify <> state:7 var
+R1036:1043 Corelib.Init.Logic <> ::type_scope:x_'/\'_x not
+R1010:1012 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R983:1005 ArcTypes <> bound_transparency_root proj
+R1007:1009 ArcVerify <> obj:6 var
+R1013:1029 ArcTypes <> transparency_root proj
+R1031:1035 ArcVerify <> state:7 var
+R1059:1061 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1044:1054 ArcTypes <> bound_epoch proj
+R1056:1058 ArcVerify <> obj:6 var
+R1062:1066 ArcTypes <> epoch proj
+R1068:1072 ArcVerify <> state:7 var
+R1113:1133 ArcVerify <> object_bound_to_state def
+R1158:1170 Stdlib.Bool.Bool <> andb_true_iff thm
+R1158:1170 Stdlib.Bool.Bool <> andb_true_iff thm
+R1158:1170 Stdlib.Bool.Bool <> andb_true_iff thm
+R1158:1170 Stdlib.Bool.Bool <> andb_true_iff thm
+R1158:1170 Stdlib.Bool.Bool <> andb_true_iff thm
+R1158:1170 Stdlib.Bool.Bool <> andb_true_iff thm
+R1158:1170 Stdlib.Bool.Bool <> andb_true_iff thm
+R1158:1170 Stdlib.Bool.Bool <> andb_true_iff thm
+R1252:1261 Stdlib.Arith.PeanoNat Nat eqb_eq thm
+R1252:1261 Stdlib.Arith.PeanoNat Nat eqb_eq thm
+R1252:1261 Stdlib.Arith.PeanoNat Nat eqb_eq thm
+R1252:1261 Stdlib.Arith.PeanoNat Nat eqb_eq thm
+R1252:1261 Stdlib.Arith.PeanoNat Nat eqb_eq thm
+prf 1288:1330 <> verify_open_context_implies_authority_valid
+binder 1343:1345 <> obj:8
+binder 1347:1349 <> cap:9
+binder 1351:1355 <> state:10
+R1402:1409 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R1395:1397 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1362:1380 ArcVerify <> verify_open_context def
+R1382:1384 ArcVerify <> obj:8 var
+R1386:1388 ArcVerify <> cap:9 var
+R1390:1394 ArcVerify <> state:10 var
+R1398:1401 Corelib.Init.Datatypes <> true constr
+R1437:1439 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1410:1430 ArcAuthority <> authority_state_valid def
+R1432:1436 ArcVerify <> state:10 var
+R1440:1443 Corelib.Init.Datatypes <> true constr
+R1488:1506 ArcVerify <> verify_open_context def
+R1531:1543 Stdlib.Bool.Bool <> andb_true_iff thm
+R1531:1543 Stdlib.Bool.Bool <> andb_true_iff thm
+R1531:1543 Stdlib.Bool.Bool <> andb_true_iff thm
+R1531:1543 Stdlib.Bool.Bool <> andb_true_iff thm
+R1531:1543 Stdlib.Bool.Bool <> andb_true_iff thm
+R1531:1543 Stdlib.Bool.Bool <> andb_true_iff thm
+R1531:1543 Stdlib.Bool.Bool <> andb_true_iff thm
+R1531:1543 Stdlib.Bool.Bool <> andb_true_iff thm
+R1531:1543 Stdlib.Bool.Bool <> andb_true_iff thm
+R1531:1543 Stdlib.Bool.Bool <> andb_true_iff thm
+prf 1619:1660 <> verify_open_context_implies_policy_accepts
+binder 1673:1675 <> obj:11
+binder 1677:1679 <> cap:12
+binder 1681:1685 <> state:13
+R1732:1739 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R1725:1727 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1692:1710 ArcVerify <> verify_open_context def
+R1712:1714 ArcVerify <> obj:11 var
+R1716:1718 ArcVerify <> cap:12 var
+R1720:1724 ArcVerify <> state:13 var
+R1728:1731 Corelib.Init.Datatypes <> true constr
+R1762:1764 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R1740:1753 ArcPolicy <> policy_accepts def
+R1755:1757 ArcVerify <> cap:12 var
+R1759:1761 ArcVerify <> obj:11 var
+R1765:1768 Corelib.Init.Datatypes <> true constr
+R1813:1831 ArcVerify <> verify_open_context def
+R1856:1868 Stdlib.Bool.Bool <> andb_true_iff thm
+R1856:1868 Stdlib.Bool.Bool <> andb_true_iff thm
+R1856:1868 Stdlib.Bool.Bool <> andb_true_iff thm
+R1856:1868 Stdlib.Bool.Bool <> andb_true_iff thm
+R1856:1868 Stdlib.Bool.Bool <> andb_true_iff thm
+R1856:1868 Stdlib.Bool.Bool <> andb_true_iff thm
+R1856:1868 Stdlib.Bool.Bool <> andb_true_iff thm
+R1856:1868 Stdlib.Bool.Bool <> andb_true_iff thm
+R1856:1868 Stdlib.Bool.Bool <> andb_true_iff thm
+R1856:1868 Stdlib.Bool.Bool <> andb_true_iff thm
+prf 1949:1999 <> verify_open_context_implies_capability_in_authority
+binder 2012:2014 <> obj:14
+binder 2016:2018 <> cap:15
+binder 2020:2024 <> state:16
+R2071:2078 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R2064:2066 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R2031:2049 ArcVerify <> verify_open_context def
+R2051:2053 ArcVerify <> obj:14 var
+R2055:2057 ArcVerify <> cap:15 var
+R2059:2063 ArcVerify <> state:16 var
+R2067:2070 Corelib.Init.Datatypes <> true constr
+R2117:2119 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R2079:2106 ArcMerkle <> capability_in_authority_root def
+R2108:2110 ArcVerify <> cap:15 var
+R2112:2116 ArcVerify <> state:16 var
+R2120:2123 Corelib.Init.Datatypes <> true constr
+R2168:2186 ArcVerify <> verify_open_context def
+R2211:2223 Stdlib.Bool.Bool <> andb_true_iff thm
+R2211:2223 Stdlib.Bool.Bool <> andb_true_iff thm
+R2211:2223 Stdlib.Bool.Bool <> andb_true_iff thm
+R2211:2223 Stdlib.Bool.Bool <> andb_true_iff thm
+R2211:2223 Stdlib.Bool.Bool <> andb_true_iff thm
+R2211:2223 Stdlib.Bool.Bool <> andb_true_iff thm
+R2211:2223 Stdlib.Bool.Bool <> andb_true_iff thm
+R2211:2223 Stdlib.Bool.Bool <> andb_true_iff thm
+R2211:2223 Stdlib.Bool.Bool <> andb_true_iff thm
+R2211:2223 Stdlib.Bool.Bool <> andb_true_iff thm
+prf 2298:2336 <> verify_open_context_implies_not_revoked
+binder 2349:2351 <> obj:17
+binder 2353:2355 <> cap:18
+binder 2357:2361 <> state:19
+R2408:2415 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R2401:2403 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R2368:2386 ArcVerify <> verify_open_context def
+R2388:2390 ArcVerify <> obj:17 var
+R2392:2394 ArcVerify <> cap:18 var
+R2396:2400 ArcVerify <> state:19 var
+R2404:2407 Corelib.Init.Datatypes <> true constr
+R2448:2450 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R2416:2437 ArcMerkle <> capability_not_revoked def
+R2439:2441 ArcVerify <> cap:18 var
+R2443:2447 ArcVerify <> state:19 var
+R2451:2454 Corelib.Init.Datatypes <> true constr
+R2499:2517 ArcVerify <> verify_open_context def
+R2542:2554 Stdlib.Bool.Bool <> andb_true_iff thm
+R2542:2554 Stdlib.Bool.Bool <> andb_true_iff thm
+R2542:2554 Stdlib.Bool.Bool <> andb_true_iff thm
+R2542:2554 Stdlib.Bool.Bool <> andb_true_iff thm
+R2542:2554 Stdlib.Bool.Bool <> andb_true_iff thm
+R2542:2554 Stdlib.Bool.Bool <> andb_true_iff thm
+R2542:2554 Stdlib.Bool.Bool <> andb_true_iff thm
+R2542:2554 Stdlib.Bool.Bool <> andb_true_iff thm
+R2542:2554 Stdlib.Bool.Bool <> andb_true_iff thm
+R2542:2554 Stdlib.Bool.Bool <> andb_true_iff thm
+prf 2645:2684 <> verify_open_context_implies_object_bound
+binder 2697:2699 <> obj:20
+binder 2701:2703 <> cap:21
+binder 2705:2709 <> state:22
+R2756:2763 Corelib.Init.Logic <> ::type_scope:x_'->'_x not
+R2749:2751 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R2716:2734 ArcVerify <> verify_open_context def
+R2736:2738 ArcVerify <> obj:20 var
+R2740:2742 ArcVerify <> cap:21 var
+R2744:2748 ArcVerify <> state:22 var
+R2752:2755 Corelib.Init.Datatypes <> true constr
+R2795:2797 Corelib.Init.Logic <> ::type_scope:x_'='_x not
+R2764:2784 ArcVerify <> object_bound_to_state def
+R2786:2788 ArcVerify <> obj:20 var
+R2790:2794 ArcVerify <> state:22 var
+R2798:2801 Corelib.Init.Datatypes <> true constr
+R2846:2864 ArcVerify <> verify_open_context def
+R2889:2901 Stdlib.Bool.Bool <> andb_true_iff thm
+R2889:2901 Stdlib.Bool.Bool <> andb_true_iff thm
+R2889:2901 Stdlib.Bool.Bool <> andb_true_iff thm
+R2889:2901 Stdlib.Bool.Bool <> andb_true_iff thm
+R2889:2901 Stdlib.Bool.Bool <> andb_true_iff thm
+R2889:2901 Stdlib.Bool.Bool <> andb_true_iff thm
+R2889:2901 Stdlib.Bool.Bool <> andb_true_iff thm
+R2889:2901 Stdlib.Bool.Bool <> andb_true_iff thm
+R2889:2901 Stdlib.Bool.Bool <> andb_true_iff thm
+R2889:2901 Stdlib.Bool.Bool <> andb_true_iff thm

@@ -1,0 +1,7 @@
+rekurn-commit
+tree 15a1157b71154853cd53dee8d1450cfe20bdeeee0c31b491b08bbe42cf0a5dd2
+parent a700bb929d94d50f6c898d7c722213e3e465c6a18dcb4f1accdd9a8d3a77c8fe
+author reeveskeefe <reeveskeefe@outlook.com> 1780252861
+committer reeveskeefe <reeveskeefe@outlook.com> 1780252861
+
+removed unnecessary code in the fuzz_decode_arc_object.rs

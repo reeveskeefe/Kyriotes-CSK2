@@ -1,0 +1,61 @@
+rekurn-blob
+1951
+From Stdlib Require Import List Bool Arith.PeanoNat Lia.
+Import ListNotations.
+Require Import ArcTypes.
+
+Definition capability_matches_object (cap : Capability) (obj : ArcObject) : bool :=
+  Nat.eqb (cap_object_id cap) (object_id obj).
+
+Definition capability_has_required_rights (cap : Capability) (obj : ArcObject) : bool :=
+  has_rights (cap_rights cap) (required_rights obj).
+
+Definition capability_valid_for_object_epoch (cap : Capability) (obj : ArcObject) : bool :=
+  epoch_in_window (bound_epoch obj) (cap_epoch_start cap) (cap_epoch_end cap).
+
+Definition policy_accepts (cap : Capability) (obj : ArcObject) : bool :=
+  capability_matches_object cap obj &&
+  capability_has_required_rights cap obj &&
+  capability_valid_for_object_epoch cap obj.
+
+Lemma policy_accepts_implies_object_match :
+  forall cap obj,
+    policy_accepts cap obj = true ->
+    cap_object_id cap = object_id obj.
+Proof.
+  intros cap obj H.
+  unfold policy_accepts in H.
+  repeat rewrite andb_true_iff in H.
+  destruct H as [[H_match _] _].
+  unfold capability_matches_object in H_match.
+  apply Nat.eqb_eq in H_match.
+  exact H_match.
+Qed.
+
+Lemma policy_accepts_implies_required_rights :
+  forall cap obj,
+    policy_accepts cap obj = true ->
+    Nat.land (cap_rights cap) (required_rights obj) = required_rights obj.
+Proof.
+  intros cap obj H.
+  unfold policy_accepts in H.
+  repeat rewrite andb_true_iff in H.
+  destruct H as [[_ H_rights] _].
+  unfold capability_has_required_rights in H_rights.
+  apply has_rights_true.
+  exact H_rights.
+Qed.
+
+Lemma policy_accepts_implies_epoch_window :
+  forall cap obj,
+    policy_accepts cap obj = true ->
+    cap_epoch_start cap <= bound_epoch obj /\ bound_epoch obj <= cap_epoch_end cap.
+Proof.
+  intros cap obj H.
+  unfold policy_accepts in H.
+  repeat rewrite andb_true_iff in H.
+  destruct H as [[_ _] H_epoch].
+  unfold capability_valid_for_object_epoch in H_epoch.
+  apply epoch_in_window_true_bounds.
+  exact H_epoch.
+Qed.

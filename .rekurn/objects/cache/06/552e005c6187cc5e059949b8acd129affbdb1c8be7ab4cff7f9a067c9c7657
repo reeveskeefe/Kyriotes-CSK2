@@ -1,0 +1,22 @@
+rekurn-blob
+348
+[package]
+name = "arc-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[dependencies]
+arc_core = { path = "..", package = "ARCencryption" }
+libfuzzer-sys = "0.4"
+
+[package.metadata]
+cargo-fuzz = true
+
+[[bin]]
+name = "fuzz_decode_arc_object"
+path = "fuzz_targets/fuzz_decode_arc_object.rs"
+test = false
+doc = false
+
+# repeat for each target

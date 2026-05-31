@@ -1,0 +1,16 @@
+rekurn-blob
+244
+-R . ArcProofs
+ArcTypes.v
+ArcMerkle.v
+ArcAuthority.v
+ArcPolicy.v
+ArcVerify.v
+ArcSecurityGame.v
+ArcTheorems.v
+ArcStressProofs.v
+ArcDelegationProofs.v
+ArcCryptoReduction.v
+ArcTemporalProofs.v
+ArcTranscriptProofs.v
+ArcRevocationCompromiseProofs.v

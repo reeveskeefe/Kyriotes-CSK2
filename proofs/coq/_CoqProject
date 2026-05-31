@@ -25,3 +25,4 @@ ArcInvalidTransitionProofs.v
 ArcTightSecurityGameProofs.v
 ArcAssumptionReductionProofs.v
 ArcRustRefinementMap.v
+ArcMasterInvariantProofs.v

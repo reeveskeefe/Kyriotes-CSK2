@@ -29,5 +29,6 @@ coqc ArcInvalidTransitionProofs.v
 coqc ArcTightSecurityGameProofs.v
 coqc ArcAssumptionReductionProofs.v
 coqc ArcRustRefinementMap.v
+coqc ArcMasterInvariantProofs.v
 
 echo "ARC Coq proofs compiled successfully."

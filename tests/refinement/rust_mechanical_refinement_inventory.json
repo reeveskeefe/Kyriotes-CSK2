@@ -1,5 +1,5 @@
 {
-  "boundary": "Mechanical refinement inventory with checked context_hash, decode_arc_object, encode_arc_object, verify, seal, open, add_epoch_wrapper, rotate_epoch, and rotate_epoch_full targets; full proof remains open until all targets are mechanically proven.",
+  "boundary": "Mechanical refinement inventory with checked engine, encoding, context, and capability_tree targets; full proof remains open until all targets are mechanically proven.",
   "entries": [
     {
       "boundary": "decode_arc_object has parser-refinement rejection vectors and Rust rejection tests; not yet full byte-level semantic proof.",
@@ -119,11 +119,11 @@
       "symbol_present": true
     },
     {
-      "boundary": "Harnessed inventory only; not a proof of Rust behavioral equivalence.",
+      "boundary": "capability_tree has a mechanical Merkle/capability proof refinement track and source-surface check; not yet full semantic proof.",
       "coq_model": "ArcMerkleTransparencyCompleteness",
       "harness_level": "MechanicallyHarnessed",
       "id": "capability_tree.proofs",
-      "mechanically_checked": false,
+      "mechanically_checked": true,
       "mechanically_proven": false,
       "obligation": "Rust capability tree proof logic must refine Coq Merkle membership and revocation models.",
       "rust_file": "src/arc/capability_tree.rs",
@@ -146,7 +146,7 @@
     }
   ],
   "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
-  "mechanically_checked_count": 9,
+  "mechanically_checked_count": 10,
   "mechanically_proven_count": 0,
   "schema": "arc.rust_mechanical_refinement_inventory.v1",
   "source_present_count": 11,

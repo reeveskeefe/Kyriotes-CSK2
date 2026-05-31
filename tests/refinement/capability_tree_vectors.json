@@ -1,0 +1,96 @@
+{
+  "claim_boundary": "Capability-tree proof refinement track; not full Coq/Rust semantic equivalence.",
+  "schema": "arc.capability_tree.refinement_vectors.v1",
+  "target": "src/arc/capability_tree.rs",
+  "vector_count": 11,
+  "vectors": [
+    {
+      "category": "missing-capability-proof-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "capability_proof",
+      "id": "capability_tree.066757161a328a17",
+      "notes": "capability_tree must reject missing capability proof material."
+    },
+    {
+      "category": "missing-membership-proof-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "membership_proof",
+      "id": "capability_tree.548cae295b03c421",
+      "notes": "capability_tree must reject missing membership proof material."
+    },
+    {
+      "category": "missing-nonrevocation-witness-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "nonrevocation_witness",
+      "id": "capability_tree.f51d5f2a2fca474f",
+      "notes": "capability_tree must reject missing non-revocation witness material."
+    },
+    {
+      "category": "root-mismatch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "root_binding",
+      "id": "capability_tree.d792f94e37994cab",
+      "notes": "capability_tree must reject proofs whose computed root does not match the expected root."
+    },
+    {
+      "category": "tampered-leaf-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "leaf_binding",
+      "id": "capability_tree.06e6f3d63bfd81fd",
+      "notes": "capability_tree must reject tampered proof leaf material."
+    },
+    {
+      "category": "tampered-sibling-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "sibling_binding",
+      "id": "capability_tree.fd0b26c6bd9f5714",
+      "notes": "capability_tree must reject tampered sibling material."
+    },
+    {
+      "category": "sibling-order-mismatch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "sibling_order",
+      "id": "capability_tree.25b7adb440e58aba",
+      "notes": "capability_tree must reject sibling ordering mismatches."
+    },
+    {
+      "category": "empty-proof-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "empty_proof",
+      "id": "capability_tree.ae5fa5a10cd4e9f3",
+      "notes": "capability_tree must reject invalid empty proof material."
+    },
+    {
+      "category": "revoked-capability-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "revocation_witness",
+      "id": "capability_tree.ebdb6f960b8d510c",
+      "notes": "capability_tree must reject revoked capability evidence."
+    },
+    {
+      "category": "valid-membership-proof-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "valid_membership_proof",
+      "id": "capability_tree.648889e3a3615201",
+      "notes": "Reserved for future concrete valid capability membership proof fixture."
+    },
+    {
+      "category": "valid-nonrevocation-proof-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "valid_nonrevocation_proof",
+      "id": "capability_tree.4cad19f1d37770fd",
+      "notes": "Reserved for future concrete valid non-revocation proof fixture."
+    }
+  ]
+}

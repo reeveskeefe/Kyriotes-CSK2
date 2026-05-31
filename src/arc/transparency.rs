@@ -46,6 +46,15 @@ struct TransparencyEntry {
     chain_hash: [u8; 32],
 }
 
+pub(crate) fn bind_transparency_root_to_state(
+    state: &AuthorityState,
+    transparency_root: [u8; 32],
+) -> AuthorityState {
+    let mut committed_state = state.clone();
+    committed_state.transparency_root = transparency_root;
+    committed_state
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct InMemoryTransparencyLog {
     entries: Vec<TransparencyEntry>,

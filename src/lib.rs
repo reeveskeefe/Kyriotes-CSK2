@@ -91,3 +91,9 @@ mod kani_rotate_epoch_equivalence;
 
 #[cfg(kani)]
 mod kani_rotate_epoch_full_equivalence;
+
+#[cfg(kani)]
+mod kani_transparency_equivalence;
+
+#[cfg(kani)]
+mod kani_capability_tree_equivalence;

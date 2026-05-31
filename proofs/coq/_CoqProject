@@ -10,3 +10,4 @@ ArcStressProofs.v
 ArcDelegationProofs.v
 ArcCryptoReduction.v
 ArcTemporalProofs.v
+ArcTranscriptProofs.v

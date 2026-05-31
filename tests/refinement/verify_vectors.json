@@ -1,0 +1,88 @@
+{
+  "claim_boundary": "Verification-gate refinement track; not full Coq/Rust semantic equivalence.",
+  "schema": "arc.verify.refinement_vectors.v1",
+  "target": "src/arc/engine.rs::verify",
+  "vector_count": 10,
+  "vectors": [
+    {
+      "category": "missing-object-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "arc_object",
+      "id": "verify.db6cc7945d5c83f7",
+      "notes": "verify must reject when no valid ARC object is available."
+    },
+    {
+      "category": "missing-capability-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "capability",
+      "id": "verify.18df589bd70027b2",
+      "notes": "verify must reject when capability evidence is missing or malformed."
+    },
+    {
+      "category": "missing-capability-proof-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "capability_proof",
+      "id": "verify.066757161a328a17",
+      "notes": "verify must reject when capability proof evidence is missing or invalid."
+    },
+    {
+      "category": "missing-authority-state-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "authority_state",
+      "id": "verify.e7ecdd16ebf1d622",
+      "notes": "verify must reject when authority state is absent or mismatched."
+    },
+    {
+      "category": "missing-transparency-proof-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "transparency_proof",
+      "id": "verify.cabf39e034c64bb7",
+      "notes": "verify must reject when transparency proof evidence is missing or mismatched."
+    },
+    {
+      "category": "revoked-capability-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "nonrevocation",
+      "id": "verify.0317bca42453ee51",
+      "notes": "verify must reject revoked capabilities."
+    },
+    {
+      "category": "temporal-policy-mismatch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "temporal_policy",
+      "id": "verify.b9f1a122444791cb",
+      "notes": "verify must reject temporal policy mismatches."
+    },
+    {
+      "category": "transcript-binding-mismatch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "transcript_binding",
+      "id": "verify.abc74e06866094d9",
+      "notes": "verify must reject transcript or context binding mismatches."
+    },
+    {
+      "category": "wrapper-binding-mismatch-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "wrapper_binding",
+      "id": "verify.3224ba2934eb1f6e",
+      "notes": "verify must reject wrapper binding mismatches."
+    },
+    {
+      "category": "valid-verification-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "all_gates",
+      "id": "verify.b63980026107d588",
+      "notes": "Reserved for future valid object/capability/proof/state/transparency fixtures."
+    }
+  ]
+}

@@ -48,4 +48,5 @@ coqc ArcRustFullMechanicalProofGate.v
 coqc ArcContextHashRustRefinement.v
 coqc ArcDecodeArcObjectRustRefinement.v
 coqc ArcEncodeArcObjectRustRefinement.v
+coqc ArcVerifyRustRefinement.v
 echo "ARC Coq proofs compiled successfully."

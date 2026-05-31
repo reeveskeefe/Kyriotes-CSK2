@@ -18,3 +18,10 @@ ArcWrapperProofs.v
 ArcKemAeadAssumptions.v
 ArcEndToEndTheorems.v
 ArcStateTransitionProofs.v
+ArcConcreteMerkleProofs.v
+ArcTransparencyConsistencyProofs.v
+ArcProtocolStateMachineProofs.v
+ArcInvalidTransitionProofs.v
+ArcTightSecurityGameProofs.v
+ArcAssumptionReductionProofs.v
+ArcRustRefinementMap.v

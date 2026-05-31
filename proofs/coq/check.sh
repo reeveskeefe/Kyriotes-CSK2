@@ -22,5 +22,12 @@ coqc ArcWrapperProofs.v
 coqc ArcKemAeadAssumptions.v
 coqc ArcEndToEndTheorems.v
 coqc ArcStateTransitionProofs.v
+coqc ArcConcreteMerkleProofs.v
+coqc ArcTransparencyConsistencyProofs.v
+coqc ArcProtocolStateMachineProofs.v
+coqc ArcInvalidTransitionProofs.v
+coqc ArcTightSecurityGameProofs.v
+coqc ArcAssumptionReductionProofs.v
+coqc ArcRustRefinementMap.v
 
 echo "ARC Coq proofs compiled successfully."

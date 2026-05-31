@@ -46,3 +46,4 @@ ArcEncodeArcObjectRustRefinement.v
 ArcVerifyRustRefinement.v
 ArcSealRustRefinement.v
 ArcOpenRustRefinement.v
+ArcAddEpochWrapperRustRefinement.v

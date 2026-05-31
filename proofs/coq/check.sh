@@ -51,4 +51,5 @@ coqc ArcEncodeArcObjectRustRefinement.v
 coqc ArcVerifyRustRefinement.v
 coqc ArcSealRustRefinement.v
 coqc ArcOpenRustRefinement.v
+coqc ArcAddEpochWrapperRustRefinement.v
 echo "ARC Coq proofs compiled successfully."

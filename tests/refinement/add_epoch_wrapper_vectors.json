@@ -1,0 +1,96 @@
+{
+  "claim_boundary": "Epoch-wrapper refinement track; not full Coq/Rust semantic equivalence.",
+  "schema": "arc.add_epoch_wrapper.refinement_vectors.v1",
+  "target": "src/arc/engine.rs::add_epoch_wrapper",
+  "vector_count": 11,
+  "vectors": [
+    {
+      "category": "missing-recipient-secret-key-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "recipient_secret_key",
+      "id": "add_epoch_wrapper.2603e2a180c21ee3",
+      "notes": "add_epoch_wrapper must require recipient secret key material."
+    },
+    {
+      "category": "missing-recipient-public-key-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "recipient_public_key",
+      "id": "add_epoch_wrapper.907ffbf292dcae5c",
+      "notes": "add_epoch_wrapper must require recipient public key material."
+    },
+    {
+      "category": "missing-object-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "arc_object",
+      "id": "add_epoch_wrapper.db6cc7945d5c83f7",
+      "notes": "add_epoch_wrapper must require a mutable ARC object."
+    },
+    {
+      "category": "missing-capability-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "capability",
+      "id": "add_epoch_wrapper.18df589bd70027b2",
+      "notes": "add_epoch_wrapper must require a valid capability."
+    },
+    {
+      "category": "missing-capability-proof-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "capability_proof",
+      "id": "add_epoch_wrapper.066757161a328a17",
+      "notes": "add_epoch_wrapper must require capability proof evidence."
+    },
+    {
+      "category": "missing-previous-authority-state-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "previous_authority_state",
+      "id": "add_epoch_wrapper.ddca5f4b7bc69228",
+      "notes": "add_epoch_wrapper must require the previous authority state."
+    },
+    {
+      "category": "missing-next-authority-state-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "next_authority_state",
+      "id": "add_epoch_wrapper.ad4fb511223244c3",
+      "notes": "add_epoch_wrapper must require the next authority state."
+    },
+    {
+      "category": "missing-transparency-proof-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "transparency_proof",
+      "id": "add_epoch_wrapper.cabf39e034c64bb7",
+      "notes": "add_epoch_wrapper must require transparency proof evidence."
+    },
+    {
+      "category": "epoch-regression-rejection",
+      "deterministic": true,
+      "expected_result": "reject",
+      "gate_name": "epoch_monotonicity",
+      "id": "add_epoch_wrapper.bb10595875c95498",
+      "notes": "add_epoch_wrapper must reject wrapper transitions that regress epoch state."
+    },
+    {
+      "category": "wrapper-binding-preservation-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "wrapper_binding",
+      "id": "add_epoch_wrapper.6731fb94305ce7a7",
+      "notes": "Reserved for future concrete wrapper binding preservation fixture."
+    },
+    {
+      "category": "rewrap-roundtrip-reserved",
+      "deterministic": true,
+      "expected_result": "reserved",
+      "gate_name": "rewrap_roundtrip",
+      "id": "add_epoch_wrapper.cfcda580be81f6b3",
+      "notes": "Reserved for future seal -> verify -> add_epoch_wrapper -> open fixture."
+    }
+  ]
+}

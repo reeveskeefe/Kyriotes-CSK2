@@ -21,5 +21,6 @@ coqc ArcEncodingProofs.v
 coqc ArcWrapperProofs.v
 coqc ArcKemAeadAssumptions.v
 coqc ArcEndToEndTheorems.v
+coqc ArcStateTransitionProofs.v
 
 echo "ARC Coq proofs compiled successfully."

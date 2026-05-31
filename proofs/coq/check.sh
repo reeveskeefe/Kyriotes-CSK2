@@ -56,4 +56,5 @@ coqc ArcRotateEpochRustRefinement.v
 coqc ArcRotateEpochFullRustRefinement.v
 coqc ArcCapabilityTreeRustRefinement.v
 coqc ArcTransparencyRustRefinement.v
+coqc ArcFullMechanicalProofEquivalence.v
 echo "ARC Coq proofs compiled successfully."

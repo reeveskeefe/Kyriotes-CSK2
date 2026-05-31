@@ -51,3 +51,4 @@ ArcRotateEpochRustRefinement.v
 ArcRotateEpochFullRustRefinement.v
 ArcCapabilityTreeRustRefinement.v
 ArcTransparencyRustRefinement.v
+ArcFullMechanicalProofEquivalence.v

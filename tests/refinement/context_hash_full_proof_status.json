@@ -1,0 +1,11 @@
+{
+  "boundary": "Full proof remains open unless the verifier command succeeds.",
+  "mechanically_checked": true,
+  "mechanically_proven": false,
+  "proof_attempted": false,
+  "proof_succeeded": false,
+  "proof_tool": "kani",
+  "reason": "Kani is not installed or not discoverable on PATH.",
+  "schema": "arc.context_hash.full_mechanical_proof_status.v1",
+  "target": "src/arc/model.rs::context_hash"
+}

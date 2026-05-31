@@ -40,4 +40,5 @@ coqc ArcRustRefinementObligations.v
 coqc ArcAbstractInvariantCompleteness.v
 coqc ArcDesignModelCompleteness.v
 coqc ArcStateMachineCompleteness.v
+coqc ArcMerkleTransparencyCompleteness.v
 echo "ARC Coq proofs compiled successfully."

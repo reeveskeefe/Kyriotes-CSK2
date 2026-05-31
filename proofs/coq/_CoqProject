@@ -35,3 +35,4 @@ ArcRustRefinementObligations.v
 ArcAbstractInvariantCompleteness.v
 ArcDesignModelCompleteness.v
 ArcStateMachineCompleteness.v
+ArcMerkleTransparencyCompleteness.v

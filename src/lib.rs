@@ -82,3 +82,6 @@ mod kani_seal_equivalence;
 
 #[cfg(kani)]
 mod kani_open_equivalence;
+
+#[cfg(kani)]
+mod kani_add_epoch_wrapper_equivalence;

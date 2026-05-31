@@ -1,5 +1,5 @@
 {
-  "boundary": "Mechanical refinement inventory has all declared targets checked and context_hash, decode_arc_object, encode_arc_object, verify, seal, and open verifier-backed proof lanes complete within their stated narrow scopes.",
+  "boundary": "Mechanical refinement inventory has all declared targets checked and the add_epoch_wrapper verifier-backed fail-closed proof lane is complete within its stated narrow scope.",
   "entries": [
     {
       "boundary": "decode_arc_object has verifier-backed Kani proof evidence for bounded malformed parser rejection and deterministic rejection behavior. Full parser equivalence remains outside this narrow proof claim.",
@@ -80,12 +80,12 @@
       "symbol_present": true
     },
     {
-      "boundary": "add_epoch_wrapper has a mechanical epoch-wrapper refinement track and source-surface check; not yet full semantic proof.",
+      "boundary": "add_epoch_wrapper has verifier-backed Kani proof evidence for fail-closed authority-verifier rejection propagation, deterministic rejection, early rejection before capability validation/rewrap, and wrapper-count preservation on rejection. Full cryptographic rewrap equivalence remains outside this narrow proof claim.",
       "coq_model": "ArcStateMachineCompleteness",
       "harness_level": "MechanicallyHarnessed",
       "id": "engine.add_epoch_wrapper",
       "mechanically_checked": true,
-      "mechanically_proven": false,
+      "mechanically_proven": true,
       "obligation": "Rust add_epoch_wrapper must refine rewrap and epoch-wrapper state-machine rules.",
       "rust_file": "src/arc/engine.rs",
       "rust_symbol": "add_epoch_wrapper",
@@ -147,7 +147,7 @@
   ],
   "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
   "mechanically_checked_count": 11,
-  "mechanically_proven_count": 6,
+  "mechanically_proven_count": 7,
   "schema": "arc.rust_mechanical_refinement_inventory.v1",
   "source_present_count": 11,
   "symbol_present_count": 8,

@@ -1,3 +1,11 @@
 /target/
 **/*.rs.bk
 .DS_Store
+
+# Coq/Rocq build artifacts
+*.vo
+*.vos
+*.vok
+*.glob
+*.aux
+.coq-native/

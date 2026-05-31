@@ -13,5 +13,6 @@ coqc ArcTheorems.v
 coqc ArcStressProofs.v
 coqc ArcDelegationProofs.v
 coqc ArcCryptoReduction.v
+coqc ArcTemporalProofs.v
 
 echo "ARC Coq proofs compiled successfully."

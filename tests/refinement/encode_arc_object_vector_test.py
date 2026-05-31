@@ -18,7 +18,7 @@ def main() -> int:
 
     assert payload["schema"] == "arc.encode_arc_object.refinement_vectors.v1"
     assert payload["target"] == "src/encoding/codec.rs::encode_arc_object"
-    assert payload["paired_decoder"] == "src/encoding/codec.rs::decode_arc_object"
+    assert payload["paired_decoder"] == "src/encoding/wire.rs::decode_arc_object"
     assert payload["vector_count"] >= 5
 
     vectors = payload["vectors"]

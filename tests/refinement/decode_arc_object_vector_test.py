@@ -24,7 +24,7 @@ def main() -> int:
     payload = json.loads(VECTOR_PATH.read_text(encoding="utf-8"))
 
     assert payload["schema"] == "arc.decode_arc_object.refinement_vectors.v1"
-    assert payload["target"] == "src/encoding/codec.rs::decode_arc_object"
+    assert payload["target"] == "src/encoding/wire.rs::decode_arc_object"
     assert payload["vector_count"] >= 10
 
     vectors = payload["vectors"]

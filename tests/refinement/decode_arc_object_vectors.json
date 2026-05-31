@@ -1,7 +1,7 @@
 {
   "claim_boundary": "Parser-refinement vectors and rejection checks; not full byte-level Coq/Rust equivalence.",
   "schema": "arc.decode_arc_object.refinement_vectors.v1",
-  "target": "src/encoding/codec.rs::decode_arc_object",
+  "target": "src/encoding/wire.rs::decode_arc_object",
   "vector_count": 10,
   "vectors": [
     {

@@ -1,13 +1,13 @@
 {
-  "boundary": "Mechanical refinement inventory has all declared targets checked and context_hash verifier-backed transcript-model proof complete.",
+  "boundary": "Mechanical refinement inventory has all declared targets checked and context_hash plus decode_arc_object verifier-backed proof lanes complete within their stated narrow scopes.",
   "entries": [
     {
-      "boundary": "decode_arc_object has parser-refinement rejection vectors and Rust rejection tests; not yet full byte-level semantic proof.",
+      "boundary": "decode_arc_object has verifier-backed Kani proof evidence for bounded malformed parser rejection and deterministic rejection behavior. Full parser equivalence remains outside this narrow proof claim.",
       "coq_model": "ArcEncodingProofs",
       "harness_level": "MechanicallyHarnessed",
       "id": "codec.decode_arc_object",
       "mechanically_checked": true,
-      "mechanically_proven": false,
+      "mechanically_proven": true,
       "obligation": "Rust decoder must reject malformed and over-limit ARC objects consistently with Coq encoding safety assumptions.",
       "rust_file": "src/encoding/codec.rs",
       "rust_symbol": "decode_arc_object",
@@ -147,7 +147,7 @@
   ],
   "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
   "mechanically_checked_count": 11,
-  "mechanically_proven_count": 1,
+  "mechanically_proven_count": 2,
   "schema": "arc.rust_mechanical_refinement_inventory.v1",
   "source_present_count": 11,
   "symbol_present_count": 8,

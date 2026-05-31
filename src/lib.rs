@@ -76,3 +76,6 @@ mod kani_encode_arc_object_equivalence;
 
 #[cfg(kani)]
 mod kani_verify_equivalence;
+
+#[cfg(kani)]
+mod kani_seal_equivalence;

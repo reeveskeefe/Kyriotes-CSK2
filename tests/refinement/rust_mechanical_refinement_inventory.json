@@ -1,5 +1,5 @@
 {
-  "boundary": "Mechanical refinement inventory has all declared targets checked and context_hash, decode_arc_object, encode_arc_object, and verify verifier-backed proof lanes complete within their stated narrow scopes.",
+  "boundary": "Mechanical refinement inventory has all declared targets checked and context_hash, decode_arc_object, encode_arc_object, verify, and seal verifier-backed proof lanes complete within their stated narrow scopes.",
   "entries": [
     {
       "boundary": "decode_arc_object has verifier-backed Kani proof evidence for bounded malformed parser rejection and deterministic rejection behavior. Full parser equivalence remains outside this narrow proof claim.",
@@ -67,12 +67,12 @@
       "symbol_present": true
     },
     {
-      "boundary": "seal has a mechanical lifecycle refinement track and source-surface check; not yet full semantic proof.",
+      "boundary": "seal has verifier-backed Kani proof evidence for fail-closed authority-verifier rejection propagation, deterministic rejection, early rejection before capability validation/encryption, and no-panic behavior on a bounded invalid authority surface. Full cryptographic sealing equivalence remains outside this narrow proof claim.",
       "coq_model": "ArcLifecycleProofs",
       "harness_level": "MechanicallyHarnessed",
       "id": "engine.seal",
       "mechanically_checked": true,
-      "mechanically_proven": false,
+      "mechanically_proven": true,
       "obligation": "Rust seal must refine the Coq lifecycle seal transition.",
       "rust_file": "src/arc/engine.rs",
       "rust_symbol": "seal",
@@ -147,7 +147,7 @@
   ],
   "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
   "mechanically_checked_count": 11,
-  "mechanically_proven_count": 4,
+  "mechanically_proven_count": 5,
   "schema": "arc.rust_mechanical_refinement_inventory.v1",
   "source_present_count": 11,
   "symbol_present_count": 8,

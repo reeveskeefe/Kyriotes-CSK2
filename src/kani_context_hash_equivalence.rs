@@ -52,12 +52,11 @@ fn fold_temporal_policy(acc: u64, policy: &TemporalPolicy) -> u64 {
     match policy {
         TemporalPolicy::Historical(epoch) => acc.wrapping_mul(131).wrapping_add(*epoch),
         TemporalPolicy::Current => acc.wrapping_mul(131).wrapping_add(1),
-        TemporalPolicy::Window { start, end } => {
-            acc.wrapping_mul(131)
-                .wrapping_add(*start)
-                .wrapping_mul(131)
-                .wrapping_add(*end)
-        }
+        TemporalPolicy::Window { start, end } => acc
+            .wrapping_mul(131)
+            .wrapping_add(*start)
+            .wrapping_mul(131)
+            .wrapping_add(*end),
         TemporalPolicy::ResealRequired { after } => acc.wrapping_mul(131).wrapping_add(*after),
     }
 }

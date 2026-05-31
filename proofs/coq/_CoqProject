@@ -36,3 +36,4 @@ ArcAbstractInvariantCompleteness.v
 ArcDesignModelCompleteness.v
 ArcStateMachineCompleteness.v
 ArcMerkleTransparencyCompleteness.v
+ArcCryptoReductionCompleteness.v

@@ -1,5 +1,5 @@
 {
-  "boundary": "Mechanical refinement inventory with checked context_hash, decode_arc_object, encode_arc_object, verify, seal, open, and add_epoch_wrapper targets; full proof remains open until all targets are mechanically proven.",
+  "boundary": "Mechanical refinement inventory with checked context_hash, decode_arc_object, encode_arc_object, verify, seal, open, add_epoch_wrapper, and rotate_epoch targets; full proof remains open until all targets are mechanically proven.",
   "entries": [
     {
       "boundary": "decode_arc_object has parser-refinement rejection vectors and Rust rejection tests; not yet full byte-level semantic proof.",
@@ -93,11 +93,11 @@
       "symbol_present": true
     },
     {
-      "boundary": "Harnessed inventory only; not a proof of Rust behavioral equivalence.",
+      "boundary": "rotate_epoch has a mechanical authority-epoch refinement track and source-surface check; not yet full semantic proof.",
       "coq_model": "ArcStateMachineCompleteness",
       "harness_level": "MechanicallyHarnessed",
       "id": "engine.rotate_epoch",
-      "mechanically_checked": false,
+      "mechanically_checked": true,
       "mechanically_proven": false,
       "obligation": "Rust rotate_epoch must strictly advance epoch state.",
       "rust_file": "src/arc/engine.rs",
@@ -146,7 +146,7 @@
     }
   ],
   "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
-  "mechanically_checked_count": 7,
+  "mechanically_checked_count": 8,
   "mechanically_proven_count": 0,
   "schema": "arc.rust_mechanical_refinement_inventory.v1",
   "source_present_count": 11,

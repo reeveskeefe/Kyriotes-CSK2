@@ -1,4 +1,4 @@
-From Stdlib Require Import List Bool Arith.PeanoNat Lia.
+From Coq Require Import List Bool Arith.PeanoNat Lia.
 Import ListNotations.
 From KyriotesCsk2Proofs Require Import KyriotesCsk2Types KyriotesCsk2Merkle KyriotesCsk2Authority KyriotesCsk2Policy KyriotesCsk2Verify KyriotesCsk2SecurityGame KyriotesCsk2Theorems KyriotesCsk2StressProofs KyriotesCsk2DelegationProofs KyriotesCsk2CryptoReduction KyriotesCsk2TemporalProofs KyriotesCsk2TranscriptProofs KyriotesCsk2RevocationCompromiseProofs KyriotesCsk2TransparencyProofs KyriotesCsk2EncodingProofs KyriotesCsk2WrapperProofs.
 

@@ -1,4 +1,4 @@
-From Stdlib Require Import List Bool String.
+From Coq Require Import List Bool String.
 From KyriotesCsk2Proofs Require Import KyriotesCsk2Types.
 From KyriotesCsk2Proofs Require Import KyriotesCsk2SealOpenModelCryptoEquivalence.
 Import ListNotations.

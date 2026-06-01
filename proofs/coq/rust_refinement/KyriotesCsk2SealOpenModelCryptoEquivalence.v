@@ -1,4 +1,4 @@
-From Stdlib Require Import List Bool Arith.PeanoNat.
+From Coq Require Import List Bool Arith.PeanoNat.
 From KyriotesCsk2Proofs Require Import KyriotesCsk2Types.
 From KyriotesCsk2Proofs Require Import KyriotesCsk2SealRustRefinement.
 From KyriotesCsk2Proofs Require Import KyriotesCsk2OpenRustRefinement.

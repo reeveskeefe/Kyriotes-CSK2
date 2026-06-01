@@ -1,4 +1,4 @@
-From Stdlib Require Import List Bool Arith.PeanoNat Lia.
+From Coq Require Import List Bool Arith.PeanoNat Lia.
 Import ListNotations.
 
 From KyriotesCsk2Proofs Require Import KyriotesCsk2Types.

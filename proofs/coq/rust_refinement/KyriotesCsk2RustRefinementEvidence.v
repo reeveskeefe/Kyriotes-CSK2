@@ -1,4 +1,4 @@
-From Stdlib Require Import List Bool String Arith.PeanoNat Lia.
+From Coq Require Import List Bool String Arith.PeanoNat Lia.
 Import ListNotations.
 Open Scope string_scope.
 

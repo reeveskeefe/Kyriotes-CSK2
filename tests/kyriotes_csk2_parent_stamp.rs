@@ -8,7 +8,7 @@ mod helpers;
 
 use helpers::{capability::sample_cap, request_builders::policy_hash, scenario::Scenario};
 use kyriotes_csk2::{
-    StubAuthorityVerifier, Capability, InMemoryTransparencyLog, capability_leaf_hash, open,
+    Capability, InMemoryTransparencyLog, StubAuthorityVerifier, capability_leaf_hash, open,
     seal_and_commit,
 };
 

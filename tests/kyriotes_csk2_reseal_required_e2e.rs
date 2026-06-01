@@ -12,7 +12,7 @@ mod helpers;
 use helpers::scenario::Scenario;
 use helpers::transparency::commit_state;
 use kyriotes_csk2::{
-    StubAuthorityVerifier, InMemoryTransparencyLog, KyriotesCsk2Error, RecipientKeyPair,
+    InMemoryTransparencyLog, KyriotesCsk2Error, RecipientKeyPair, StubAuthorityVerifier,
     TemporalPolicy, open, open_and_reseal, open_and_reseal_and_commit, seal,
 };
 

@@ -281,7 +281,6 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
         state: &AuthorityState,
         transparency_proof: &TransparencyProof,
     ) -> Result<VerifiedAuthorityState, KyriotesCsk2Error> {
-
         let evidence = self
             .evidence_registry
             .find(&state.authority_id, state.epoch)

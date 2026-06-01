@@ -2,7 +2,10 @@ mod helpers;
 
 use helpers::scenario::Scenario;
 use helpers::state::sample_state;
-use kyriotes_csk2::{KyriotesCsk2Error, Rights, TemporalPolicy, open, seal};
+use kyriotes_csk2::{
+    CryptoAuthorityVerifier, KyriotesCsk2Error, Rights, TemporalPolicy, open, seal,
+    seal_with_verifier,
+};
 
 #[test]
 fn rejects_cross_object_capability_misuse() {
@@ -35,15 +38,35 @@ fn rejects_cross_object_capability_misuse() {
 
 #[test]
 fn rejects_when_authority_chain_checks_fail() {
-    let s = Scenario::baseline("strict", 42).invalidate_seal_epoch_signature();
+    let s = Scenario::baseline("strict", 42);
 
-    let err = seal(
+    let mut verifier = CryptoAuthorityVerifier::with_root_pk(s.authority.root_pk());
+    let epoch_root_sig = s.authority.epoch_kp.sign_epoch_root(
+        &s.seal_state.authority_root,
+        &s.seal_state.revocation_root,
+        &s.seal_state.transparency_root,
+        s.seal_state.epoch,
+        &s.seal_state.prev_epoch_hash,
+    );
+    verifier.add_evidence(
+        &s.seal_state.authority_id,
+        s.seal_state.epoch,
+        s.authority.epoch_kp.verifying_key_bytes(),
+        epoch_root_sig,
+        s.authority.epoch_cert.clone(),
+    );
+
+    let mut tampered_state = s.seal_state.clone();
+    tampered_state.prev_epoch_hash[0] ^= 0xFF;
+
+    let err = seal_with_verifier(
+        &verifier,
         &s.keypair.public,
         &s.message,
         &s.cap,
         &s.proof,
         &s.seal_transparency_proof,
-        &s.seal_state,
+        &tampered_state,
         &s.req,
         s.temporal_policy.clone(),
     )

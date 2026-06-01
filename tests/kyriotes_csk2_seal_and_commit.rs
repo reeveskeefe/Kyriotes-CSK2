@@ -7,9 +7,9 @@ use helpers::{
     request_builders::{DEFAULT_OBJECT_ID, policy_hash, sample_req},
 };
 use kyriotes_csk2::{
-    AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, StubAuthorityVerifier,
-    CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair, InMemoryTransparencyLog,
-    RecipientKeyPair, Rights, TemporalPolicy, capability_stamp, issue_capability, open,
+    AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, CapabilityIssuanceProof,
+    CapabilityProof, EpochSigningKeyPair, InMemoryTransparencyLog, RecipientKeyPair, Rights,
+    StubAuthorityVerifier, TemporalPolicy, capability_stamp, issue_capability, open,
     seal_and_commit,
 };
 

@@ -402,14 +402,8 @@ fn verify_rejects_invalid_transparency_proof() {
     let mut bad_proof = s.seal_transparency_proof.clone();
     bad_proof.leaf_hash[0] ^= 0xFF;
 
-    let err = verify(
-        &object,
-        &s.cap,
-        &s.proof,
-        &s.seal_state,
-        &bad_proof,
-    )
-    .expect_err("should reject invalid transparency proof");
+    let err = verify(&object, &s.cap, &s.proof, &s.seal_state, &bad_proof)
+        .expect_err("should reject invalid transparency proof");
     assert!(
         matches!(err, KyriotesCsk2Error::AuthorityState(_)),
         "{err:?}"

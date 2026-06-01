@@ -5,7 +5,7 @@ mod helpers;
 use helpers::scenario::Scenario;
 use helpers::transparency::commit_state;
 use kyriotes_csk2::{
-    StubAuthorityVerifier, InMemoryTransparencyLog, KyriotesCsk2Error, TemporalPolicy,
+    InMemoryTransparencyLog, KyriotesCsk2Error, StubAuthorityVerifier, TemporalPolicy,
     add_epoch_wrapper_and_commit, open, seal,
 };
 

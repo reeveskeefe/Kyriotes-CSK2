@@ -1460,6 +1460,7 @@ pub fn rotate_epoch_full<L: TransparencyLog>(
 #[cfg(test)]
 mod crypto_contract_discharge_tests {
     use super::*;
+    use crate::arc::model::RecipientKeyPair;
 
     fn bytes32(seed: u8) -> [u8; 32] {
         let mut out = [0u8; 32];
@@ -1665,6 +1666,240 @@ mod crypto_contract_discharge_tests {
         assert_ne!(
             authority_aad(&object, &state, ctx, &kem_ct_classical, &changed_kem_ct_pq),
             baseline
+        );
+    }
+
+    #[test]
+    fn kem_classical_encapsulation_decapsulation_agree() {
+        let recipient_secret = x25519_dalek::StaticSecret::from([7u8; 32]);
+        let recipient_public = x25519_dalek::PublicKey::from(&recipient_secret);
+        let recipient_pk = RecipientPublicKey {
+            classical: recipient_public,
+            pq: None,
+        };
+        let recipient_sk = RecipientSecretKey {
+            classical: recipient_secret,
+            pq: None,
+        };
+
+        let (ct_classical, ss_encaps, ct_pq, ss_pq_encaps) =
+            kem_encaps(&recipient_pk, &mut rand::rngs::OsRng);
+        let (ss_decaps, ss_pq_decaps) = kem_decaps(&recipient_sk, &ct_classical, &ct_pq);
+
+        assert_eq!(ss_encaps, ss_decaps);
+        assert_eq!(ct_pq, Vec::<u8>::new());
+        assert_eq!(ss_pq_encaps, [0u8; 32]);
+        assert_eq!(ss_pq_decaps, [0u8; 32]);
+
+        let wrong_sk = RecipientSecretKey {
+            classical: x25519_dalek::StaticSecret::from([8u8; 32]),
+            pq: None,
+        };
+        let (wrong_ss, _) = kem_decaps(&wrong_sk, &ct_classical, &ct_pq);
+        assert_ne!(ss_encaps, wrong_ss);
+    }
+
+    #[test]
+    fn kem_hybrid_pq_encapsulation_decapsulation_agree_and_tamper_changes_secret() {
+        let keypair = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
+
+        let (ct_classical, ss_c_encaps, ct_pq, ss_pq_encaps) =
+            kem_encaps(&keypair.public, &mut rand::rngs::OsRng);
+        assert!(!ct_pq.is_empty());
+
+        let (ss_c_decaps, ss_pq_decaps) = kem_decaps(&keypair.secret, &ct_classical, &ct_pq);
+        assert_eq!(ss_c_encaps, ss_c_decaps);
+        assert_eq!(ss_pq_encaps, ss_pq_decaps);
+        assert_eq!(
+            hybrid_secret(&ss_c_encaps, Some(&ss_pq_encaps)),
+            hybrid_secret(&ss_c_decaps, Some(&ss_pq_decaps))
+        );
+
+        let mut tampered_ct_pq = ct_pq;
+        tampered_ct_pq[0] ^= 1;
+        let (_, tampered_ss_pq) = kem_decaps(&keypair.secret, &ct_classical, &tampered_ct_pq);
+        assert_ne!(ss_pq_encaps, tampered_ss_pq);
+    }
+
+    #[test]
+    fn hybrid_secret_and_hkdf_are_deterministic_and_context_separated() {
+        let ss_c = bytes32(71);
+        let ss_pq = bytes32(72);
+        assert_eq!(hybrid_secret(&ss_c, None), hybrid_secret(&ss_c, None));
+        assert_eq!(
+            hybrid_secret(&ss_c, Some(&ss_pq)),
+            hybrid_secret(&ss_c, Some(&ss_pq))
+        );
+        assert_ne!(
+            hybrid_secret(&ss_c, None),
+            hybrid_secret(&ss_c, Some(&ss_pq))
+        );
+
+        let state = sample_state();
+        let ctx = bytes32(73);
+        let policy_hash = bytes32(74);
+        let kek = derive_kek(&ss_c, &state, ctx, policy_hash);
+        assert_eq!(kek, derive_kek(&ss_c, &state, ctx, policy_hash));
+
+        let mut changed_ctx = ctx;
+        changed_ctx[0] ^= 1;
+        assert_ne!(kek, derive_kek(&ss_c, &state, changed_ctx, policy_hash));
+
+        let mut changed_state = state.clone();
+        changed_state.authority_root[0] ^= 1;
+        assert_ne!(kek, derive_kek(&ss_c, &changed_state, ctx, policy_hash));
+
+        let mut changed_policy_hash = policy_hash;
+        changed_policy_hash[0] ^= 1;
+        assert_ne!(kek, derive_kek(&ss_c, &state, ctx, changed_policy_hash));
+    }
+
+    #[test]
+    fn context_hash_binds_full_open_transcript() {
+        let object = sample_object();
+        let state = sample_state();
+        let cap_stamp = bytes32(81);
+        let baseline = context_hash(
+            &object.object_id,
+            object.required_rights,
+            object.policy_hash,
+            &state,
+            cap_stamp,
+            &object.temporal_policy,
+        );
+
+        assert_ne!(
+            baseline,
+            context_hash(
+                "object-b",
+                object.required_rights,
+                object.policy_hash,
+                &state,
+                cap_stamp,
+                &object.temporal_policy,
+            )
+        );
+
+        assert_ne!(
+            baseline,
+            context_hash(
+                &object.object_id,
+                Rights::WRITE,
+                object.policy_hash,
+                &state,
+                cap_stamp,
+                &object.temporal_policy,
+            )
+        );
+
+        let mut changed_policy_hash = object.policy_hash;
+        changed_policy_hash[0] ^= 1;
+        assert_ne!(
+            baseline,
+            context_hash(
+                &object.object_id,
+                object.required_rights,
+                changed_policy_hash,
+                &state,
+                cap_stamp,
+                &object.temporal_policy,
+            )
+        );
+
+        let mut changed_state = state.clone();
+        changed_state.epoch += 1;
+        assert_ne!(
+            baseline,
+            context_hash(
+                &object.object_id,
+                object.required_rights,
+                object.policy_hash,
+                &changed_state,
+                cap_stamp,
+                &object.temporal_policy,
+            )
+        );
+
+        let mut changed_state = state.clone();
+        changed_state.authority_root[0] ^= 1;
+        assert_ne!(
+            baseline,
+            context_hash(
+                &object.object_id,
+                object.required_rights,
+                object.policy_hash,
+                &changed_state,
+                cap_stamp,
+                &object.temporal_policy,
+            )
+        );
+
+        let mut changed_state = state.clone();
+        changed_state.revocation_root[0] ^= 1;
+        assert_ne!(
+            baseline,
+            context_hash(
+                &object.object_id,
+                object.required_rights,
+                object.policy_hash,
+                &changed_state,
+                cap_stamp,
+                &object.temporal_policy,
+            )
+        );
+
+        let mut changed_state = state.clone();
+        changed_state.transparency_root[0] ^= 1;
+        assert_ne!(
+            baseline,
+            context_hash(
+                &object.object_id,
+                object.required_rights,
+                object.policy_hash,
+                &changed_state,
+                cap_stamp,
+                &object.temporal_policy,
+            )
+        );
+
+        let mut changed_cap_stamp = cap_stamp;
+        changed_cap_stamp[0] ^= 1;
+        assert_ne!(
+            baseline,
+            context_hash(
+                &object.object_id,
+                object.required_rights,
+                object.policy_hash,
+                &state,
+                changed_cap_stamp,
+                &object.temporal_policy,
+            )
+        );
+
+        let mut changed_state = state.clone();
+        changed_state.authority_id = "other-authority".to_string();
+        assert_ne!(
+            baseline,
+            context_hash(
+                &object.object_id,
+                object.required_rights,
+                object.policy_hash,
+                &changed_state,
+                cap_stamp,
+                &object.temporal_policy,
+            )
+        );
+
+        assert_ne!(
+            baseline,
+            context_hash(
+                &object.object_id,
+                object.required_rights,
+                object.policy_hash,
+                &state,
+                cap_stamp,
+                &TemporalPolicy::Window { start: 7, end: 9 },
+            )
         );
     }
 }

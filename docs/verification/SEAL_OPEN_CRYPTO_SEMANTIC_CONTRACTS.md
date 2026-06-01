@@ -71,6 +71,12 @@ The AEAD + AAD binding portion now has concrete Rust evidence recorded in:
 
 This discharges ARC's concrete use of `payload_encrypt`, `payload_decrypt`, `wrap_dek`, `unwrap_dek`, `payload_aad`, and `authority_aad` for round-trip and defined tamper-rejection behavior. It does not prove ChaCha20Poly1305 as a primitive.
 
+The KEM agreement, HKDF/context separation, deeper context-hash binding, and production composed seal/open tamper behavior now have concrete Rust evidence recorded in:
+
+    docs/verification/SEAL_OPEN_CRYPTO_CONTRACT_DISCHARGE.md
+
+This discharges the remaining implementation-level contract evidence for ARC's current seal/open composition, while preserving the boundary that primitive cryptographic security is inherited rather than proven here.
+
 ## Production Helper Boundaries
 
 The open path now has explicit helper boundaries for wrapper selection and open-request construction. This does not change public API behavior; it gives the proof lane named implementation surfaces for the real seal/open semantic expansion.
@@ -79,7 +85,6 @@ The open path now has explicit helper boundaries for wrapper selection and open-
 
 Next proof-expansion work should replace portions of the contract assumptions with deeper evidence:
 
-1. Concrete KEM encapsulation/decapsulation agreement tests and proof-facing contracts.
-2. Concrete HKDF determinism and context separation checks.
-3. SHA/context-hash field-inclusion expansion beyond the existing transcript model.
-4. Production-level composed seal/open harnesses covering real valid inputs and defined tampering cases.
+1. Kani-friendly extracted models for the concrete KEM/HKDF/context helper surfaces.
+2. External primitive-security references for X25519, ML-KEM, ChaCha20Poly1305, HKDF, and SHA.
+3. CI recording of the concrete discharge tests as named verification evidence.

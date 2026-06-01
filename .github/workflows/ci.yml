@@ -36,7 +36,7 @@ jobs:
         run: cargo test --all-targets --all-features
 
       - name: Publish dry run
-        run: cargo publish --dry-run --locked
+        run: cargo publish --dry-run --locked --allow-dirty
 
   coq-proofs:
     name: Coq proof check

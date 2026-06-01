@@ -5,7 +5,7 @@ mod helpers;
 use helpers::scenario::Scenario;
 use helpers::transparency::commit_state;
 use kyriotes_csk2::{
-    BasicAuthorityVerifier, InMemoryTransparencyLog, KyriotesCsk2Error, TemporalPolicy,
+    StubAuthorityVerifier, InMemoryTransparencyLog, KyriotesCsk2Error, TemporalPolicy,
     add_epoch_wrapper_and_commit, open, seal,
 };
 
@@ -35,7 +35,7 @@ fn add_epoch_wrapper_and_commit_bakes_in_committed_proof() {
 
     let mut log = InMemoryTransparencyLog::new();
     let seed50 = s.make_state_at_epoch(50);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
 
     let commit = add_epoch_wrapper_and_commit(
         &mut log,
@@ -94,7 +94,7 @@ fn add_epoch_wrapper_and_commit_object_is_openable_at_new_epoch() {
 
     let mut log = InMemoryTransparencyLog::new();
     let seed50 = s.make_state_at_epoch(50);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
 
     let commit = add_epoch_wrapper_and_commit(
         &mut log,
@@ -146,7 +146,7 @@ fn add_epoch_wrapper_and_commit_rejects_missing_from_wrapper() {
     let proof50 = s.build_proof_for_state(&state50);
 
     let seed55 = s.make_state_at_epoch(55);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
     let mut log = InMemoryTransparencyLog::new();
 
     // from_state = epoch 50 (no wrapper); to_state = epoch 55

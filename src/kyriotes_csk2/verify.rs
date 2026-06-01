@@ -8,37 +8,116 @@ use super::model::{AuthorityState, TransparencyProof, transparency_leaf_hash};
 use super::transparency::hash_transparency_node;
 use super::tsig::{ThresholdSignatureSet, tsig_verify};
 
+mod private {
+    #[derive(Clone, Debug)]
+    pub struct Sealed;
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VerificationPath {
+    Legacy,
+    CertChain,
+    Stub,
+}
+
+#[derive(Clone, Debug)]
+pub struct AuthorityVerificationEvidence {
+    pub path: VerificationPath,
+}
+
+#[derive(Clone, Debug)]
+pub struct VerifiedAuthorityState {
+    inner: AuthorityState,
+    pub evidence: AuthorityVerificationEvidence,
+    _sealed: private::Sealed,
+}
+
+impl VerifiedAuthorityState {
+    pub(crate) fn new(inner: AuthorityState, evidence: AuthorityVerificationEvidence) -> Self {
+        Self {
+            inner,
+            evidence,
+            _sealed: private::Sealed,
+        }
+    }
+
+    pub fn as_state(&self) -> &AuthorityState {
+        &self.inner
+    }
+
+    pub fn authority_root(&self) -> [u8; 32] {
+        self.inner.authority_root
+    }
+
+    pub fn revocation_root(&self) -> [u8; 32] {
+        self.inner.revocation_root
+    }
+
+    pub fn transparency_root(&self) -> [u8; 32] {
+        self.inner.transparency_root
+    }
+
+    pub fn epoch(&self) -> u64 {
+        self.inner.epoch
+    }
+
+    pub fn authority_id(&self) -> &str {
+        &self.inner.authority_id
+    }
+
+    pub fn revocation_count(&self) -> u64 {
+        self.inner.revocation_count
+    }
+
+    pub fn prev_epoch_hash(&self) -> [u8; 32] {
+        self.inner.prev_epoch_hash
+    }
+}
+
 pub trait AuthorityVerifier {
     fn verify_state(
         &self,
         state: &AuthorityState,
         transparency_proof: &TransparencyProof,
-    ) -> Result<(), KyriotesCsk2Error>;
+    ) -> Result<VerifiedAuthorityState, KyriotesCsk2Error>;
 }
 
 #[derive(Default)]
+#[cfg(any(test, feature = "insecure-stub-verifier"))]
+pub struct StubAuthorityVerifier;
+
+#[cfg(any(test, feature = "insecure-stub-verifier"))]
+#[deprecated(note = "Use StubAuthorityVerifier; BasicAuthorityVerifier is test-only")]
+#[derive(Default)]
 pub struct BasicAuthorityVerifier;
 
+#[cfg(any(test, feature = "insecure-stub-verifier"))]
+#[allow(deprecated)]
 impl AuthorityVerifier for BasicAuthorityVerifier {
     fn verify_state(
         &self,
         state: &AuthorityState,
-        _transparency_proof: &TransparencyProof,
-    ) -> Result<(), KyriotesCsk2Error> {
-        if !state.epoch_signature_valid {
-            return Err(KyriotesCsk2Error::AuthorityState("invalid epoch signature"));
-        }
-        if !state.epoch_key_cert_valid {
-            return Err(KyriotesCsk2Error::AuthorityState(
-                "invalid epoch key certificate",
-            ));
-        }
-        if !state.transparency_inclusion_valid {
-            return Err(KyriotesCsk2Error::AuthorityState(
-                "missing or invalid transparency proof",
-            ));
-        }
-        Ok(())
+        transparency_proof: &TransparencyProof,
+    ) -> Result<VerifiedAuthorityState, KyriotesCsk2Error> {
+        let verifier = StubAuthorityVerifier;
+        verifier.verify_state(state, transparency_proof)
+    }
+}
+
+#[cfg(any(test, feature = "insecure-stub-verifier"))]
+impl AuthorityVerifier for StubAuthorityVerifier {
+    fn verify_state(
+        &self,
+        state: &AuthorityState,
+        transparency_proof: &TransparencyProof,
+    ) -> Result<VerifiedAuthorityState, KyriotesCsk2Error> {
+        verify_transparency_inclusion(state, transparency_proof)?;
+        Ok(VerifiedAuthorityState::new(
+            state.clone(),
+            AuthorityVerificationEvidence {
+                path: VerificationPath::Stub,
+            },
+        ))
     }
 }
 
@@ -108,7 +187,6 @@ impl AuthorityEvidenceRegistry {
 #[derive(Clone, Debug, Default)]
 pub struct CryptoAuthorityVerifier {
     evidence_registry: AuthorityEvidenceRegistry,
-    enforce_stub_checks: bool,
     /// When set, full cert chain verification is enforced: the epoch key cert
     /// must be signed by this offline root public key, and the epoch root
     /// signature must be signed by the certified epoch key.
@@ -122,7 +200,6 @@ impl CryptoAuthorityVerifier {
     pub fn new() -> Self {
         Self {
             evidence_registry: AuthorityEvidenceRegistry::new(),
-            enforce_stub_checks: true,
             root_pk: None,
         }
     }
@@ -132,14 +209,8 @@ impl CryptoAuthorityVerifier {
     pub fn with_root_pk(root_pk: [u8; 32]) -> Self {
         Self {
             evidence_registry: AuthorityEvidenceRegistry::new(),
-            enforce_stub_checks: true,
             root_pk: Some(root_pk),
         }
-    }
-
-    pub fn with_stub_checks(mut self, enforce: bool) -> Self {
-        self.enforce_stub_checks = enforce;
-        self
     }
 
     /// Register evidence for `(authority_id, epoch)`.
@@ -209,22 +280,7 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
         &self,
         state: &AuthorityState,
         transparency_proof: &TransparencyProof,
-    ) -> Result<(), KyriotesCsk2Error> {
-        if self.enforce_stub_checks {
-            if !state.epoch_signature_valid {
-                return Err(KyriotesCsk2Error::AuthorityState("invalid epoch signature"));
-            }
-            if !state.epoch_key_cert_valid {
-                return Err(KyriotesCsk2Error::AuthorityState(
-                    "invalid epoch key certificate",
-                ));
-            }
-            if !state.transparency_inclusion_valid {
-                return Err(KyriotesCsk2Error::AuthorityState(
-                    "missing or invalid transparency proof",
-                ));
-            }
-        }
+    ) -> Result<VerifiedAuthorityState, KyriotesCsk2Error> {
 
         let evidence = self
             .evidence_registry
@@ -233,7 +289,7 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
                 "missing authority key/signature evidence for epoch",
             ))?;
 
-        match &self.root_pk {
+        let path = match &self.root_pk {
             Some(root_pk) => {
                 // Full chain: offline root → epoch cert → epoch root signature.
                 verify_epoch_cert(root_pk, &evidence.epoch_cert)?;
@@ -280,6 +336,7 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
                         )?;
                     }
                 }
+                VerificationPath::CertChain
             }
             None => {
                 // Legacy path: verify epoch_root_sig over authority_state_signing_message.
@@ -291,10 +348,16 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
                 key.verify_strict(&msg, &sig).map_err(|_| {
                     KyriotesCsk2Error::AuthorityState("invalid authority signature")
                 })?;
+                VerificationPath::Legacy
             }
-        }
+        };
 
-        verify_transparency_inclusion(state, transparency_proof)
+        verify_transparency_inclusion(state, transparency_proof)?;
+
+        Ok(VerifiedAuthorityState::new(
+            state.clone(),
+            AuthorityVerificationEvidence { path },
+        ))
     }
 }
 
@@ -302,12 +365,6 @@ fn verify_transparency_inclusion(
     state: &AuthorityState,
     proof: &TransparencyProof,
 ) -> Result<(), KyriotesCsk2Error> {
-    if !state.transparency_inclusion_valid {
-        return Err(KyriotesCsk2Error::AuthorityState(
-            "missing or invalid transparency proof",
-        ));
-    }
-
     let expected_leaf = transparency_leaf_hash(state);
     if proof.leaf_hash != expected_leaf {
         return Err(KyriotesCsk2Error::AuthorityState(
@@ -360,9 +417,6 @@ mod tests {
             transparency_root: [0u8; 32],
             epoch: 42,
             authority_id: "auth-main".to_string(),
-            epoch_signature_valid: true,
-            epoch_key_cert_valid: true,
-            transparency_inclusion_valid: true,
             root_pk: [0u8; 32],
             revocation_count: 0,
             prev_epoch_hash: [0u8; 32],

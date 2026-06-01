@@ -119,9 +119,6 @@ pub struct AuthorityState {
     pub transparency_root: [u8; 32],
     pub epoch: u64,
     pub authority_id: String,
-    pub epoch_signature_valid: bool,
-    pub epoch_key_cert_valid: bool,
-    pub transparency_inclusion_valid: bool,
     pub root_pk: [u8; 32],
     /// Authenticated count of entries in the revocation tree `V_e`.
     ///

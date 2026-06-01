@@ -25,6 +25,10 @@ include = [
 [lib]
 name = "kyriotes_csk2"
 
+[features]
+default = []
+insecure-stub-verifier = []
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(kani)"] }
 

@@ -23,7 +23,9 @@ use super::model::{
     capability_leaf_hash, capability_stamp, context_hash,
 };
 use super::transparency::{TransparencyLog, TransparencyStateCommit, transparency_log_entry_hash};
-use super::verify::{AuthorityVerifier, BasicAuthorityVerifier, CryptoAuthorityVerifier};
+use super::verify::{AuthorityVerifier, CryptoAuthorityVerifier, VerifiedAuthorityState};
+#[cfg(any(test, feature = "insecure-stub-verifier"))]
+use super::verify::StubAuthorityVerifier;
 use crate::core::rights::Rights;
 
 /// Maximum allowed delegation depth for a capability chain.
@@ -351,18 +353,37 @@ pub fn seal(
     req: &OpenRequest,
     temporal_policy: TemporalPolicy,
 ) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
-    let verifier = BasicAuthorityVerifier;
-    seal_with_verifier(
-        &verifier,
-        recipient_pk,
-        message,
-        cap,
-        proof,
-        transparency_proof,
-        state,
-        req,
-        temporal_policy,
-    )
+    #[cfg(any(test, feature = "insecure-stub-verifier"))]
+    {
+        let verifier = StubAuthorityVerifier;
+        return seal_with_verifier(
+            &verifier,
+            recipient_pk,
+            message,
+            cap,
+            proof,
+            transparency_proof,
+            state,
+            req,
+            temporal_policy,
+        );
+    }
+
+    #[cfg(not(any(test, feature = "insecure-stub-verifier")))]
+    {
+        let verifier = CryptoAuthorityVerifier::new();
+        seal_with_verifier(
+            &verifier,
+            recipient_pk,
+            message,
+            cap,
+            proof,
+            transparency_proof,
+            state,
+            req,
+            temporal_policy,
+        )
+    }
 }
 
 // Keep the v0.1 public API stable until request-struct APIs are designed.
@@ -378,7 +399,31 @@ pub fn seal_with_verifier<V: AuthorityVerifier>(
     req: &OpenRequest,
     temporal_policy: TemporalPolicy,
 ) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
-    verifier.verify_state(state, transparency_proof)?;
+    let verified_state = verifier.verify_state(state, transparency_proof)?;
+    seal_verified(
+        recipient_pk,
+        message,
+        cap,
+        proof,
+        transparency_proof,
+        &verified_state,
+        req,
+        temporal_policy,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn seal_verified(
+    recipient_pk: &RecipientPublicKey,
+    message: &[u8],
+    cap: &Capability,
+    proof: &CapabilityProof,
+    transparency_proof: &TransparencyProof,
+    verified_state: &VerifiedAuthorityState,
+    req: &OpenRequest,
+    temporal_policy: TemporalPolicy,
+) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
+    let state = verified_state.as_state();
     validate_capability(cap, proof, state, req)?;
 
     let mut payload_nonce = [0u8; 12];
@@ -548,8 +593,17 @@ pub fn open(
     proof: &CapabilityProof,
     state: &AuthorityState,
 ) -> Result<Vec<u8>, KyriotesCsk2Error> {
-    let verifier = BasicAuthorityVerifier;
-    open_with_verifier(&verifier, recipient_sk, object, cap, proof, state)
+    #[cfg(any(test, feature = "insecure-stub-verifier"))]
+    {
+        let verifier = StubAuthorityVerifier;
+        return open_with_verifier(&verifier, recipient_sk, object, cap, proof, state);
+    }
+
+    #[cfg(not(any(test, feature = "insecure-stub-verifier")))]
+    {
+        let verifier = CryptoAuthorityVerifier::new();
+        open_with_verifier(&verifier, recipient_sk, object, cap, proof, state)
+    }
 }
 
 pub fn open_with_verifier<V: AuthorityVerifier>(
@@ -562,7 +616,20 @@ pub fn open_with_verifier<V: AuthorityVerifier>(
 ) -> Result<Vec<u8>, KyriotesCsk2Error> {
     let (e_req, wrapper) = select_required_wrapper(object, state)?;
 
-    verifier.verify_state(state, &wrapper.transparency_proof)?;
+    let verified_state = verifier.verify_state(state, &wrapper.transparency_proof)?;
+    open_verified(recipient_sk, object, cap, proof, &verified_state, wrapper, e_req)
+}
+
+pub fn open_verified(
+    recipient_sk: &RecipientSecretKey,
+    object: &KyriotesCsk2Object,
+    cap: &Capability,
+    proof: &CapabilityProof,
+    verified_state: &VerifiedAuthorityState,
+    wrapper: &AuthorityWrapper,
+    e_req: u64,
+) -> Result<Vec<u8>, KyriotesCsk2Error> {
+    let state = verified_state.as_state();
 
     let req = open_request_for_object(object, e_req);
 
@@ -589,18 +656,37 @@ pub fn add_epoch_wrapper(
     to_state: &AuthorityState,
     to_transparency_proof: &TransparencyProof,
 ) -> Result<(), KyriotesCsk2Error> {
-    let verifier = BasicAuthorityVerifier;
-    add_epoch_wrapper_with_verifier(
-        &verifier,
-        recipient_sk,
-        recipient_pk,
-        object,
-        cap,
-        proof,
-        from_state,
-        to_state,
-        to_transparency_proof,
-    )
+    #[cfg(any(test, feature = "insecure-stub-verifier"))]
+    {
+        let verifier = StubAuthorityVerifier;
+        return add_epoch_wrapper_with_verifier(
+            &verifier,
+            recipient_sk,
+            recipient_pk,
+            object,
+            cap,
+            proof,
+            from_state,
+            to_state,
+            to_transparency_proof,
+        );
+    }
+
+    #[cfg(not(any(test, feature = "insecure-stub-verifier")))]
+    {
+        let verifier = CryptoAuthorityVerifier::new();
+        add_epoch_wrapper_with_verifier(
+            &verifier,
+            recipient_sk,
+            recipient_pk,
+            object,
+            cap,
+            proof,
+            from_state,
+            to_state,
+            to_transparency_proof,
+        )
+    }
 }
 
 // Keep the v0.1 public API stable until request-struct APIs are designed.
@@ -622,8 +708,38 @@ pub fn add_epoch_wrapper_with_verifier<V: AuthorityVerifier>(
         .find(|w| w.epoch == from_state.epoch)
         .ok_or(KyriotesCsk2Error::MissingWrapper)?;
 
-    verifier.verify_state(from_state, &from_wrapper.transparency_proof)?;
-    verifier.verify_state(to_state, to_transparency_proof)?;
+    let from_verified = verifier.verify_state(from_state, &from_wrapper.transparency_proof)?;
+    let to_verified = verifier.verify_state(to_state, to_transparency_proof)?;
+    add_epoch_wrapper_verified(
+        recipient_sk,
+        recipient_pk,
+        object,
+        cap,
+        proof,
+        &from_verified,
+        &to_verified,
+        to_transparency_proof,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn add_epoch_wrapper_verified(
+    recipient_sk: &RecipientSecretKey,
+    recipient_pk: &RecipientPublicKey,
+    object: &mut KyriotesCsk2Object,
+    cap: &Capability,
+    proof: &CapabilityProof,
+    from_verified: &VerifiedAuthorityState,
+    to_verified: &VerifiedAuthorityState,
+    to_transparency_proof: &TransparencyProof,
+) -> Result<(), KyriotesCsk2Error> {
+    let from_state = from_verified.as_state();
+    let to_state = to_verified.as_state();
+    let from_wrapper = object
+        .wrappers
+        .iter()
+        .find(|w| w.epoch == from_state.epoch)
+        .ok_or(KyriotesCsk2Error::MissingWrapper)?;
 
     let from_req = OpenRequest {
         object_id: object.object_id.clone(),
@@ -833,8 +949,17 @@ pub fn verify(
     state: &AuthorityState,
     transparency_proof: &TransparencyProof,
 ) -> Result<(), KyriotesCsk2Error> {
-    let verifier = BasicAuthorityVerifier;
-    verify_with_verifier(&verifier, object, cap, proof, state, transparency_proof)
+    #[cfg(any(test, feature = "insecure-stub-verifier"))]
+    {
+        let verifier = StubAuthorityVerifier;
+        return verify_with_verifier(&verifier, object, cap, proof, state, transparency_proof);
+    }
+
+    #[cfg(not(any(test, feature = "insecure-stub-verifier")))]
+    {
+        let verifier = CryptoAuthorityVerifier::new();
+        verify_with_verifier(&verifier, object, cap, proof, state, transparency_proof)
+    }
 }
 
 /// Verify variant that accepts a custom [`AuthorityVerifier`].
@@ -853,7 +978,17 @@ pub fn verify_with_verifier<V: AuthorityVerifier>(
     transparency_proof: &TransparencyProof,
 ) -> Result<(), KyriotesCsk2Error> {
     // Step 1: epoch chain + transparency inclusion.
-    verifier.verify_state(state, transparency_proof)?;
+    let verified_state = verifier.verify_state(state, transparency_proof)?;
+    verify_verified(object, cap, proof, &verified_state)
+}
+
+pub fn verify_verified(
+    object: &KyriotesCsk2Object,
+    cap: &Capability,
+    proof: &CapabilityProof,
+    verified_state: &VerifiedAuthorityState,
+) -> Result<(), KyriotesCsk2Error> {
+    let state = verified_state.as_state();
 
     // Step 2: temporal policy acceptance.
     let e_open = state.epoch;
@@ -904,21 +1039,43 @@ pub fn open_and_reseal(
     seal_req: &OpenRequest,
     new_temporal_policy: TemporalPolicy,
 ) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
-    let verifier = BasicAuthorityVerifier;
-    open_and_reseal_with_verifier(
-        &verifier,
-        recipient_sk,
-        recipient_pk_new,
-        object,
-        cap,
-        open_proof,
-        open_state,
-        seal_proof,
-        seal_transparency_proof,
-        seal_state,
-        seal_req,
-        new_temporal_policy,
-    )
+    #[cfg(any(test, feature = "insecure-stub-verifier"))]
+    {
+        let verifier = StubAuthorityVerifier;
+        return open_and_reseal_with_verifier(
+            &verifier,
+            recipient_sk,
+            recipient_pk_new,
+            object,
+            cap,
+            open_proof,
+            open_state,
+            seal_proof,
+            seal_transparency_proof,
+            seal_state,
+            seal_req,
+            new_temporal_policy,
+        );
+    }
+
+    #[cfg(not(any(test, feature = "insecure-stub-verifier")))]
+    {
+        let verifier = CryptoAuthorityVerifier::new();
+        open_and_reseal_with_verifier(
+            &verifier,
+            recipient_sk,
+            recipient_pk_new,
+            object,
+            cap,
+            open_proof,
+            open_state,
+            seal_proof,
+            seal_transparency_proof,
+            seal_state,
+            seal_req,
+            new_temporal_policy,
+        )
+    }
 }
 
 /// Reseal variant that accepts a custom [`AuthorityVerifier`].
@@ -938,19 +1095,62 @@ pub fn open_and_reseal_with_verifier<V: AuthorityVerifier>(
     seal_req: &OpenRequest,
     new_temporal_policy: TemporalPolicy,
 ) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
-    // Step 1: Open the existing object to recover M.
-    let plaintext =
-        open_with_verifier(verifier, recipient_sk, object, cap, open_proof, open_state)?;
+    let open_wrapper = object
+        .wrappers
+        .iter()
+        .find(|w| w.epoch == open_state.epoch)
+        .ok_or(KyriotesCsk2Error::MissingWrapper)?;
+    let open_verified = verifier.verify_state(open_state, &open_wrapper.transparency_proof)?;
+    let seal_verified = verifier.verify_state(seal_state, seal_transparency_proof)?;
 
-    // Step 2–4: Seal M under the new state with a fresh DEK (spec §15 Reseal).
-    seal_with_verifier(
-        verifier,
+    open_and_reseal_verified(
+        recipient_sk,
+        recipient_pk_new,
+        object,
+        cap,
+        open_proof,
+        &open_verified,
+        seal_proof,
+        seal_transparency_proof,
+        &seal_verified,
+        seal_req,
+        new_temporal_policy,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn open_and_reseal_verified(
+    recipient_sk: &RecipientSecretKey,
+    recipient_pk_new: &RecipientPublicKey,
+    object: &KyriotesCsk2Object,
+    cap: &Capability,
+    open_proof: &CapabilityProof,
+    open_verified_state: &VerifiedAuthorityState,
+    seal_proof: &CapabilityProof,
+    seal_transparency_proof: &TransparencyProof,
+    seal_verified_state: &VerifiedAuthorityState,
+    seal_req: &OpenRequest,
+    new_temporal_policy: TemporalPolicy,
+) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
+    let open_state = open_verified_state.as_state();
+    let (e_req, wrapper) = select_required_wrapper(object, open_state)?;
+    let plaintext = open_verified(
+        recipient_sk,
+        object,
+        cap,
+        open_proof,
+        open_verified_state,
+        wrapper,
+        e_req,
+    )?;
+
+    seal_verified(
         recipient_pk_new,
         &plaintext,
         cap,
         seal_proof,
         seal_transparency_proof,
-        seal_state,
+        seal_verified_state,
         seal_req,
         new_temporal_policy,
     )
@@ -1127,16 +1327,33 @@ pub fn open_with_compromise_check(
     state: &AuthorityState,
     notices: &[CompromiseNotice],
 ) -> Result<Vec<u8>, KyriotesCsk2Error> {
-    let verifier = BasicAuthorityVerifier;
-    open_with_compromise_check_and_verifier(
-        &verifier,
-        recipient_sk,
-        object,
-        cap,
-        proof,
-        state,
-        notices,
-    )
+    #[cfg(any(test, feature = "insecure-stub-verifier"))]
+    {
+        let verifier = StubAuthorityVerifier;
+        return open_with_compromise_check_and_verifier(
+            &verifier,
+            recipient_sk,
+            object,
+            cap,
+            proof,
+            state,
+            notices,
+        );
+    }
+
+    #[cfg(not(any(test, feature = "insecure-stub-verifier")))]
+    {
+        let verifier = CryptoAuthorityVerifier::new();
+        open_with_compromise_check_and_verifier(
+            &verifier,
+            recipient_sk,
+            object,
+            cap,
+            proof,
+            state,
+            notices,
+        )
+    }
 }
 
 /// Compromise-aware open that accepts a custom [`AuthorityVerifier`].
@@ -1149,8 +1366,34 @@ pub fn open_with_compromise_check_and_verifier<V: AuthorityVerifier>(
     state: &AuthorityState,
     notices: &[CompromiseNotice],
 ) -> Result<Vec<u8>, KyriotesCsk2Error> {
+    let (e_req, wrapper) = select_required_wrapper(object, state)?;
+    let verified_state = verifier.verify_state(state, &wrapper.transparency_proof)?;
+    open_with_compromise_check_verified(
+        recipient_sk,
+        object,
+        cap,
+        proof,
+        &verified_state,
+        notices,
+        wrapper,
+        e_req,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn open_with_compromise_check_verified(
+    recipient_sk: &RecipientSecretKey,
+    object: &KyriotesCsk2Object,
+    cap: &Capability,
+    proof: &CapabilityProof,
+    verified_state: &VerifiedAuthorityState,
+    notices: &[CompromiseNotice],
+    wrapper: &AuthorityWrapper,
+    e_req: u64,
+) -> Result<Vec<u8>, KyriotesCsk2Error> {
+    let state = verified_state.as_state();
     enforce_compromise_notices(state, &proof.issuance.epoch_cert.epoch_pk, notices)?;
-    open_with_verifier(verifier, recipient_sk, object, cap, proof, state)
+    open_verified(recipient_sk, object, cap, proof, verified_state, wrapper, e_req)
 }
 
 /// Verify an Kyriotēs-CSK2 object while enforcing one or more [`CompromiseNotice`]s.
@@ -1165,16 +1408,33 @@ pub fn verify_with_compromise_check(
     transparency_proof: &TransparencyProof,
     notices: &[CompromiseNotice],
 ) -> Result<(), KyriotesCsk2Error> {
-    let verifier = BasicAuthorityVerifier;
-    verify_with_compromise_check_and_verifier(
-        &verifier,
-        object,
-        cap,
-        proof,
-        state,
-        transparency_proof,
-        notices,
-    )
+    #[cfg(any(test, feature = "insecure-stub-verifier"))]
+    {
+        let verifier = StubAuthorityVerifier;
+        return verify_with_compromise_check_and_verifier(
+            &verifier,
+            object,
+            cap,
+            proof,
+            state,
+            transparency_proof,
+            notices,
+        );
+    }
+
+    #[cfg(not(any(test, feature = "insecure-stub-verifier")))]
+    {
+        let verifier = CryptoAuthorityVerifier::new();
+        verify_with_compromise_check_and_verifier(
+            &verifier,
+            object,
+            cap,
+            proof,
+            state,
+            transparency_proof,
+            notices,
+        )
+    }
 }
 
 /// Compromise-aware verify that accepts a custom [`AuthorityVerifier`].
@@ -1187,8 +1447,20 @@ pub fn verify_with_compromise_check_and_verifier<V: AuthorityVerifier>(
     transparency_proof: &TransparencyProof,
     notices: &[CompromiseNotice],
 ) -> Result<(), KyriotesCsk2Error> {
+    let verified_state = verifier.verify_state(state, transparency_proof)?;
+    verify_with_compromise_check_verified(object, cap, proof, &verified_state, notices)
+}
+
+pub fn verify_with_compromise_check_verified(
+    object: &KyriotesCsk2Object,
+    cap: &Capability,
+    proof: &CapabilityProof,
+    verified_state: &VerifiedAuthorityState,
+    notices: &[CompromiseNotice],
+) -> Result<(), KyriotesCsk2Error> {
+    let state = verified_state.as_state();
     enforce_compromise_notices(state, &proof.issuance.epoch_cert.epoch_pk, notices)?;
-    verify_with_verifier(verifier, object, cap, proof, state, transparency_proof)
+    verify_verified(object, cap, proof, verified_state)
 }
 
 /// Internal helper: verify each notice signature under `state.root_pk` and
@@ -1239,9 +1511,6 @@ pub(crate) fn rotated_authority_state(
         transparency_root: [0u8; 32],
         epoch: new_epoch,
         authority_id: base_state.authority_id.clone(),
-        epoch_signature_valid: true,
-        epoch_key_cert_valid: true,
-        transparency_inclusion_valid: true,
         root_pk: base_state.root_pk,
         revocation_count: base_state.revocation_count,
         prev_epoch_hash: *prev_epoch_hash,
@@ -1489,9 +1758,6 @@ mod crypto_contract_discharge_tests {
             transparency_root: bytes32(13),
             epoch: 7,
             authority_id: "aead-aad-discharge".to_string(),
-            epoch_signature_valid: true,
-            epoch_key_cert_valid: true,
-            transparency_inclusion_valid: true,
             root_pk: bytes32(14),
             revocation_count: 3,
             prev_epoch_hash: bytes32(15),

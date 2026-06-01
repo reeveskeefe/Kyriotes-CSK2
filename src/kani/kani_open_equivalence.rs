@@ -9,7 +9,7 @@ use crate::kyriotes_csk2::model::{
     AuthorityState, AuthorityWrapper, Capability, CapabilityProof, KyriotesCsk2Object,
     RecipientSecretKey, TransparencyProof,
 };
-use crate::kyriotes_csk2::verify::AuthorityVerifier;
+use crate::kyriotes_csk2::verify::{AuthorityVerifier, VerifiedAuthorityState};
 use crate::{KyriotesCsk2Error, Rights, TemporalPolicy};
 
 struct RejectingAuthorityVerifier;
@@ -19,7 +19,7 @@ impl AuthorityVerifier for RejectingAuthorityVerifier {
         &self,
         _state: &AuthorityState,
         _transparency_proof: &TransparencyProof,
-    ) -> Result<(), KyriotesCsk2Error> {
+    ) -> Result<VerifiedAuthorityState, KyriotesCsk2Error> {
         Err(KyriotesCsk2Error::Parse(
             "kani rejecting authority verifier",
         ))
@@ -109,9 +109,6 @@ fn minimal_authority_state() -> AuthorityState {
         transparency_root: bytes32(13),
         epoch: 7,
         authority_id: "kani-authority".to_string(),
-        epoch_signature_valid: true,
-        epoch_key_cert_valid: true,
-        transparency_inclusion_valid: true,
         root_pk: bytes32(14),
         revocation_count: 0,
         prev_epoch_hash: bytes32(15),
@@ -262,9 +259,7 @@ fn open_with_verifier_rejects_invalid_authority_surface_without_panic() {
     let proof = minimal_capability_proof();
     let mut state = minimal_authority_state();
 
-    state.epoch_signature_valid = false;
-    state.epoch_key_cert_valid = false;
-    state.transparency_inclusion_valid = false;
+    state.transparency_root = [0u8; 32];
 
     let result = open_with_verifier(
         &verifier,

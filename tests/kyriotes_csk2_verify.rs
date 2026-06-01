@@ -109,11 +109,11 @@ fn verify_rejects_temporal_policy_epoch_mismatch() {
 }
 
 // ---------------------------------------------------------------------------
-// Authority-state flag checks
+// Authority-state tamper checks
 // ---------------------------------------------------------------------------
 
 #[test]
-fn verify_rejects_invalid_epoch_signature_flag() {
+fn verify_rejects_tampered_authority_root() {
     let s = Scenario::baseline("verify-sig-flag", 42).with_message(b"x");
 
     let object = seal(
@@ -129,7 +129,7 @@ fn verify_rejects_invalid_epoch_signature_flag() {
     .expect("seal");
 
     let mut bad_state = s.seal_state.clone();
-    bad_state.epoch_signature_valid = false;
+    bad_state.authority_root[0] ^= 0xFF;
 
     let err = verify(
         &object,
@@ -140,13 +140,14 @@ fn verify_rejects_invalid_epoch_signature_flag() {
     )
     .expect_err("should reject bad epoch sig flag");
     assert!(
-        matches!(err, KyriotesCsk2Error::AuthorityState(_)),
+        matches!(err, KyriotesCsk2Error::AuthorityState(_))
+            || matches!(err, KyriotesCsk2Error::InvalidCapability(_)),
         "{err:?}"
     );
 }
 
 #[test]
-fn verify_rejects_invalid_epoch_cert_flag() {
+fn verify_rejects_tampered_root_public_key() {
     let s = Scenario::baseline("verify-cert-flag", 42).with_message(b"y");
 
     let object = seal(
@@ -162,7 +163,7 @@ fn verify_rejects_invalid_epoch_cert_flag() {
     .expect("seal");
 
     let mut bad_state = s.seal_state.clone();
-    bad_state.epoch_key_cert_valid = false;
+    bad_state.root_pk[0] ^= 0xAB;
 
     let err = verify(
         &object,
@@ -173,7 +174,8 @@ fn verify_rejects_invalid_epoch_cert_flag() {
     )
     .expect_err("should reject bad cert flag");
     assert!(
-        matches!(err, KyriotesCsk2Error::AuthorityState(_)),
+        matches!(err, KyriotesCsk2Error::AuthorityState(_))
+            || matches!(err, KyriotesCsk2Error::InvalidCapability(_)),
         "{err:?}"
     );
 }
@@ -377,14 +379,12 @@ fn verify_with_crypto_verifier_rejects_missing_evidence() {
 }
 
 // ---------------------------------------------------------------------------
-// Transparency inclusion flag
+// Transparency inclusion verification
 // ---------------------------------------------------------------------------
 
 /// Spec §2 step 3: transparency inclusion proof must pass.
-/// `AuthorityState::transparency_inclusion_valid = false` signals a failed
-/// inclusion check and must cause verify to reject.
 #[test]
-fn verify_rejects_invalid_transparency_flag() {
+fn verify_rejects_invalid_transparency_proof() {
     let s = Scenario::baseline("verify-tp-flag", 42).with_message(b"data");
 
     let object = seal(
@@ -399,17 +399,17 @@ fn verify_rejects_invalid_transparency_flag() {
     )
     .expect("seal");
 
-    let mut bad_state = s.seal_state.clone();
-    bad_state.transparency_inclusion_valid = false;
+    let mut bad_proof = s.seal_transparency_proof.clone();
+    bad_proof.leaf_hash[0] ^= 0xFF;
 
     let err = verify(
         &object,
         &s.cap,
         &s.proof,
-        &bad_state,
-        &s.seal_transparency_proof,
+        &s.seal_state,
+        &bad_proof,
     )
-    .expect_err("should reject when transparency inclusion flag is false");
+    .expect_err("should reject invalid transparency proof");
     assert!(
         matches!(err, KyriotesCsk2Error::AuthorityState(_)),
         "{err:?}"

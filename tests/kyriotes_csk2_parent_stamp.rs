@@ -8,7 +8,7 @@ mod helpers;
 
 use helpers::{capability::sample_cap, request_builders::policy_hash, scenario::Scenario};
 use kyriotes_csk2::{
-    BasicAuthorityVerifier, Capability, InMemoryTransparencyLog, capability_leaf_hash, open,
+    StubAuthorityVerifier, Capability, InMemoryTransparencyLog, capability_leaf_hash, open,
     seal_and_commit,
 };
 
@@ -75,7 +75,7 @@ fn default_values_roundtrip_seal_open() {
     );
 
     let mut log = InMemoryTransparencyLog::new();
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
 
     let (object, commit) = seal_and_commit(
         &mut log,

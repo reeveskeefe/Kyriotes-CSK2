@@ -25,14 +25,16 @@ pub use kyriotes_csk2::capability_tree::{
 };
 pub use kyriotes_csk2::engine::{
     EpochRotation, MAX_DELEGATION_DEPTH, add_epoch_wrapper, add_epoch_wrapper_and_commit,
-    add_epoch_wrapper_with_verifier, check_epoch_not_compromised, delegate_capability,
-    issue_capability, issue_capability_and_commit, open, open_and_reseal,
-    open_and_reseal_and_commit, open_and_reseal_with_verifier, open_with_compromise_check,
-    open_with_compromise_check_and_verifier, open_with_verifier, revoke_capability,
+    add_epoch_wrapper_verified, add_epoch_wrapper_with_verifier, check_epoch_not_compromised,
+    delegate_capability, issue_capability, issue_capability_and_commit, open, open_and_reseal,
+    open_and_reseal_and_commit, open_and_reseal_verified, open_and_reseal_with_verifier,
+    open_verified, open_with_compromise_check, open_with_compromise_check_and_verifier,
+    open_with_compromise_check_verified, open_with_verifier, revoke_capability,
     revoke_capability_and_commit, revoke_capability_and_commit_async, rotate_epoch,
-    rotate_epoch_and_commit, rotate_epoch_full, seal, seal_and_commit, seal_with_verifier,
-    validate_capability, verify, verify_with_compromise_check,
-    verify_with_compromise_check_and_verifier, verify_with_verifier,
+    rotate_epoch_and_commit, rotate_epoch_full, seal, seal_and_commit, seal_verified,
+    seal_with_verifier, validate_capability, verify, verify_verified,
+    verify_with_compromise_check, verify_with_compromise_check_and_verifier,
+    verify_with_compromise_check_verified, verify_with_verifier,
 };
 pub use kyriotes_csk2::kem::{hybrid_secret, kem_decaps, kem_encaps};
 pub use kyriotes_csk2::model::{
@@ -50,9 +52,15 @@ pub use kyriotes_csk2::tsig::{
     ThresholdPartialSig, ThresholdSignatureSet, tsig_epoch_signing_message, tsig_sign, tsig_verify,
 };
 pub use kyriotes_csk2::verify::{
-    AuthorityEpochEvidence, AuthorityEvidenceRegistry, AuthorityVerifier, BasicAuthorityVerifier,
-    CryptoAuthorityVerifier, TsigEvidence, authority_state_signing_message,
+    AuthorityEpochEvidence, AuthorityEvidenceRegistry, AuthorityVerificationEvidence,
+    AuthorityVerifier, CryptoAuthorityVerifier, TsigEvidence, VerificationPath,
+    VerifiedAuthorityState, authority_state_signing_message,
 };
+#[cfg(any(test, feature = "insecure-stub-verifier"))]
+pub use kyriotes_csk2::verify::StubAuthorityVerifier;
+#[cfg(any(test, feature = "insecure-stub-verifier"))]
+#[allow(deprecated)]
+pub use kyriotes_csk2::verify::BasicAuthorityVerifier;
 
 #[cfg(test)]
 mod smoke {

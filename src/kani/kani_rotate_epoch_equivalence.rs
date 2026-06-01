@@ -23,9 +23,6 @@ fn base_authority_state() -> AuthorityState {
         transparency_root: bytes32(13),
         epoch: 7,
         authority_id: "kani-authority".to_string(),
-        epoch_signature_valid: false,
-        epoch_key_cert_valid: false,
-        transparency_inclusion_valid: false,
         root_pk: bytes32(14),
         revocation_count: 42,
         prev_epoch_hash: bytes32(15),
@@ -63,15 +60,12 @@ fn rotate_epoch_state_preserves_authority_identity_and_revocation_count() {
 }
 
 #[kani::proof]
-fn rotate_epoch_state_resets_transparency_root_and_validity_flags() {
+fn rotate_epoch_state_resets_transparency_root() {
     let base = base_authority_state();
     let prev = bytes32(21);
     let rotated = rotated_authority_state(&base, 8, &prev);
 
     assert_eq!(rotated.transparency_root, [0u8; 32]);
-    assert!(rotated.epoch_signature_valid);
-    assert!(rotated.epoch_key_cert_valid);
-    assert!(rotated.transparency_inclusion_valid);
 }
 
 #[kani::proof]

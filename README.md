@@ -81,3 +81,9 @@ covered in `tests/kyriotes_csk2_guards.rs`.
 
 Shared test setup lives under
 tests/helpers/, including authority-state fixtures, capability and prooffixtures, request builders, policy-hash helpers, and small scenario buildersfor composing expressive end-to-end cases.
+
+
+## Project Status
+
+- [Changelog](CHANGELOG.md)
+- [Verification documentation](docs/verification/)

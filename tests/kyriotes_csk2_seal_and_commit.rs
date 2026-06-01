@@ -7,7 +7,7 @@ use helpers::{
     request_builders::{DEFAULT_OBJECT_ID, policy_hash, sample_req},
 };
 use kyriotes_csk2::{
-    AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, BasicAuthorityVerifier,
+    AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, StubAuthorityVerifier,
     CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair, InMemoryTransparencyLog,
     RecipientKeyPair, Rights, TemporalPolicy, capability_stamp, issue_capability, open,
     seal_and_commit,
@@ -70,9 +70,6 @@ impl Setup {
             transparency_root: [0u8; 32],
             epoch,
             authority_id: "auth-main".to_string(),
-            epoch_signature_valid: true,
-            epoch_key_cert_valid: true,
-            transparency_inclusion_valid: true,
             root_pk: self.root_kp.verifying_key_bytes(),
             revocation_count: self.tree.revocation_count(),
             prev_epoch_hash: [0u8; 32],
@@ -93,7 +90,7 @@ fn seal_and_commit_returns_valid_object_and_commit() {
     let mut s = Setup::new(40, 60, 42, "sac-basic");
     let state = s.uncommitted_state(42);
     let req = sample_req(42, p);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
     let proof = s.build_proof(&cap, &state);
 
     let (object, commit) = seal_and_commit(
@@ -133,7 +130,7 @@ fn seal_and_commit_wrapper_bakes_in_committed_proof() {
     let mut s = Setup::new(40, 60, 42, "sac-proof");
     let state = s.uncommitted_state(42);
     let req = sample_req(42, p);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
     let proof = s.build_proof(&cap, &state);
 
     let (object, commit) = seal_and_commit(
@@ -166,7 +163,7 @@ fn seal_and_commit_object_is_immediately_openable() {
     let mut s = Setup::new(40, 60, 42, "sac-open");
     let state = s.uncommitted_state(42);
     let req = sample_req(42, p);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
     let proof = s.build_proof(&cap, &state);
     let message = b"open me right away";
 
@@ -199,7 +196,7 @@ fn seal_and_commit_idempotent_for_same_state() {
     let mut s = Setup::new(40, 60, 42, "sac-idempotent");
     let state = s.uncommitted_state(42);
     let req = sample_req(42, p);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
 
     let proof = s.build_proof(&cap, &state);
 
@@ -258,7 +255,7 @@ fn seal_and_commit_rejects_insufficient_rights() {
         epoch: 42,
     };
 
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
     let proof = s.build_proof(&cap, &state);
 
     let err = seal_and_commit(

@@ -42,9 +42,6 @@ impl Scenario {
             transparency_root: [0u8; 32],
             epoch,
             authority_id: "auth-main".to_string(),
-            epoch_signature_valid: true,
-            epoch_key_cert_valid: true,
-            transparency_inclusion_valid: true,
             root_pk: authority.root_pk(),
             revocation_count: 0,
             prev_epoch_hash: [0u8; 32],
@@ -81,9 +78,6 @@ impl Scenario {
             transparency_root: [0u8; 32],
             epoch,
             authority_id: "auth-main".to_string(),
-            epoch_signature_valid: true,
-            epoch_key_cert_valid: true,
-            transparency_inclusion_valid: true,
             root_pk: self.authority.root_pk(),
             revocation_count: self.authority.tree.revocation_count(),
             prev_epoch_hash: [0u8; 32],
@@ -135,7 +129,7 @@ impl Scenario {
     }
 
     pub fn invalidate_seal_epoch_signature(mut self) -> Self {
-        self.seal_state.epoch_signature_valid = false;
+        self.seal_state.prev_epoch_hash[0] ^= 0xFF;
         self
     }
 }

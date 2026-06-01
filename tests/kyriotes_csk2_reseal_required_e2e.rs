@@ -12,7 +12,7 @@ mod helpers;
 use helpers::scenario::Scenario;
 use helpers::transparency::commit_state;
 use kyriotes_csk2::{
-    BasicAuthorityVerifier, InMemoryTransparencyLog, KyriotesCsk2Error, RecipientKeyPair,
+    StubAuthorityVerifier, InMemoryTransparencyLog, KyriotesCsk2Error, RecipientKeyPair,
     TemporalPolicy, open, open_and_reseal, open_and_reseal_and_commit, seal,
 };
 
@@ -39,7 +39,7 @@ fn open_and_reseal_and_commit_produces_openable_object() {
 
     let new_kp = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
     let mut log = InMemoryTransparencyLog::new();
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
 
     let (resealed, commit) = open_and_reseal_and_commit(
         &mut log,
@@ -86,7 +86,7 @@ fn open_and_reseal_and_commit_wrapper_bound_to_committed_root() {
 
     let new_kp = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
     let mut log = InMemoryTransparencyLog::new();
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
 
     let (resealed, commit) = open_and_reseal_and_commit(
         &mut log,
@@ -164,7 +164,7 @@ fn reseal_required_full_e2e_flow() {
     // Step 3: Reseal — open using the ORIGINAL epoch-42 wrapper (42 ≤ 44 → valid)
     // and seal with a fresh DEK bound to epoch 45.
     let new_kp = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
     let req45 = kyriotes_csk2::OpenRequest {
         object_id: s.req.object_id.clone(),
         required_rights: s.req.required_rights,
@@ -222,7 +222,7 @@ fn reseal_required_old_recipient_cannot_open_resealed() {
     .expect("seal");
 
     let new_kp = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
     let mut log = InMemoryTransparencyLog::new();
 
     let (resealed, commit) = open_and_reseal_and_commit(

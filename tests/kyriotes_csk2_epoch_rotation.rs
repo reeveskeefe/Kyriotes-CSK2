@@ -7,7 +7,7 @@ use helpers::{
     request_builders::{policy_hash, sample_req},
 };
 use kyriotes_csk2::{
-    AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, BasicAuthorityVerifier,
+    AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, StubAuthorityVerifier,
     Capability, CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair,
     InMemoryTransparencyLog, RecipientKeyPair, TemporalPolicy, TransparencyLog,
     capability_leaf_hash, capability_stamp, issue_capability, open, open_with_verifier,
@@ -43,9 +43,6 @@ impl Authority {
             transparency_root: [0u8; 32],
             epoch: 42,
             authority_id: "auth-rotation".to_string(),
-            epoch_signature_valid: true,
-            epoch_key_cert_valid: true,
-            transparency_inclusion_valid: true,
             root_pk: root_kp.verifying_key_bytes(),
             revocation_count: tree.revocation_count(),
             prev_epoch_hash: [0u8; 32],
@@ -218,7 +215,7 @@ fn rotate_epoch_and_commit_enables_seal_open_roundtrip() {
     let proof50 = a.build_proof_with_issuance(&cap, &commit50.state, issuance50);
     let req50 = sample_req(50, p);
     let recipient = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
     let message = b"epoch-50 payload";
 
     let (object, sealed_commit) = seal_and_commit(
@@ -273,7 +270,7 @@ fn rotate_epoch_chained_rotation_seal_open() {
     let proof60 = a.build_proof_with_issuance(&cap, &commit60.state, issuance60);
     let req60 = sample_req(60, p);
     let recipient = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
-    let verifier = BasicAuthorityVerifier;
+    let verifier = StubAuthorityVerifier;
     let message = b"chained epoch-60 payload";
 
     let (object, sealed_commit) = seal_and_commit(
@@ -354,9 +351,6 @@ fn base_setup_full(
         transparency_root: [0u8; 32],
         epoch,
         authority_id: authority_id.to_string(),
-        epoch_signature_valid: true,
-        epoch_key_cert_valid: true,
-        transparency_inclusion_valid: true,
         root_pk: root_kp.verifying_key_bytes(),
         revocation_count: 0,
         prev_epoch_hash: [0u8; 32],
@@ -414,9 +408,6 @@ fn rotate_epoch_full_into_verifier_seal_open_roundtrip() {
         transparency_root: [0u8; 32],
         epoch: 1,
         authority_id: "auth-full-roundtrip".to_string(),
-        epoch_signature_valid: true,
-        epoch_key_cert_valid: true,
-        transparency_inclusion_valid: true,
         root_pk: root_kp.verifying_key_bytes(),
         revocation_count: tree.revocation_count(),
         prev_epoch_hash: [0u8; 32],
@@ -485,9 +476,6 @@ fn rotate_epoch_full_into_verifier_verify_path() {
         transparency_root: [0u8; 32],
         epoch: 1,
         authority_id: "auth-full-verify".to_string(),
-        epoch_signature_valid: true,
-        epoch_key_cert_valid: true,
-        transparency_inclusion_valid: true,
         root_pk: root_kp.verifying_key_bytes(),
         revocation_count: tree.revocation_count(),
         prev_epoch_hash: [0u8; 32],

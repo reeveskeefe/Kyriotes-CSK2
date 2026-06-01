@@ -1,4 +1,5 @@
-# Contributing
+# Contributing | Oreulius Contributer Pledge
+
 
 I welcome all contribution attempts to this project under the MIT license. 
 
@@ -46,3 +47,4 @@ Resolve technical differences through data, cryptographic theory, benchmarking, 
 5. Respond objectively to the technical feedback provided by project maintainers to finalize the merge process.
 
 
+By contributing, you pledge to follow those standards. 

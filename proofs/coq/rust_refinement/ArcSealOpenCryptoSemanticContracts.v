@@ -33,6 +33,17 @@ Record SealOpenRustBoundaryEvidence := {
   boundary_kani_contract_harnesses_registered : bool
 }.
 
+Record SealOpenAeadAadDischargeEvidence := {
+  discharge_payload_aead_roundtrip_test : bool;
+  discharge_payload_aead_rejects_ciphertext_tamper_test : bool;
+  discharge_payload_aead_rejects_wrong_key_nonce_aad_test : bool;
+  discharge_wrapped_dek_aead_roundtrip_test : bool;
+  discharge_wrapped_dek_rejects_ciphertext_tamper_test : bool;
+  discharge_wrapped_dek_rejects_wrong_key_nonce_aad_test : bool;
+  discharge_payload_aad_field_binding_test : bool;
+  discharge_authority_aad_field_binding_test : bool
+}.
+
 Definition rust_boundary_evidence_complete
   (evidence : SealOpenRustBoundaryEvidence)
   : bool :=
@@ -43,6 +54,18 @@ Definition rust_boundary_evidence_complete
   boundary_dek_wrap_boundary_recorded evidence &&
   boundary_payload_encrypt_boundary_recorded evidence &&
   boundary_kani_contract_harnesses_registered evidence.
+
+Definition aead_aad_discharge_evidence_complete
+  (evidence : SealOpenAeadAadDischargeEvidence)
+  : bool :=
+  discharge_payload_aead_roundtrip_test evidence &&
+  discharge_payload_aead_rejects_ciphertext_tamper_test evidence &&
+  discharge_payload_aead_rejects_wrong_key_nonce_aad_test evidence &&
+  discharge_wrapped_dek_aead_roundtrip_test evidence &&
+  discharge_wrapped_dek_rejects_ciphertext_tamper_test evidence &&
+  discharge_wrapped_dek_rejects_wrong_key_nonce_aad_test evidence &&
+  discharge_payload_aad_field_binding_test evidence &&
+  discharge_authority_aad_field_binding_test evidence.
 
 Definition arc_current_seal_open_primitive_contracts : SealOpenPrimitiveContracts :=
   {|
@@ -63,6 +86,19 @@ Definition arc_current_seal_open_rust_boundary_evidence : SealOpenRustBoundaryEv
     boundary_dek_wrap_boundary_recorded := true;
     boundary_payload_encrypt_boundary_recorded := true;
     boundary_kani_contract_harnesses_registered := true
+  |}.
+
+Definition arc_current_seal_open_aead_aad_discharge_evidence
+  : SealOpenAeadAadDischargeEvidence :=
+  {|
+    discharge_payload_aead_roundtrip_test := true;
+    discharge_payload_aead_rejects_ciphertext_tamper_test := true;
+    discharge_payload_aead_rejects_wrong_key_nonce_aad_test := true;
+    discharge_wrapped_dek_aead_roundtrip_test := true;
+    discharge_wrapped_dek_rejects_ciphertext_tamper_test := true;
+    discharge_wrapped_dek_rejects_wrong_key_nonce_aad_test := true;
+    discharge_payload_aad_field_binding_test := true;
+    discharge_authority_aad_field_binding_test := true
   |}.
 
 Parameter crypto_contract_seal : ModelRecipient -> ModelCryptoBinding -> Bytes -> ModelSealedObject.
@@ -112,6 +148,23 @@ Theorem current_rust_boundary_evidence_complete :
   rust_boundary_evidence_complete arc_current_seal_open_rust_boundary_evidence = true.
 Proof.
   reflexivity.
+Qed.
+
+Theorem current_aead_aad_discharge_evidence_complete :
+  aead_aad_discharge_evidence_complete
+    arc_current_seal_open_aead_aad_discharge_evidence = true.
+Proof.
+  reflexivity.
+Qed.
+
+Theorem current_aead_roundtrip_and_aad_tamper_contracts_discharged :
+  contract_aead_roundtrip arc_current_seal_open_primitive_contracts = true /\
+  contract_aead_rejects_ciphertext_tamper arc_current_seal_open_primitive_contracts = true /\
+  contract_aead_rejects_aad_tamper arc_current_seal_open_primitive_contracts = true /\
+  aead_aad_discharge_evidence_complete
+    arc_current_seal_open_aead_aad_discharge_evidence = true.
+Proof.
+  repeat split; reflexivity.
 Qed.
 
 Theorem seal_open_crypto_semantic_equivalence_under_primitive_contracts :

@@ -1456,3 +1456,215 @@ pub fn rotate_epoch_full<L: TransparencyLog>(
         prev_epoch_hash,
     )
 }
+
+#[cfg(test)]
+mod crypto_contract_discharge_tests {
+    use super::*;
+
+    fn bytes32(seed: u8) -> [u8; 32] {
+        let mut out = [0u8; 32];
+        let mut i = 0usize;
+        while i < 32 {
+            out[i] = seed.wrapping_add(i as u8);
+            i += 1;
+        }
+        out
+    }
+
+    fn bytes12(seed: u8) -> [u8; 12] {
+        let mut out = [0u8; 12];
+        let mut i = 0usize;
+        while i < 12 {
+            out[i] = seed.wrapping_add(i as u8);
+            i += 1;
+        }
+        out
+    }
+
+    fn sample_state() -> AuthorityState {
+        AuthorityState {
+            authority_root: bytes32(11),
+            revocation_root: bytes32(12),
+            transparency_root: bytes32(13),
+            epoch: 7,
+            authority_id: "aead-aad-discharge".to_string(),
+            epoch_signature_valid: true,
+            epoch_key_cert_valid: true,
+            transparency_inclusion_valid: true,
+            root_pk: bytes32(14),
+            revocation_count: 3,
+            prev_epoch_hash: bytes32(15),
+        }
+    }
+
+    fn sample_object() -> ArcObject {
+        ArcObject {
+            version: 1,
+            suite: "ARC-DEV-CHACHA20POLY1305-HKDF-SHA256".to_string(),
+            object_id: "object-a".to_string(),
+            required_rights: Rights::READ,
+            policy_hash: bytes32(21),
+            seal_epoch: 7,
+            temporal_policy: TemporalPolicy::Current,
+            authority_root: bytes32(11),
+            revocation_root: bytes32(12),
+            payload_nonce: bytes12(31),
+            payload_ciphertext: Vec::new(),
+            wrappers: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn payload_aead_roundtrip_and_tamper_rejection() {
+        let dek = bytes32(41);
+        let nonce = bytes12(42);
+        let aad = b"payload-aad";
+        let message = b"bounded plaintext";
+
+        let ciphertext = payload_encrypt(dek, nonce, message, aad).unwrap();
+        assert_eq!(
+            payload_decrypt(dek, nonce, &ciphertext, aad).unwrap(),
+            message
+        );
+
+        let mut tampered_ciphertext = ciphertext.clone();
+        tampered_ciphertext[0] ^= 1;
+        assert!(payload_decrypt(dek, nonce, &tampered_ciphertext, aad).is_err());
+
+        let mut wrong_dek = dek;
+        wrong_dek[0] ^= 1;
+        assert!(payload_decrypt(wrong_dek, nonce, &ciphertext, aad).is_err());
+
+        let mut wrong_nonce = nonce;
+        wrong_nonce[0] ^= 1;
+        assert!(payload_decrypt(dek, wrong_nonce, &ciphertext, aad).is_err());
+
+        assert!(payload_decrypt(dek, nonce, &ciphertext, b"wrong-aad").is_err());
+    }
+
+    #[test]
+    fn wrapped_dek_aead_roundtrip_and_tamper_rejection() {
+        let kek = bytes32(51);
+        let nonce = bytes12(52);
+        let dek = bytes32(53);
+        let aad = b"authority-aad";
+
+        let wrapped = wrap_dek(kek, nonce, dek, aad).unwrap();
+        assert_eq!(unwrap_dek(kek, nonce, &wrapped, aad).unwrap(), dek);
+
+        let mut tampered_wrapped = wrapped.clone();
+        tampered_wrapped[0] ^= 1;
+        assert!(unwrap_dek(kek, nonce, &tampered_wrapped, aad).is_err());
+
+        let mut wrong_kek = kek;
+        wrong_kek[0] ^= 1;
+        assert!(unwrap_dek(wrong_kek, nonce, &wrapped, aad).is_err());
+
+        let mut wrong_nonce = nonce;
+        wrong_nonce[0] ^= 1;
+        assert!(unwrap_dek(kek, wrong_nonce, &wrapped, aad).is_err());
+
+        assert!(unwrap_dek(kek, nonce, &wrapped, b"wrong-authority-aad").is_err());
+    }
+
+    #[test]
+    fn payload_aad_binds_object_rights_policy_and_seal_epoch() {
+        let object = sample_object();
+        let baseline = payload_aad(&object);
+
+        let mut changed_object_id = object.clone();
+        changed_object_id.object_id = "object-b".to_string();
+        assert_ne!(payload_aad(&changed_object_id), baseline);
+
+        let mut changed_rights = object.clone();
+        changed_rights.required_rights = Rights::WRITE;
+        assert_ne!(payload_aad(&changed_rights), baseline);
+
+        let mut changed_policy_hash = object.clone();
+        changed_policy_hash.policy_hash[0] ^= 1;
+        assert_ne!(payload_aad(&changed_policy_hash), baseline);
+
+        let mut changed_epoch = object;
+        changed_epoch.seal_epoch += 1;
+        assert_ne!(payload_aad(&changed_epoch), baseline);
+    }
+
+    #[test]
+    fn authority_aad_binds_state_context_temporal_policy_and_kem_ciphertexts() {
+        let object = sample_object();
+        let state = sample_state();
+        let ctx = bytes32(61);
+        let kem_ct_classical = bytes32(62);
+        let kem_ct_pq = vec![63u8, 64u8, 65u8];
+        let baseline = authority_aad(&object, &state, ctx, &kem_ct_classical, &kem_ct_pq);
+
+        let mut changed_object = object.clone();
+        changed_object.object_id = "object-b".to_string();
+        assert_ne!(
+            authority_aad(&changed_object, &state, ctx, &kem_ct_classical, &kem_ct_pq),
+            baseline
+        );
+
+        let mut changed_policy = object.clone();
+        changed_policy.policy_hash[0] ^= 1;
+        assert_ne!(
+            authority_aad(&changed_policy, &state, ctx, &kem_ct_classical, &kem_ct_pq),
+            baseline
+        );
+
+        let mut changed_temporal_policy = object.clone();
+        changed_temporal_policy.temporal_policy = TemporalPolicy::Window { start: 7, end: 9 };
+        assert_ne!(
+            authority_aad(
+                &changed_temporal_policy,
+                &state,
+                ctx,
+                &kem_ct_classical,
+                &kem_ct_pq
+            ),
+            baseline
+        );
+
+        let mut changed_state = state.clone();
+        changed_state.authority_root[0] ^= 1;
+        assert_ne!(
+            authority_aad(&object, &changed_state, ctx, &kem_ct_classical, &kem_ct_pq),
+            baseline
+        );
+
+        let mut changed_state = state.clone();
+        changed_state.revocation_root[0] ^= 1;
+        assert_ne!(
+            authority_aad(&object, &changed_state, ctx, &kem_ct_classical, &kem_ct_pq),
+            baseline
+        );
+
+        let mut changed_state = state.clone();
+        changed_state.transparency_root[0] ^= 1;
+        assert_ne!(
+            authority_aad(&object, &changed_state, ctx, &kem_ct_classical, &kem_ct_pq),
+            baseline
+        );
+
+        let mut changed_ctx = ctx;
+        changed_ctx[0] ^= 1;
+        assert_ne!(
+            authority_aad(&object, &state, changed_ctx, &kem_ct_classical, &kem_ct_pq),
+            baseline
+        );
+
+        let mut changed_kem_ct_classical = kem_ct_classical;
+        changed_kem_ct_classical[0] ^= 1;
+        assert_ne!(
+            authority_aad(&object, &state, ctx, &changed_kem_ct_classical, &kem_ct_pq),
+            baseline
+        );
+
+        let mut changed_kem_ct_pq = kem_ct_pq;
+        changed_kem_ct_pq[0] ^= 1;
+        assert_ne!(
+            authority_aad(&object, &state, ctx, &kem_ct_classical, &changed_kem_ct_pq),
+            baseline
+        );
+    }
+}

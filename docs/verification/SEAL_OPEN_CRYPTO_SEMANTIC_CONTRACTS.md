@@ -63,6 +63,14 @@ The Kani boundary harnesses check the executable contract model for:
     composed seal/open contract round trip
     payload ciphertext tamper rejection
 
+## Discharged Concrete Sub-Lanes
+
+The AEAD + AAD binding portion now has concrete Rust evidence recorded in:
+
+    docs/verification/SEAL_OPEN_AEAD_AAD_CONTRACT_DISCHARGE.md
+
+This discharges ARC's concrete use of `payload_encrypt`, `payload_decrypt`, `wrap_dek`, `unwrap_dek`, `payload_aad`, and `authority_aad` for round-trip and defined tamper-rejection behavior. It does not prove ChaCha20Poly1305 as a primitive.
+
 ## Production Helper Boundaries
 
 The open path now has explicit helper boundaries for wrapper selection and open-request construction. This does not change public API behavior; it gives the proof lane named implementation surfaces for the real seal/open semantic expansion.
@@ -71,7 +79,7 @@ The open path now has explicit helper boundaries for wrapper selection and open-
 
 Next proof-expansion work should replace portions of the contract assumptions with deeper evidence:
 
-1. Concrete AEAD API round-trip and tamper-rejection harnesses over bounded inputs.
-2. Concrete KEM encapsulation/decapsulation agreement tests and proof-facing contracts.
-3. Concrete HKDF determinism and context separation checks.
-4. SHA/context-hash field-inclusion expansion beyond the existing transcript model.
+1. Concrete KEM encapsulation/decapsulation agreement tests and proof-facing contracts.
+2. Concrete HKDF determinism and context separation checks.
+3. SHA/context-hash field-inclusion expansion beyond the existing transcript model.
+4. Production-level composed seal/open harnesses covering real valid inputs and defined tampering cases.

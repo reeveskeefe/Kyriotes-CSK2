@@ -51,9 +51,8 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p target/verification-evidence
+          chmod -R a+rwX "$PWD"
           docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            -e HOME=/tmp \
             -v "$PWD:/work" \
             -w /work \
             coqorg/coq:8.20 \

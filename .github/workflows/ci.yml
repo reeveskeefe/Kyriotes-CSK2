@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.87.0
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
@@ -41,8 +41,6 @@ jobs:
   coq-proofs:
     name: Coq proof check
     runs-on: ubuntu-latest
-    # Uses a modern Docker environment that understands modern logical paths like Stdlib
-    container: coqorg/coq:8.20
 
     steps:
       - name: Checkout
@@ -53,12 +51,13 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p target/verification-evidence
-          
-          # Avoid container-specific Git file ownership validation failures
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          
-          # Explicitly calling bash bypasses platform permission restrictions
-          bash ./proofs/coq/check.sh 2>&1 | tee target/verification-evidence/coq-check.log
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp \
+            -v "$PWD:/work" \
+            -w /work \
+            coqorg/coq:8.20 \
+            bash ./proofs/coq/check.sh 2>&1 | tee target/verification-evidence/coq-check.log
 
       - name: Record Coq evidence summary
         if: always()
@@ -90,7 +89,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.87.0
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
@@ -107,8 +106,8 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          cargo test --test arc_seal_open_crypto_semantic --all-features -- --nocapture \
-            2>&1 | tee target/verification-evidence/arc-seal-open-crypto-semantic.log
+          cargo test --test kyriotes_csk2_seal_open_crypto_semantic --all-features -- --nocapture \
+            2>&1 | tee target/verification-evidence/kyriotes-csk2-seal-open-crypto-semantic.log
 
       - name: Record Rust evidence summary
         if: always()
@@ -121,10 +120,10 @@ jobs:
             echo "- Workflow: CI / Seal/open concrete Rust evidence"
             echo "- Commands:"
             echo "  - \`cargo test crypto_contract_discharge_tests --all-features -- --nocapture\`"
-            echo "  - \`cargo test --test arc_seal_open_crypto_semantic --all-features -- --nocapture\`"
+            echo "  - \`cargo test --test kyriotes_csk2_seal_open_crypto_semantic --all-features -- --nocapture\`"
             echo "- Artifact logs:"
             echo "  - \`crypto-contract-discharge-tests.log\`"
-            echo "  - \`arc-seal-open-crypto-semantic.log\`"
+            echo "  - \`kyriotes-csk2-seal-open-crypto-semantic.log\`"
             echo "- Timestamp UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           } > target/verification-evidence/seal-open-rust-summary.md
 
@@ -144,7 +143,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.87.0
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
@@ -216,4 +215,3 @@ jobs:
         with:
           name: seal-open-kani-evidence
           path: target/verification-evidence/
-

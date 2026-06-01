@@ -43,7 +43,7 @@ ARC is a draft cryptographic construction and security model with ongoing harden
 
 ## Rust development status
 
-This repository includes the Rust package ARCencryption, which exposes the library crate arc_core in Rust code. The crate is published on crates.io, and release checks now run in CI with tag-triggered publishing automation. The implementation currently focuses on validating capabilities, checking authority state, enforcing temporal policy, encrypting payloads with fresh DEKs, wrapping those DEKs with HKDF-derived authority-bound KEKs, supporting epoch rewraps for current-authority opening, framing canonical transcripts and associated data, and exposing pluggable authority verifier interfaces.
+This repository includes the Rust package ARCencryption, which exposes the library crate arc_core in Rust code. The crate is published on crates.io, and release checks now run in CI with a manual publish workflow. The implementation currently focuses on validating capabilities, checking authority state, enforcing temporal policy, encrypting payloads with fresh DEKs, wrapping those DEKs with HKDF-derived authority-bound KEKs, supporting epoch rewraps for current-authority opening, framing canonical transcripts and associated data, and exposing pluggable authority verifier interfaces.
 
 The crate is organized around a small set of core modules. The ARC data model
 and context hashing live in src/arc/model.rs, while src/arc/engine.rs contains the seal, open, and rewrap pipeline. Authority verification traits
@@ -58,8 +58,7 @@ Use cargo test to run the test suite, `cargo fmt` to format the code, and `cargo
 
 Publishing is automated with the GitHub Actions workflow in `.github/workflows/publish.yml`.
 
-- Push a tag formatted as `vX.Y.Z` (for example, `v0.1.1`).
-- The workflow verifies that the tag version matches `Cargo.toml`.
+- Run the `Publish` workflow manually from the Actions tab.
 - The workflow packages and publishes using the repository secret `CARGO_REGISTRY_TOKEN`.
 
 For local preflight checks, run `cargo publish --dry-run --locked`.

@@ -19,18 +19,11 @@ cargo publish --dry-run --locked
 ```
 
 3. Commit and push changes.
-4. Create and push a tag in `vX.Y.Z` format that matches `Cargo.toml`:
-
-```bash
-git tag v0.1.1
-git push origin v0.1.1
-```
-
+4. In GitHub Actions, manually run the `Publish` workflow from the branch/commit you want to release.
 5. Confirm the Publish workflow succeeds.
 
 ## Workflow behavior
 
 - File: `.github/workflows/publish.yml`
-- Trigger: tag push matching `v*` or manual run
-- Guardrail: fails if tag version does not match `Cargo.toml`
+- Trigger: manual run (`workflow_dispatch`) only
 - Publish command: `cargo publish --locked`

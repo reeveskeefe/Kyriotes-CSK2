@@ -17,75 +17,75 @@ if ! command -v coqc >/dev/null 2>&1; then
 fi
 
 coq_flags=(
-  -Q core ArcProofs
-  -Q merkle_transparency ArcProofs
-  -Q security ArcProofs
-  -Q lifecycle ArcProofs
-  -Q completeness ArcProofs
-  -Q rust_refinement ArcProofs
+  -Q core KyriotesCsk2Proofs
+  -Q merkle_transparency KyriotesCsk2Proofs
+  -Q security KyriotesCsk2Proofs
+  -Q lifecycle KyriotesCsk2Proofs
+  -Q completeness KyriotesCsk2Proofs
+  -Q rust_refinement KyriotesCsk2Proofs
 )
 
 proofs=(
-  core/ArcTypes.v
-  merkle_transparency/ArcMerkle.v
-  core/ArcAuthority.v
-  core/ArcPolicy.v
-  core/ArcVerify.v
-  security/ArcSecurityGame.v
-  security/ArcTheorems.v
-  security/ArcStressProofs.v
-  security/ArcDelegationProofs.v
-  security/ArcCryptoReduction.v
-  lifecycle/ArcTemporalProofs.v
-  lifecycle/ArcTranscriptProofs.v
-  lifecycle/ArcRevocationCompromiseProofs.v
-  merkle_transparency/ArcTransparencyProofs.v
-  lifecycle/ArcEncodingProofs.v
-  lifecycle/ArcWrapperProofs.v
-  security/ArcKemAeadAssumptions.v
-  lifecycle/ArcEndToEndTheorems.v
-  lifecycle/ArcStateTransitionProofs.v
-  merkle_transparency/ArcConcreteMerkleProofs.v
-  merkle_transparency/ArcTransparencyConsistencyProofs.v
-  lifecycle/ArcProtocolStateMachineProofs.v
-  lifecycle/ArcInvalidTransitionProofs.v
-  security/ArcTightSecurityGameProofs.v
-  security/ArcAssumptionReductionProofs.v
-  rust_refinement/ArcRustRefinementMap.v
-  completeness/ArcMasterInvariantProofs.v
-  merkle_transparency/ArcMerkleConcreteTree.v
-  merkle_transparency/ArcTransparencyAppendOnly.v
-  lifecycle/ArcLifecycleProofs.v
-  lifecycle/ArcPredicateRefinementProofs.v
-  security/ArcAdversaryGame.v
-  rust_refinement/ArcRustRefinementObligations.v
-  completeness/ArcAbstractInvariantCompleteness.v
-  completeness/ArcDesignModelCompleteness.v
-  completeness/ArcStateMachineCompleteness.v
-  merkle_transparency/ArcMerkleTransparencyCompleteness.v
-  security/ArcCryptoReductionCompleteness.v
-  rust_refinement/ArcRustRefinementEvidence.v
-  rust_refinement/ArcRustMechanicalRefinement.v
-  rust_refinement/ArcRustFullMechanicalProofGate.v
-  rust_refinement/ArcContextHashRustRefinement.v
-  rust_refinement/ArcDecodeArcObjectRustRefinement.v
-  rust_refinement/ArcEncodeArcObjectRustRefinement.v
-  rust_refinement/ArcVerifyRustRefinement.v
-  rust_refinement/ArcSealRustRefinement.v
-  rust_refinement/ArcOpenRustRefinement.v
-  rust_refinement/ArcSealOpenModelCryptoEquivalence.v
-  rust_refinement/ArcSealOpenCryptoSemanticContracts.v
-  rust_refinement/ArcCapabilityTreeWitnessSoundness.v
-  rust_refinement/ArcAddEpochWrapperRustRefinement.v
-  rust_refinement/ArcRotateEpochRustRefinement.v
-  rust_refinement/ArcRotateEpochFullRustRefinement.v
-  rust_refinement/ArcCapabilityTreeRustRefinement.v
-  rust_refinement/ArcTransparencyRustRefinement.v
-  rust_refinement/ArcFullMechanicalProofEquivalence.v
+  core/KyriotesCsk2Types.v
+  merkle_transparency/KyriotesCsk2Merkle.v
+  core/KyriotesCsk2Authority.v
+  core/KyriotesCsk2Policy.v
+  core/KyriotesCsk2Verify.v
+  security/KyriotesCsk2SecurityGame.v
+  security/KyriotesCsk2Theorems.v
+  security/KyriotesCsk2StressProofs.v
+  security/KyriotesCsk2DelegationProofs.v
+  security/KyriotesCsk2CryptoReduction.v
+  lifecycle/KyriotesCsk2TemporalProofs.v
+  lifecycle/KyriotesCsk2TranscriptProofs.v
+  lifecycle/KyriotesCsk2RevocationCompromiseProofs.v
+  merkle_transparency/KyriotesCsk2TransparencyProofs.v
+  lifecycle/KyriotesCsk2EncodingProofs.v
+  lifecycle/KyriotesCsk2WrapperProofs.v
+  security/KyriotesCsk2KemAeadAssumptions.v
+  lifecycle/KyriotesCsk2EndToEndTheorems.v
+  lifecycle/KyriotesCsk2StateTransitionProofs.v
+  merkle_transparency/KyriotesCsk2ConcreteMerkleProofs.v
+  merkle_transparency/KyriotesCsk2TransparencyConsistencyProofs.v
+  lifecycle/KyriotesCsk2ProtocolStateMachineProofs.v
+  lifecycle/KyriotesCsk2InvalidTransitionProofs.v
+  security/KyriotesCsk2TightSecurityGameProofs.v
+  security/KyriotesCsk2AssumptionReductionProofs.v
+  rust_refinement/KyriotesCsk2RustRefinementMap.v
+  completeness/KyriotesCsk2MasterInvariantProofs.v
+  merkle_transparency/KyriotesCsk2MerkleConcreteTree.v
+  merkle_transparency/KyriotesCsk2TransparencyAppendOnly.v
+  lifecycle/KyriotesCsk2LifecycleProofs.v
+  lifecycle/KyriotesCsk2PredicateRefinementProofs.v
+  security/KyriotesCsk2AdversaryGame.v
+  rust_refinement/KyriotesCsk2RustRefinementObligations.v
+  completeness/KyriotesCsk2AbstractInvariantCompleteness.v
+  completeness/KyriotesCsk2DesignModelCompleteness.v
+  completeness/KyriotesCsk2StateMachineCompleteness.v
+  merkle_transparency/KyriotesCsk2MerkleTransparencyCompleteness.v
+  security/KyriotesCsk2CryptoReductionCompleteness.v
+  rust_refinement/KyriotesCsk2RustRefinementEvidence.v
+  rust_refinement/KyriotesCsk2RustMechanicalRefinement.v
+  rust_refinement/KyriotesCsk2RustFullMechanicalProofGate.v
+  rust_refinement/KyriotesCsk2ContextHashRustRefinement.v
+  rust_refinement/KyriotesCsk2DecodeKyriotesCsk2ObjectRustRefinement.v
+  rust_refinement/KyriotesCsk2EncodeKyriotesCsk2ObjectRustRefinement.v
+  rust_refinement/KyriotesCsk2VerifyRustRefinement.v
+  rust_refinement/KyriotesCsk2SealRustRefinement.v
+  rust_refinement/KyriotesCsk2OpenRustRefinement.v
+  rust_refinement/KyriotesCsk2SealOpenModelCryptoEquivalence.v
+  rust_refinement/KyriotesCsk2SealOpenCryptoSemanticContracts.v
+  rust_refinement/KyriotesCsk2CapabilityTreeWitnessSoundness.v
+  rust_refinement/KyriotesCsk2AddEpochWrapperRustRefinement.v
+  rust_refinement/KyriotesCsk2RotateEpochRustRefinement.v
+  rust_refinement/KyriotesCsk2RotateEpochFullRustRefinement.v
+  rust_refinement/KyriotesCsk2CapabilityTreeRustRefinement.v
+  rust_refinement/KyriotesCsk2TransparencyRustRefinement.v
+  rust_refinement/KyriotesCsk2FullMechanicalProofEquivalence.v
 )
 
 for proof in "${proofs[@]}"; do
   coqc "${coq_flags[@]}" "$proof"
 done
 
-echo "ARC Coq proofs compiled successfully."
+echo "Kyriotēs-CSK2 Coq proofs compiled successfully."

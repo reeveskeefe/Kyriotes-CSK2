@@ -305,6 +305,40 @@ fn required_epoch(policy: &TemporalPolicy, e_open: u64, e_seal: u64) -> u64 {
     policy.required_wrapper_epoch(e_open, e_seal)
 }
 
+fn select_required_wrapper<'a>(
+    object: &'a ArcObject,
+    state: &AuthorityState,
+) -> Result<(u64, &'a AuthorityWrapper), ArcError> {
+    let e_open = state.epoch;
+    if !object.temporal_policy.accepts(e_open, object.seal_epoch) {
+        return Err(ArcError::TemporalRejected);
+    }
+
+    let e_req = required_epoch(&object.temporal_policy, e_open, object.seal_epoch);
+    if e_req != state.epoch {
+        return Err(ArcError::AuthorityState(
+            "open attempted with wrong authority epoch for temporal policy",
+        ));
+    }
+
+    let wrapper = object
+        .wrappers
+        .iter()
+        .find(|w| w.epoch == e_req)
+        .ok_or(ArcError::MissingWrapper)?;
+
+    Ok((e_req, wrapper))
+}
+
+fn open_request_for_object(object: &ArcObject, epoch: u64) -> OpenRequest {
+    OpenRequest {
+        object_id: object.object_id.clone(),
+        required_rights: object.required_rights,
+        policy_hash: object.policy_hash,
+        epoch,
+    }
+}
+
 // Keep the v0.1 public API stable until request-struct APIs are designed.
 #[allow(clippy::too_many_arguments)]
 pub fn seal(
@@ -526,32 +560,11 @@ pub fn open_with_verifier<V: AuthorityVerifier>(
     proof: &CapabilityProof,
     state: &AuthorityState,
 ) -> Result<Vec<u8>, ArcError> {
-    let e_open = state.epoch;
-    if !object.temporal_policy.accepts(e_open, object.seal_epoch) {
-        return Err(ArcError::TemporalRejected);
-    }
-
-    let e_req = required_epoch(&object.temporal_policy, e_open, object.seal_epoch);
-    if e_req != state.epoch {
-        return Err(ArcError::AuthorityState(
-            "open attempted with wrong authority epoch for temporal policy",
-        ));
-    }
-
-    let wrapper = object
-        .wrappers
-        .iter()
-        .find(|w| w.epoch == e_req)
-        .ok_or(ArcError::MissingWrapper)?;
+    let (e_req, wrapper) = select_required_wrapper(object, state)?;
 
     verifier.verify_state(state, &wrapper.transparency_proof)?;
 
-    let req = OpenRequest {
-        object_id: object.object_id.clone(),
-        required_rights: object.required_rights,
-        policy_hash: object.policy_hash,
-        epoch: e_req,
-    };
+    let req = open_request_for_object(object, e_req);
 
     validate_capability(cap, proof, state, &req)?;
 

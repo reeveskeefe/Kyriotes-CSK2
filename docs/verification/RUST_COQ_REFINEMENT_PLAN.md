@@ -89,4 +89,4 @@ The evidence layer should be considered stale if Rust symbols change without upd
 1. Full transparency append and Merkle soundness.
 2. Capability-tree non-empty witness and Merkle-path soundness.
 3. Encode/decode canonical round-trip equivalence.
-4. Active expansion lane: seal/open model-crypto semantic equivalence over a deterministic model crypto backend.
+4. Active expansion lane: seal/open crypto semantic contracts over explicit AEAD/KEM/HKDF/SHA assumptions.

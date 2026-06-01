@@ -1,0 +1,77 @@
+# Seal/Open Crypto Semantic Contract Expansion
+
+## Status
+
+    Verification expansion lane: active
+    Coq contract artifact: added and wired
+    Kani boundary harnesses: added
+    Production API impact: none
+    Tracked Rust mechanical inventory impact: none
+
+ARC's tracked Rust mechanical refinement inventory remains complete at 11 / 11 verifier-backed proof lanes. This file records the next seal/open expansion stage after the deterministic model-crypto lane.
+
+## Claim Shape
+
+The target semantic claim is:
+
+    open(sk_recipient, seal(pk_recipient, state, cap, message)) = message
+
+under explicit assumptions:
+
+    matching recipient keypair
+    valid authority state
+    valid capability proof
+    valid non-revocation proof
+    matching transparency proof
+    selected epoch wrapper exists
+    seal/open context bindings match
+    AEAD, KEM, HKDF, and SHA/context-binding contracts hold
+
+Defined tampering cases should reject before plaintext recovery.
+
+## Boundary
+
+This is a crypto-contract lane, not a primitive-security proof. It assumes contract behavior for AEAD round trip and tamper rejection, KEM encapsulation/decapsulation agreement for matching keys, HKDF determinism, and SHA/context binding.
+
+It does not prove X25519, ML-KEM, ChaCha20Poly1305, HKDF, SHA, or Merkle security. Those remain separate primitive-analysis or reduction targets.
+
+## Coq Artifact
+
+    proofs/coq/rust_refinement/ArcSealOpenCryptoSemanticContracts.v
+
+The Coq layer records the primitive contract assumptions, the Rust helper-boundary evidence, and the composed semantic theorems:
+
+    seal_open_crypto_semantic_equivalence_under_primitive_contracts
+    seal_open_defined_tamper_rejects_under_primitive_contracts
+
+Both theorems are explicitly conditional on the primitive contracts and helper-boundary evidence.
+
+## Kani Artifact
+
+    src/kani/kani_seal_open_crypto_boundary_equivalence.rs
+
+The Kani boundary harnesses check the executable contract model for:
+
+    payload AAD policy binding
+    authority AAD KEM-ciphertext binding
+    wrapper selection for required epoch
+    missing-wrapper rejection
+    AEAD round trip
+    AEAD AAD tamper rejection
+    DEK wrap round trip
+    KEM/HKDF determinism
+    composed seal/open contract round trip
+    payload ciphertext tamper rejection
+
+## Production Helper Boundaries
+
+The open path now has explicit helper boundaries for wrapper selection and open-request construction. This does not change public API behavior; it gives the proof lane named implementation surfaces for the real seal/open semantic expansion.
+
+## Remaining Work
+
+Next proof-expansion work should replace portions of the contract assumptions with deeper evidence:
+
+1. Concrete AEAD API round-trip and tamper-rejection harnesses over bounded inputs.
+2. Concrete KEM encapsulation/decapsulation agreement tests and proof-facing contracts.
+3. Concrete HKDF determinism and context separation checks.
+4. SHA/context-hash field-inclusion expansion beyond the existing transcript model.

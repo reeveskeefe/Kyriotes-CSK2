@@ -9,6 +9,7 @@ mod kani_open_equivalence;
 mod kani_rotate_epoch_equivalence;
 mod kani_rotate_epoch_full_equivalence;
 mod kani_seal_equivalence;
+mod kani_seal_open_crypto_boundary_equivalence;
 mod kani_seal_open_model_crypto_equivalence;
 mod kani_transparency_equivalence;
 mod kani_verify_equivalence;

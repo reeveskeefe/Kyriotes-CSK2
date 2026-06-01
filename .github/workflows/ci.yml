@@ -41,22 +41,24 @@ jobs:
   coq-proofs:
     name: Coq proof check
     runs-on: ubuntu-latest
+    # Uses a modern Docker environment that understands modern logical paths like Stdlib
+    container: coqorg/coq:8.20
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install Coq
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y coq
 
       - name: Run Coq proof check
         shell: bash
         run: |
           set -o pipefail
           mkdir -p target/verification-evidence
-          ./proofs/coq/check.sh 2>&1 | tee target/verification-evidence/coq-check.log
+          
+          # Avoid container-specific Git file ownership validation failures
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          
+          # Explicitly calling bash bypasses platform permission restrictions
+          bash ./proofs/coq/check.sh 2>&1 | tee target/verification-evidence/coq-check.log
 
       - name: Record Coq evidence summary
         if: always()
@@ -147,10 +149,13 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Install Kani
-        uses: model-checking/kani-github-action@v1
-        with:
-          kani-version: latest
+      # Installs Kani directly inside your rust-toolchain runner context 
+      # so that it retains complete binary access to cargo.
+      - name: Install and Setup Kani
+        shell: bash
+        run: |
+          cargo install --locked kani-verifier
+          cargo kani setup
 
       - name: List Kani harnesses
         shell: bash
@@ -211,3 +216,4 @@ jobs:
         with:
           name: seal-open-kani-evidence
           path: target/verification-evidence/
+

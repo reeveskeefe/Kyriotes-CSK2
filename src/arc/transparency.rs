@@ -46,6 +46,7 @@ struct TransparencyEntry {
     chain_hash: [u8; 32],
 }
 
+#[cfg(kani)]
 pub(crate) fn bind_transparency_root_to_state(
     state: &AuthorityState,
     transparency_root: [u8; 32],

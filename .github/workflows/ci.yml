@@ -37,3 +37,177 @@ jobs:
 
       - name: Publish dry run
         run: cargo publish --dry-run --locked
+
+  coq-proofs:
+    name: Coq proof check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Coq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y coq
+
+      - name: Run Coq proof check
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p target/verification-evidence
+          ./proofs/coq/check.sh 2>&1 | tee target/verification-evidence/coq-check.log
+
+      - name: Record Coq evidence summary
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p target/verification-evidence
+          {
+            echo "# Coq Proof Check Evidence"
+            echo
+            echo "- Workflow: CI / Coq proof check"
+            echo "- Command: \`./proofs/coq/check.sh\`"
+            echo "- Artifact log: \`coq-check.log\`"
+            echo "- Timestamp UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          } > target/verification-evidence/coq-summary.md
+
+      - name: Upload Coq evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coq-proof-check-evidence
+          path: target/verification-evidence/
+
+  seal-open-rust-evidence:
+    name: Seal/open concrete Rust evidence
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.87.0
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run seal/open crypto contract discharge tests
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p target/verification-evidence
+          cargo test crypto_contract_discharge_tests --all-features -- --nocapture \
+            2>&1 | tee target/verification-evidence/crypto-contract-discharge-tests.log
+
+      - name: Run production seal/open semantic evidence tests
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo test --test arc_seal_open_crypto_semantic --all-features -- --nocapture \
+            2>&1 | tee target/verification-evidence/arc-seal-open-crypto-semantic.log
+
+      - name: Record Rust evidence summary
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p target/verification-evidence
+          {
+            echo "# Seal/Open Rust Evidence"
+            echo
+            echo "- Workflow: CI / Seal/open concrete Rust evidence"
+            echo "- Commands:"
+            echo "  - \`cargo test crypto_contract_discharge_tests --all-features -- --nocapture\`"
+            echo "  - \`cargo test --test arc_seal_open_crypto_semantic --all-features -- --nocapture\`"
+            echo "- Artifact logs:"
+            echo "  - \`crypto-contract-discharge-tests.log\`"
+            echo "  - \`arc-seal-open-crypto-semantic.log\`"
+            echo "- Timestamp UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          } > target/verification-evidence/seal-open-rust-summary.md
+
+      - name: Upload seal/open Rust evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seal-open-rust-evidence
+          path: target/verification-evidence/
+
+  seal-open-kani-evidence:
+    name: Seal/open Kani evidence
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.87.0
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Kani
+        uses: model-checking/kani-github-action@v1
+        with:
+          kani-version: latest
+
+      - name: List Kani harnesses
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p target/verification-evidence
+          cargo kani list 2>&1 | tee target/verification-evidence/kani-list.log
+
+      - name: Run model-crypto seal/open roundtrip harness
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo kani --harness model_crypto_seal_open_roundtrip_returns_message \
+            2>&1 | tee target/verification-evidence/kani-model-crypto-roundtrip.log
+
+      - name: Run model-crypto representative tamper harness
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo kani --harness model_crypto_open_rejects_altered_context \
+            2>&1 | tee target/verification-evidence/kani-model-crypto-tamper.log
+
+      - name: Run crypto contract roundtrip harness
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo kani --harness crypto_semantic_contract_seal_open_returns_message \
+            2>&1 | tee target/verification-evidence/kani-crypto-contract-roundtrip.log
+
+      - name: Run crypto contract representative tamper harness
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo kani --harness crypto_semantic_contract_rejects_payload_ciphertext_tamper \
+            2>&1 | tee target/verification-evidence/kani-crypto-contract-tamper.log
+
+      - name: Record Kani evidence summary
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p target/verification-evidence
+          {
+            echo "# Seal/Open Kani Evidence"
+            echo
+            echo "- Workflow: CI / Seal/open Kani evidence"
+            echo "- Commands:"
+            echo "  - \`cargo kani list\`"
+            echo "  - \`cargo kani --harness model_crypto_seal_open_roundtrip_returns_message\`"
+            echo "  - \`cargo kani --harness model_crypto_open_rejects_altered_context\`"
+            echo "  - \`cargo kani --harness crypto_semantic_contract_seal_open_returns_message\`"
+            echo "  - \`cargo kani --harness crypto_semantic_contract_rejects_payload_ciphertext_tamper\`"
+            echo "- Timestamp UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          } > target/verification-evidence/seal-open-kani-summary.md
+
+      - name: Upload seal/open Kani evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seal-open-kani-evidence
+          path: target/verification-evidence/

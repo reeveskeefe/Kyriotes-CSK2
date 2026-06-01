@@ -35,6 +35,10 @@ This is a crypto-contract lane, not a primitive-security proof. It assumes contr
 
 It does not prove X25519, ML-KEM, ChaCha20Poly1305, HKDF, SHA, or Merkle security. Those remain separate primitive-analysis or reduction targets.
 
+For a detailed list of primitive assumptions, see [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md).
+
+For a detailed list of primitive assumptions, see [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md).
+
 ## Coq Artifact
 
     proofs/coq/rust_refinement/ArcSealOpenCryptoSemanticContracts.v
@@ -44,11 +48,15 @@ The Coq layer records the primitive contract assumptions, the Rust helper-bounda
     seal_open_crypto_semantic_equivalence_under_primitive_contracts
     seal_open_defined_tamper_rejects_under_primitive_contracts
 
-Both theorems are explicitly conditional on the primitive contracts and helper-boundary evidence.
+The Coq bridge now uses constructive definitions for `crypto_contract_seal` and `crypto_contract_open` over the model-crypto seal/open functions, rather than abstract `Parameter` declarations. The round-trip theorem is proved by applying the model theorem directly, and the defined tamper theorem is proved by case analysis over explicit model-backed tamper scenarios.
+
+The primitive-contract records still state the external cryptographic assumptions. They no longer stand in for the Coq seal/open transition itself.
 
 ## Kani Artifact
 
     src/kani/kani_seal_open_crypto_boundary_equivalence.rs
+
+CI records representative Kani evidence in the `Seal/open Kani evidence` job. The job uploads the `seal-open-kani-evidence` artifact containing `cargo kani list` output and logs for the model-crypto and crypto-contract round-trip and tamper harnesses.
 
 The Kani boundary harnesses check the executable contract model for:
 
@@ -77,6 +85,8 @@ The KEM agreement, HKDF/context separation, deeper context-hash binding, and pro
 
 This discharges the remaining implementation-level contract evidence for ARC's current seal/open composition, while preserving the boundary that primitive cryptographic security is inherited rather than proven here.
 
+The Coq proof tree is compiled in CI by the `Coq proof check` job, which runs `./proofs/coq/check.sh` and uploads the `coq-proof-check-evidence` artifact.
+
 ## Production Helper Boundaries
 
 The open path now has explicit helper boundaries for wrapper selection and open-request construction. This does not change public API behavior; it gives the proof lane named implementation surfaces for the real seal/open semantic expansion.
@@ -87,4 +97,4 @@ Next proof-expansion work should replace portions of the contract assumptions wi
 
 1. Kani-friendly extracted models for the concrete KEM/HKDF/context helper surfaces.
 2. External primitive-security references for X25519, ML-KEM, ChaCha20Poly1305, HKDF, and SHA.
-3. CI recording of the concrete discharge tests as named verification evidence.
+3. Long-term retention or release attachment of CI evidence artifacts for audit packages.

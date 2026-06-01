@@ -2,7 +2,9 @@
 
 mod kani_add_epoch_wrapper_equivalence;
 mod kani_capability_tree_equivalence;
+mod kani_capability_tree_witness_soundness;
 mod kani_context_hash_equivalence;
+mod kani_context_hash_production_equivalence;
 mod kani_decode_arc_object_equivalence;
 mod kani_encode_arc_object_equivalence;
 mod kani_open_equivalence;

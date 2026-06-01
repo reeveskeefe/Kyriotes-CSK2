@@ -54,6 +54,16 @@ collected through src/lib.rs.
 
 Use cargo test to run the test suite, `cargo fmt` to format the code, and `cargo clippy --all-targets --all-features -- -D warnings` to run the strict lint configuration used by CI.
 
+## Verification evidence
+
+CI records the current verification evidence in named jobs:
+
+- `Coq proof check` runs `./proofs/coq/check.sh` and uploads `coq-proof-check-evidence`.
+- `Seal/open concrete Rust evidence` runs the concrete seal/open crypto discharge tests and uploads `seal-open-rust-evidence`.
+- `Seal/open Kani evidence` runs representative model-crypto and crypto-contract Kani harnesses and uploads `seal-open-kani-evidence`.
+
+These artifacts support the scoped seal/open semantic-equivalence expansion lanes. They do not prove the underlying cryptographic primitives themselves.
+
 ## Publishing
 
 Publishing is automated with the GitHub Actions workflow in `.github/workflows/publish.yml`.
@@ -71,4 +81,3 @@ covered in tests/arc_guards.rs.
 
 Shared test setup lives under
 tests/helpers/, including authority-state fixtures, capability and prooffixtures, request builders, policy-hash helpers, and small scenario buildersfor composing expressive end-to-end cases.
-

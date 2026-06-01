@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 
-use arc_core::arc::model::context_hash;
+use crate::arc::model::AuthorityState;
+use crate::arc::model::context_hash;
+use crate::{Rights, TemporalPolicy};
 
 fn bytes32(seed: u8) -> [u8; 32] {
     let mut out = [0u8; 32];
@@ -14,22 +16,39 @@ fn bytes32(seed: u8) -> [u8; 32] {
     out
 }
 
+fn authority_state(authority_root: [u8; 32], epoch: u64) -> AuthorityState {
+    AuthorityState {
+        authority_root,
+        revocation_root: bytes32(31),
+        transparency_root: bytes32(37),
+        epoch,
+        authority_id: "kani-authority".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: bytes32(41),
+        revocation_count: 0,
+        prev_epoch_hash: bytes32(43),
+    }
+}
+
 #[cfg(kani)]
 #[kani::proof]
 fn context_hash_is_deterministic_for_equal_inputs() {
     let object_id = "kani-context-object";
-    let rights = arc_core::Rights::READ;
+    let rights = Rights::READ;
     let policy_hash = bytes32(11);
     let authority_root = bytes32(29);
-    let epoch = 7u64;
-    let temporal_policy = arc_core::TemporalPolicy::Unbounded;
+    let state = authority_state(authority_root, 7);
+    let cap_stamp = bytes32(47);
+    let temporal_policy = TemporalPolicy::Current;
 
     let first = context_hash(
         object_id,
         rights,
         policy_hash,
-        authority_root,
-        epoch,
+        &state,
+        cap_stamp,
         &temporal_policy,
     );
 
@@ -37,8 +56,8 @@ fn context_hash_is_deterministic_for_equal_inputs() {
         object_id,
         rights,
         policy_hash,
-        authority_root,
-        epoch,
+        &state,
+        cap_stamp,
         &temporal_policy,
     );
 
@@ -50,17 +69,18 @@ fn context_hash_is_deterministic_for_equal_inputs() {
 #[kani::proof]
 fn context_hash_distinguishes_policy_hash_inputs() {
     let object_id = "kani-context-object";
-    let rights = arc_core::Rights::READ;
+    let rights = Rights::READ;
     let authority_root = bytes32(29);
-    let epoch = 7u64;
-    let temporal_policy = arc_core::TemporalPolicy::Unbounded;
+    let state = authority_state(authority_root, 7);
+    let cap_stamp = bytes32(47);
+    let temporal_policy = TemporalPolicy::Current;
 
     let first = context_hash(
         object_id,
         rights,
         bytes32(11),
-        authority_root,
-        epoch,
+        &state,
+        cap_stamp,
         &temporal_policy,
     );
 
@@ -68,8 +88,8 @@ fn context_hash_distinguishes_policy_hash_inputs() {
         object_id,
         rights,
         bytes32(12),
-        authority_root,
-        epoch,
+        &state,
+        cap_stamp,
         &temporal_policy,
     );
 

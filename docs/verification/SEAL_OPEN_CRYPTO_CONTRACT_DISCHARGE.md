@@ -17,6 +17,12 @@ The implementation evidence is split across:
     src/arc/engine.rs
     tests/arc_seal_open_crypto_semantic.rs
 
+CI records this evidence in the `Seal/open concrete Rust evidence` job. The job uploads the `seal-open-rust-evidence` artifact containing:
+
+    crypto-contract-discharge-tests.log
+    arc-seal-open-crypto-semantic.log
+    seal-open-rust-summary.md
+
 The private engine tests cover:
 
     classical X25519 encapsulation/decapsulation agreement
@@ -45,6 +51,15 @@ The discharge status is recorded in:
 
     proofs/coq/rust_refinement/ArcSealOpenCryptoSemanticContracts.v
 
+CI compiles the Coq proof tree in the `Coq proof check` job by running:
+
+    ./proofs/coq/check.sh
+
+The job uploads the `coq-proof-check-evidence` artifact containing:
+
+    coq-check.log
+    coq-summary.md
+
 The key evidence record is:
 
     SealOpenConcreteDischargeEvidence
@@ -52,6 +67,8 @@ The key evidence record is:
 The key theorem is:
 
     current_kem_hkdf_context_and_production_contracts_discharged
+
+The bridge definitions for `crypto_contract_seal` and `crypto_contract_open` are constructive aliases over the model seal/open functions. The semantic round-trip theorem now depends on the model theorem directly instead of an abstract Coq axiom, and the tamper theorem is discharged by explicit case analysis over model-backed tamper cases.
 
 ## Boundary
 
@@ -63,4 +80,4 @@ The remaining step for a stronger full seal/open story is to connect these concr
 
 1. Kani-friendly extracted models for the concrete KEM/HKDF/context helper surfaces.
 2. External primitive-security references for X25519, ML-KEM, ChaCha20Poly1305, HKDF, and SHA.
-3. CI recording of the concrete discharge tests as named verification evidence.
+3. Long-term retention or release attachment of CI evidence artifacts for audit packages.

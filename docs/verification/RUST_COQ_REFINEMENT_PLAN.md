@@ -82,6 +82,8 @@ A verification CI job should run:
     ./scripts/refinement/generate_refinement_evidence.py
     ./proofs/coq/check.sh
 
+The repository CI now includes a dedicated `Coq proof check` job for `./proofs/coq/check.sh` and uploads the `coq-proof-check-evidence` artifact containing the proof-check log and summary.
+
 The evidence layer should be considered stale if Rust symbols change without updating the refinement evidence map.
 
 ## Next Verification Expansion Targets

@@ -162,10 +162,14 @@ Proof.
   intros binding recipient message Hmatching_secret.
   unfold model_open, model_seal, model_unwrap_dek, model_decrypt_payload,
     model_wrap_dek, model_encrypt_payload.
+  simpl.
   repeat rewrite model_crypto_binding_eqb_refl.
   repeat rewrite Nat.eqb_refl.
   rewrite Hmatching_secret.
   rewrite Nat.eqb_refl.
+  replace (model_dek binding (model_recipient_public recipient) =?
+           model_dek binding (model_recipient_public recipient)) with true
+    by (symmetry; apply Nat.eqb_refl).
   reflexivity.
 Qed.
 

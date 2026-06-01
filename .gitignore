@@ -43,3 +43,6 @@ build/
 .next/
 .vercel/
 Cargo.lock.bak
+
+.continue 
+.continueignore

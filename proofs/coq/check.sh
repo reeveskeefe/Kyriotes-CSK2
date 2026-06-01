@@ -3,6 +3,19 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+if ! command -v coqc >/dev/null 2>&1; then
+  for rocq_bin in \
+    /opt/homebrew/opt/rocq/bin \
+    /opt/homebrew/Cellar/rocq/*/bin \
+    /usr/local/opt/rocq/bin \
+    /usr/local/Cellar/rocq/*/bin; do
+    if [ -x "$rocq_bin/coqc" ]; then
+      PATH="$rocq_bin:$PATH"
+      break
+    fi
+  done
+fi
+
 coq_flags=(
   -Q core ArcProofs
   -Q merkle_transparency ArcProofs
@@ -62,6 +75,7 @@ proofs=(
   rust_refinement/ArcOpenRustRefinement.v
   rust_refinement/ArcSealOpenModelCryptoEquivalence.v
   rust_refinement/ArcSealOpenCryptoSemanticContracts.v
+  rust_refinement/ArcCapabilityTreeWitnessSoundness.v
   rust_refinement/ArcAddEpochWrapperRustRefinement.v
   rust_refinement/ArcRotateEpochRustRefinement.v
   rust_refinement/ArcRotateEpochFullRustRefinement.v

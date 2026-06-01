@@ -46,7 +46,6 @@ struct TransparencyEntry {
     chain_hash: [u8; 32],
 }
 
-#[cfg(kani)]
 pub(crate) fn bind_transparency_root_to_state(
     state: &AuthorityState,
     transparency_root: [u8; 32],
@@ -127,8 +126,7 @@ impl TransparencyLog for InMemoryTransparencyLog {
         let root = self.current_root();
         let proof = self.proof_for_index(index)?;
 
-        let mut committed_state = state.clone();
-        committed_state.transparency_root = root;
+        let committed_state = bind_transparency_root_to_state(state, root);
 
         Ok(TransparencyStateCommit {
             state: committed_state,

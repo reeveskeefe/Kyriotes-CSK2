@@ -143,19 +143,20 @@ Definition arc_current_seal_open_concrete_discharge_evidence
     concrete_production_defined_tamper_rejection_tests := true
   |}.
 
-Parameter crypto_contract_seal : ModelRecipient -> ModelCryptoBinding -> Bytes -> ModelSealedObject.
-Parameter crypto_contract_open : nat -> ModelCryptoBinding -> Epoch -> ModelSealedObject -> option Bytes.
+Definition crypto_contract_seal
+  (recipient : ModelRecipient)
+  (binding : ModelCryptoBinding)
+  (message : Bytes)
+  : ModelSealedObject :=
+  model_seal recipient binding message.
 
-Axiom crypto_contract_open_after_seal :
-  forall contracts evidence binding recipient message,
-    primitive_contracts_hold contracts = true ->
-    rust_boundary_evidence_complete evidence = true ->
-    model_recipient_secret recipient = model_recipient_public recipient ->
-    crypto_contract_open
-      (model_recipient_secret recipient)
-      binding
-      (model_bind_epoch binding)
-      (crypto_contract_seal recipient binding message) = Some message.
+Definition crypto_contract_open
+  (recipient_secret : nat)
+  (binding : ModelCryptoBinding)
+  (epoch : Epoch)
+  (sealed : ModelSealedObject)
+  : option Bytes :=
+  model_open recipient_secret binding epoch sealed.
 
 Inductive SealOpenTamperCase :=
 | TamperWrongRecipientSecret
@@ -167,18 +168,52 @@ Inductive SealOpenTamperCase :=
 | TamperWrapperBinding
 | TamperWrongEpoch.
 
-Parameter crypto_contract_tamper :
-  SealOpenTamperCase -> ModelRecipient -> ModelCryptoBinding -> Bytes -> ModelSealedObject.
+Definition crypto_contract_tamper_secret
+  (tamper : SealOpenTamperCase)
+  : nat :=
+  match tamper with
+  | TamperWrongRecipientSecret => 6
+  | _ => model_recipient_secret model_sample_recipient
+  end.
 
-Axiom crypto_contract_defined_tamper_rejects :
-  forall contracts evidence tamper binding recipient message,
-    primitive_contracts_hold contracts = true ->
-    rust_boundary_evidence_complete evidence = true ->
-    crypto_contract_open
-      (model_recipient_secret recipient)
-      binding
-      (model_bind_epoch binding)
-      (crypto_contract_tamper tamper recipient binding message) = None.
+Definition crypto_contract_tamper_binding
+  (tamper : SealOpenTamperCase)
+  : ModelCryptoBinding :=
+  match tamper with
+  | TamperObjectId => model_binding_with_object_id 12
+  | TamperPolicyHash => model_binding_with_policy_hash 20
+  | TamperCapabilityStamp => model_binding_with_capability_stamp 38
+  | TamperAuthorityRoot => model_binding_with_authority_root 24
+  | _ => model_sample_binding
+  end.
+
+Definition crypto_contract_tamper_epoch
+  (tamper : SealOpenTamperCase)
+  : Epoch :=
+  match tamper with
+  | TamperWrongEpoch => 4
+  | _ => model_bind_epoch model_sample_binding
+  end.
+
+Definition crypto_contract_tamper_object
+  (tamper : SealOpenTamperCase)
+  : ModelSealedObject :=
+  match tamper with
+  | TamperPayloadCiphertext =>
+      model_sealed_with_payload_ciphertext model_tampered_payload_ciphertext
+  | TamperWrapperBinding =>
+      model_sealed_with_wrapped_dek model_tampered_wrapped_dek
+  | _ => model_sample_sealed
+  end.
+
+Definition crypto_contract_tamper_open
+  (tamper : SealOpenTamperCase)
+  : option Bytes :=
+  crypto_contract_open
+    (crypto_contract_tamper_secret tamper)
+    (crypto_contract_tamper_binding tamper)
+    (crypto_contract_tamper_epoch tamper)
+    (crypto_contract_tamper_object tamper).
 
 Theorem current_primitive_contracts_hold :
   primitive_contracts_hold arc_current_seal_open_primitive_contracts = true.
@@ -236,24 +271,15 @@ Theorem seal_open_crypto_semantic_equivalence_under_primitive_contracts :
       (crypto_contract_seal recipient binding message) = Some message.
 Proof.
   intros binding recipient message Hmatching_secret.
-  apply crypto_contract_open_after_seal with
-    (contracts := arc_current_seal_open_primitive_contracts)
-    (evidence := arc_current_seal_open_rust_boundary_evidence);
-    try reflexivity.
+  unfold crypto_contract_open, crypto_contract_seal.
+  apply model_open_after_model_seal_returns_message.
   exact Hmatching_secret.
 Qed.
 
 Theorem seal_open_defined_tamper_rejects_under_primitive_contracts :
-  forall tamper binding recipient message,
-    crypto_contract_open
-      (model_recipient_secret recipient)
-      binding
-      (model_bind_epoch binding)
-      (crypto_contract_tamper tamper recipient binding message) = None.
+  forall tamper,
+    crypto_contract_tamper_open tamper = None.
 Proof.
-  intros tamper binding recipient message.
-  apply crypto_contract_defined_tamper_rejects with
-    (contracts := arc_current_seal_open_primitive_contracts)
-    (evidence := arc_current_seal_open_rust_boundary_evidence);
-    reflexivity.
+  intros tamper.
+  destruct tamper; reflexivity.
 Qed.

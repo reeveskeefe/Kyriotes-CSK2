@@ -60,6 +60,7 @@ proofs=(
   rust_refinement/ArcVerifyRustRefinement.v
   rust_refinement/ArcSealRustRefinement.v
   rust_refinement/ArcOpenRustRefinement.v
+  rust_refinement/ArcSealOpenModelCryptoEquivalence.v
   rust_refinement/ArcAddEpochWrapperRustRefinement.v
   rust_refinement/ArcRotateEpochRustRefinement.v
   rust_refinement/ArcRotateEpochFullRustRefinement.v

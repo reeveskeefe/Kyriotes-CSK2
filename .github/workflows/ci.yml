@@ -34,3 +34,6 @@ jobs:
 
       - name: Run tests
         run: cargo test --all-targets --all-features
+
+      - name: Publish dry run
+        run: cargo publish --dry-run --locked

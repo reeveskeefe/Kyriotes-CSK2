@@ -4,7 +4,7 @@ This guide shows how to use the current ARC Rust implementation end to end.
 
 Scope of this guide:
 
-- local development usage (crate is not published yet)
+- published crate usage and local workspace usage
 - sealing and opening data
 - authority wrapper rewrap across epochs
 - wire encoding and decoding
@@ -73,15 +73,19 @@ Handle a declared epoch key compromise
 cargo test
 ```
 
-## 2. Add ARC in your app (local path)
+## 2. Add ARC in your app
 
-Because the crate is not published, use a path dependency.
+Use crates.io for normal integration and a local path dependency when you need to test unreleased changes.
 
-Why this matters:
+### Option A: crates.io dependency (recommended)
 
-- this keeps your app pinned to your local ARC workspace
-- you can iterate rapidly without publishing versions
-- your app will build against whatever commit you currently have checked out
+```toml
+# Cargo.toml
+[dependencies]
+ARCencryption = "0.1"
+```
+
+### Option B: local workspace dependency (for unreleased work)
 
 ```toml
 # Cargo.toml
@@ -89,10 +93,7 @@ Why this matters:
 arc_core = { package = "ARCencryption", path = "../ARC" }
 ```
 
-Adjust the path for your workspace layout. The package is named
-`ARCencryption`, while Rust code imports the library as `arc_core`.
-
-If your app and ARC live in different folders, update the path string to the relative location of this repository.
+The package name is `ARCencryption`, while Rust code imports the library as `arc_core`.
 
 ## 3. Minimal Seal/Open example (annotated)
 

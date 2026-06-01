@@ -104,8 +104,8 @@ def build_vectors() -> list[RotateEpochVector]:
 def main() -> int:
     vectors = build_vectors()
     payload = {
-        "schema": "arc.rotate_epoch.refinement_vectors.v1",
-        "target": "src/arc/engine.rs::rotate_epoch",
+        "schema": "kyriotes_csk2.rotate_epoch.refinement_vectors.v1",
+        "target": "src/kyriotes_csk2/engine.rs::rotate_epoch",
         "claim_boundary": "Authority epoch-rotation refinement track; not full Coq/Rust semantic equivalence.",
         "vector_count": len(vectors),
         "vectors": [asdict(item) for item in vectors],

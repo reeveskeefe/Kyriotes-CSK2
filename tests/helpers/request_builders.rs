@@ -1,4 +1,4 @@
-use arc_core::{OpenRequest, Rights, hash_policy};
+use kyriotes_csk2::{OpenRequest, Rights, hash_policy};
 
 pub const DEFAULT_OBJECT_ID: &str = "research-notes.pdf";
 

@@ -7,7 +7,7 @@ pub const MAX_FUZZ_CASES_PER_INPUT: usize = 64;
 pub const MAX_SLICE_LEN: usize = 524_288;
 
 #[derive(Debug, Clone, Arbitrary)]
-pub struct ArcFuzzHeader {
+pub struct KyriotesCsk2FuzzHeader {
     pub selector: u8,
     pub profile_selector: u8,
     pub mutation_selector: u8,
@@ -48,14 +48,14 @@ pub fn bounded(data: &[u8]) -> &[u8] {
     }
 }
 
-pub fn parse_header(data: &[u8]) -> Option<(ArcFuzzHeader, &[u8])> {
+pub fn parse_header(data: &[u8]) -> Option<(KyriotesCsk2FuzzHeader, &[u8])> {
     let data = bounded(data);
     let mut u = Unstructured::new(data);
-    let header = ArcFuzzHeader::arbitrary(&mut u).ok()?;
+    let header = KyriotesCsk2FuzzHeader::arbitrary(&mut u).ok()?;
     Some((header, u.take_rest()))
 }
 
-pub fn split_input<'a>(header: &ArcFuzzHeader, rest: &'a [u8]) -> SplitInput<'a> {
+pub fn split_input<'a>(header: &KyriotesCsk2FuzzHeader, rest: &'a [u8]) -> SplitInput<'a> {
     let len = rest.len();
 
     let start_a = (header.offset_a as usize).min(len);

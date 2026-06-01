@@ -5,11 +5,11 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-TRANSPARENCY_PATH = PROJECT_ROOT / "src" / "arc" / "transparency.rs"
+TRANSPARENCY_PATH = PROJECT_ROOT / "src" / "kyriotes-csk2" / "transparency.rs"
 
 
 def main() -> int:
-    assert TRANSPARENCY_PATH.exists(), "src/arc/transparency.rs must exist"
+    assert TRANSPARENCY_PATH.exists(), "src/kyriotes_csk2/transparency.rs must exist"
 
     source = TRANSPARENCY_PATH.read_text(encoding="utf-8")
     lowered = source.lower()

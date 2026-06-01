@@ -1,7 +1,7 @@
 {
   "claim_boundary": "Open authorization refinement track; not full Coq/Rust semantic equivalence.",
-  "schema": "arc.open.refinement_vectors.v1",
-  "target": "src/arc/engine.rs::open",
+  "schema": "kyriotes_csk2.open.refinement_vectors.v1",
+  "target": "src/kyriotes_csk2/engine.rs::open",
   "vector_count": 10,
   "vectors": [
     {
@@ -16,9 +16,9 @@
       "category": "missing-object-rejection",
       "deterministic": true,
       "expected_result": "reject",
-      "gate_name": "arc_object",
+      "gate_name": "kyriotes_csk2_object",
       "id": "open.db6cc7945d5c83f7",
-      "notes": "open must require an ARC object."
+      "notes": "open must require an Kyriotēs-CSK2 object."
     },
     {
       "category": "missing-capability-rejection",

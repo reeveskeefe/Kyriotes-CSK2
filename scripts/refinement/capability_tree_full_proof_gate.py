@@ -98,8 +98,8 @@ def main() -> int:
     kani = shutil.which("cargo-kani") or shutil.which("kani")
 
     status = {
-        "schema": "arc.capability_tree.full_mechanical_proof_status.v1",
-        "target": "src/arc/capability_tree.rs::verify_non_revocation",
+        "schema": "kyriotes_csk2.capability_tree.full_mechanical_proof_status.v1",
+        "target": "src/kyriotes_csk2/capability_tree.rs::verify_non_revocation",
         "proof_tool": "kani",
         "required_harness_count": len(HARNESSES),
         "required_harnesses": HARNESSES,

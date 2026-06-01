@@ -67,6 +67,6 @@
     "rotate_epoch_full_commit_phase_does_not_store_chain_hash_when_commit_fails",
     "rotate_epoch_full_commit_phase_rejection_hides_commit_material"
   ],
-  "schema": "arc.rotate_epoch_full.commit_mechanical_proof_status.v1",
-  "target": "src/arc/engine.rs::begin_epoch_rotation_commit"
+  "schema": "kyriotes_csk2.rotate_epoch_full.commit_mechanical_proof_status.v1",
+  "target": "src/kyriotes_csk2/engine.rs::begin_epoch_rotation_commit"
 }

@@ -5,11 +5,11 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-ENGINE_PATH = PROJECT_ROOT / "src" / "arc" / "engine.rs"
+ENGINE_PATH = PROJECT_ROOT / "src" / "kyriotes-csk2" / "engine.rs"
 
 
 def main() -> int:
-    assert ENGINE_PATH.exists(), "src/arc/engine.rs must exist"
+    assert ENGINE_PATH.exists(), "src/kyriotes_csk2/engine.rs must exist"
 
     source = ENGINE_PATH.read_text(encoding="utf-8")
 
@@ -21,7 +21,7 @@ def main() -> int:
         "epoch",
         "chain",
         "Result",
-        "ArcError",
+        "KyriotesCsk2Error",
     ]
 
     for term in required_terms:

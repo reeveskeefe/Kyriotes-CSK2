@@ -1,8 +1,8 @@
 #![cfg(kani)]
 #![allow(dead_code)]
 
-use crate::arc::model::AuthorityState;
-use crate::arc::transparency::bind_transparency_root_to_state;
+use crate::kyriotes_csk2::model::AuthorityState;
+use crate::kyriotes_csk2::transparency::bind_transparency_root_to_state;
 
 fn bytes32(seed: u8) -> [u8; 32] {
     let mut out = [0u8; 32];

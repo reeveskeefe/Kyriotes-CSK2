@@ -67,6 +67,6 @@
     "verify_with_verifier_rejects_before_capability_proof_can_succeed",
     "verify_with_verifier_rejects_invalid_authority_surface_without_panic"
   ],
-  "schema": "arc.verify.full_mechanical_proof_status.v1",
-  "target": "src/arc/engine.rs::verify_with_verifier"
+  "schema": "kyriotes_csk2.verify.full_mechanical_proof_status.v1",
+  "target": "src/kyriotes_csk2/engine.rs::verify_with_verifier"
 }

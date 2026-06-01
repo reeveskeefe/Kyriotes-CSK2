@@ -1,4 +1,4 @@
-# ARC transparency Mechanical Refinement
+# Kyriotēs-CSK2 transparency Mechanical Refinement
 
 ## Status
 
@@ -10,7 +10,7 @@ All tracked Rust mechanical refinement targets are verifier-backed proven within
 
 ## Target
 
-    src/arc/transparency.rs::bind_transparency_root_to_state
+    src/kyriotes_csk2/transparency.rs::bind_transparency_root_to_state
 
 ## Completed Proof Boundary
 

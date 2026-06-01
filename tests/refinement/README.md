@@ -1,6 +1,6 @@
 # Rust-to-Coq Refinement Evidence
 
-This directory stores deterministic evidence connecting ARC Rust implementation surfaces to Coq model concepts.
+This directory stores deterministic evidence connecting Kyriotēs-CSK2 Rust implementation surfaces to Coq model concepts.
 
 Generated file:
 

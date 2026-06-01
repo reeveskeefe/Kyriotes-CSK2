@@ -8,7 +8,7 @@
     Production API impact: none
     Tracked Rust mechanical inventory impact: none
 
-ARC's tracked Rust mechanical refinement inventory remains complete at 11 / 11 verifier-backed proof lanes. This file records the next seal/open expansion stage after the deterministic model-crypto lane.
+Kyriotēs-CSK2's tracked Rust mechanical refinement inventory remains complete at 11 / 11 verifier-backed proof lanes. This file records the next seal/open expansion stage after the deterministic model-crypto lane.
 
 ## Claim Shape
 
@@ -41,7 +41,7 @@ For a detailed list of primitive assumptions, see [PRIMITIVE_BOUNDARY.md](PRIMIT
 
 ## Coq Artifact
 
-    proofs/coq/rust_refinement/ArcSealOpenCryptoSemanticContracts.v
+    proofs/coq/rust_refinement/KyriotesCsk2SealOpenCryptoSemanticContracts.v
 
 The Coq layer records the primitive contract assumptions, the Rust helper-boundary evidence, and the composed semantic theorems:
 
@@ -77,13 +77,13 @@ The AEAD + AAD binding portion now has concrete Rust evidence recorded in:
 
     docs/verification/SEAL_OPEN_AEAD_AAD_CONTRACT_DISCHARGE.md
 
-This discharges ARC's concrete use of `payload_encrypt`, `payload_decrypt`, `wrap_dek`, `unwrap_dek`, `payload_aad`, and `authority_aad` for round-trip and defined tamper-rejection behavior. It does not prove ChaCha20Poly1305 as a primitive.
+This discharges Kyriotēs-CSK2's concrete use of `payload_encrypt`, `payload_decrypt`, `wrap_dek`, `unwrap_dek`, `payload_aad`, and `authority_aad` for round-trip and defined tamper-rejection behavior. It does not prove ChaCha20Poly1305 as a primitive.
 
 The KEM agreement, HKDF/context separation, deeper context-hash binding, and production composed seal/open tamper behavior now have concrete Rust evidence recorded in:
 
     docs/verification/SEAL_OPEN_CRYPTO_CONTRACT_DISCHARGE.md
 
-This discharges the remaining implementation-level contract evidence for ARC's current seal/open composition, while preserving the boundary that primitive cryptographic security is inherited rather than proven here.
+This discharges the remaining implementation-level contract evidence for Kyriotēs-CSK2's current seal/open composition, while preserving the boundary that primitive cryptographic security is inherited rather than proven here.
 
 The Coq proof tree is compiled in CI by the `Coq proof check` job, which runs `./proofs/coq/check.sh` and uploads the `coq-proof-check-evidence` artifact.
 

@@ -1,10 +1,10 @@
 # Tracked Rust Mechanical Proof Inventory: Complete
 
-ARC's tracked Rust mechanical refinement inventory is complete at 11 / 11 verifier-backed proof lanes, with each lane scoped and recorded by explicit proof-boundary language.
+Kyriotēs-CSK2's tracked Rust mechanical refinement inventory is complete at 11 / 11 verifier-backed proof lanes, with each lane scoped and recorded by explicit proof-boundary language.
 
 The tracked Rust mechanical refinement inventory is now complete. All 11 declared targets have mechanical check coverage and verifier-backed Kani proof evidence within their recorded proof boundaries. These proof lanes cover bounded parser rejection, encoding surface stability, context transcript binding, fail-closed engine behavior, epoch transition structure, transparency commit failure boundaries, transparency-root state binding, and selected capability-tree non-revocation behavior.
 
-This milestone should not be read as full end-to-end cryptographic verification of ARC. Several completed lanes intentionally prove narrowed implementation properties rather than full protocol semantics. In particular, full SHA/Merkle soundness, full capability-tree non-empty witness soundness, full encode/decode canonical round-trip equivalence, and full seal/open cryptographic semantic equivalence remain future verification-expansion targets.
+This milestone should not be read as full end-to-end cryptographic verification of Kyriotēs-CSK2. Several completed lanes intentionally prove narrowed implementation properties rather than full protocol semantics. In particular, full SHA/Merkle soundness, full capability-tree non-empty witness soundness, full encode/decode canonical round-trip equivalence, and full seal/open cryptographic semantic equivalence remain future verification-expansion targets.
 
 ## Inventory Status
 
@@ -24,14 +24,14 @@ For the current inventory, complete means every target currently listed in the R
     backed by Kani verifier evidence
     recorded with an explicit proof boundary
 
-This does not mean ARC has full cryptographic semantic equivalence across the entire protocol. The completed milestone proves the tracked implementation-level refinement lanes within their stated scopes.
+This does not mea Kyriotēs-CSK2 has full cryptographic semantic equivalence across the entire protocol. The completed milestone proves the tracked implementation-level refinement lanes within their stated scopes.
 
 ## Completed Proof Lanes
 
 The completed tracked lanes are:
 
-    decode_arc_object bounded malformed-input rejection
-    encode_arc_object output stability and binding checks
+    decode_kyriotes_csk2_object bounded malformed-input rejection
+    encode_kyriotes_csk2_object output stability and binding checks
     context_hash transcript-model binding checks
     verify_with_verifier fail-closed authority rejection behavior
     seal_with_verifier fail-closed authority rejection behavior

@@ -1,6 +1,6 @@
 # Rust Mechanical Refinement Inventory Complete: 11 / 11
 
-ARC has completed all 11 tracked Rust mechanical refinement proof lanes.
+Kyriotēs-CSK2 has completed all 11 tracked Rust mechanical refinement proof lanes.
 
 This means every target currently listed in the Rust mechanical refinement inventory is:
 
@@ -8,7 +8,7 @@ This means every target currently listed in the Rust mechanical refinement inven
     backed by Kani verifier evidence
     recorded with an explicit proof boundary
 
-This does not mean ARC has full cryptographic semantic equivalence across the entire protocol. The completed milestone proves the tracked implementation-level refinement lanes within their stated scopes.
+This does not mea Kyriotēs-CSK2 has full cryptographic semantic equivalence across the entire protocol. The completed milestone proves the tracked implementation-level refinement lanes within their stated scopes.
 
 ## Current Gate Status
 
@@ -20,7 +20,7 @@ All tracked Rust mechanical refinement targets are verifier-backed proven within
 
 ## Boundary
 
-This gate records closure of the current Rust mechanical refinement inventory. It should not be read as full end-to-end cryptographic verification of ARC, full cryptographic protocol proof, or full Rust-to-Coq semantic equivalence.
+This gate records closure of the current Rust mechanical refinement inventory. It should not be read as full end-to-end cryptographic verification of Kyriotēs-CSK2, full cryptographic protocol proof, or full Rust-to-Coq semantic equivalence.
 
 The current Rust mechanical refinement inventory is complete: 11 / 11 checked and 11 / 11 verifier-backed proven. Remaining verification work concerns deeper semantic expansion beyond the tracked inventory.
 

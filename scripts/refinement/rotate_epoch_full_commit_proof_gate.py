@@ -97,8 +97,8 @@ def main() -> int:
     kani = shutil.which("cargo-kani") or shutil.which("kani")
 
     status = {
-        "schema": "arc.rotate_epoch_full.commit_mechanical_proof_status.v1",
-        "target": "src/arc/engine.rs::begin_epoch_rotation_commit",
+        "schema": "kyriotes_csk2.rotate_epoch_full.commit_mechanical_proof_status.v1",
+        "target": "src/kyriotes_csk2/engine.rs::begin_epoch_rotation_commit",
         "proof_tool": "kani",
         "required_harness_count": len(HARNESSES),
         "required_harnesses": HARNESSES,

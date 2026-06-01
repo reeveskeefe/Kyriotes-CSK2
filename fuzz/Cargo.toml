@@ -1,5 +1,5 @@
 [package]
-name = "arc-fuzz"
+name = "kyriotes-csk2-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2021"
@@ -8,7 +8,7 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
-arc_core = { path = "..", package = "ARCencryption" }
+kyriotes_csk2 = { path = "..", package = "kyriotes-csk2" }
 libfuzzer-sys = "0.4"
 arbitrary = { version = "1", features = ["derive"] }
 
@@ -16,8 +16,8 @@ arbitrary = { version = "1", features = ["derive"] }
 debug = 1
 
 [[bin]]
-name = "fuzz_decode_arc_object"
-path = "fuzz_targets/fuzz_decode_arc_object.rs"
+name = "fuzz_decode_kyriotes_csk2_object"
+path = "fuzz_targets/fuzz_decode_kyriotes_csk2_object.rs"
 test = false
 doc = false
 bench = false

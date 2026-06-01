@@ -3,24 +3,6 @@
 version = 4
 
 [[package]]
-name = "ARCencryption"
-version = "0.1.1"
-dependencies = [
- "async-trait",
- "chacha20poly1305",
- "ed25519-dalek",
- "hkdf",
- "ml-kem",
- "rand",
- "rand_core 0.10.1",
- "sha2",
- "thiserror",
- "tokio",
- "x25519-dalek",
- "zeroize",
-]
-
-[[package]]
 name = "aead"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -436,6 +418,24 @@ checksum = "01737161ba802849cfd486b5bd209d38ba4943494c249a8126005170c7621edd"
 dependencies = [
  "crypto-common 0.2.2",
  "rand_core 0.10.1",
+]
+
+[[package]]
+name = "kyriotes-csk2"
+version = "0.1.1"
+dependencies = [
+ "async-trait",
+ "chacha20poly1305",
+ "ed25519-dalek",
+ "hkdf",
+ "ml-kem",
+ "rand",
+ "rand_core 0.10.1",
+ "sha2",
+ "thiserror",
+ "tokio",
+ "x25519-dalek",
+ "zeroize",
 ]
 
 [[package]]

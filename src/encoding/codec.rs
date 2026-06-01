@@ -1,4 +1,4 @@
-use crate::ArcError;
+use crate::KyriotesCsk2Error;
 use crate::core::rights::Rights;
 use crate::core::temporal::TemporalPolicy;
 
@@ -48,9 +48,9 @@ pub fn put_temporal_policy(out: &mut Vec<u8>, policy: &TemporalPolicy) {
     }
 }
 
-pub fn take_u16(input: &[u8], cursor: &mut usize) -> Result<u16, ArcError> {
+pub fn take_u16(input: &[u8], cursor: &mut usize) -> Result<u16, KyriotesCsk2Error> {
     if input.len().saturating_sub(*cursor) < 2 {
-        return Err(ArcError::Parse("unexpected EOF while reading u16"));
+        return Err(KyriotesCsk2Error::Parse("unexpected EOF while reading u16"));
     }
     let mut buf = [0u8; 2];
     buf.copy_from_slice(&input[*cursor..*cursor + 2]);
@@ -58,9 +58,9 @@ pub fn take_u16(input: &[u8], cursor: &mut usize) -> Result<u16, ArcError> {
     Ok(u16::from_le_bytes(buf))
 }
 
-pub fn take_u32(input: &[u8], cursor: &mut usize) -> Result<u32, ArcError> {
+pub fn take_u32(input: &[u8], cursor: &mut usize) -> Result<u32, KyriotesCsk2Error> {
     if input.len().saturating_sub(*cursor) < 4 {
-        return Err(ArcError::Parse("unexpected EOF while reading u32"));
+        return Err(KyriotesCsk2Error::Parse("unexpected EOF while reading u32"));
     }
     let mut buf = [0u8; 4];
     buf.copy_from_slice(&input[*cursor..*cursor + 4]);
@@ -68,9 +68,9 @@ pub fn take_u32(input: &[u8], cursor: &mut usize) -> Result<u32, ArcError> {
     Ok(u32::from_le_bytes(buf))
 }
 
-pub fn take_u64(input: &[u8], cursor: &mut usize) -> Result<u64, ArcError> {
+pub fn take_u64(input: &[u8], cursor: &mut usize) -> Result<u64, KyriotesCsk2Error> {
     if input.len().saturating_sub(*cursor) < 8 {
-        return Err(ArcError::Parse("unexpected EOF while reading u64"));
+        return Err(KyriotesCsk2Error::Parse("unexpected EOF while reading u64"));
     }
     let mut buf = [0u8; 8];
     buf.copy_from_slice(&input[*cursor..*cursor + 8]);
@@ -78,10 +78,12 @@ pub fn take_u64(input: &[u8], cursor: &mut usize) -> Result<u64, ArcError> {
     Ok(u64::from_le_bytes(buf))
 }
 
-pub fn take_bytes(input: &[u8], cursor: &mut usize) -> Result<Vec<u8>, ArcError> {
+pub fn take_bytes(input: &[u8], cursor: &mut usize) -> Result<Vec<u8>, KyriotesCsk2Error> {
     let len = take_u32(input, cursor)? as usize;
     if input.len().saturating_sub(*cursor) < len {
-        return Err(ArcError::Parse("unexpected EOF while reading bytes"));
+        return Err(KyriotesCsk2Error::Parse(
+            "unexpected EOF while reading bytes",
+        ));
     }
     let out = input[*cursor..*cursor + len].to_vec();
     *cursor += len;
@@ -92,23 +94,30 @@ pub fn take_bytes_limited(
     input: &[u8],
     cursor: &mut usize,
     max_len: usize,
-) -> Result<Vec<u8>, ArcError> {
+) -> Result<Vec<u8>, KyriotesCsk2Error> {
     let len = take_u32(input, cursor)? as usize;
     if len > max_len {
-        return Err(ArcError::Parse("field exceeds maximum allowed length"));
+        return Err(KyriotesCsk2Error::Parse(
+            "field exceeds maximum allowed length",
+        ));
     }
     if input.len().saturating_sub(*cursor) < len {
-        return Err(ArcError::Parse("unexpected EOF while reading bytes"));
+        return Err(KyriotesCsk2Error::Parse(
+            "unexpected EOF while reading bytes",
+        ));
     }
     let out = input[*cursor..*cursor + len].to_vec();
     *cursor += len;
     Ok(out)
 }
 
-pub fn take_fixed<const N: usize>(input: &[u8], cursor: &mut usize) -> Result<[u8; N], ArcError> {
+pub fn take_fixed<const N: usize>(
+    input: &[u8],
+    cursor: &mut usize,
+) -> Result<[u8; N], KyriotesCsk2Error> {
     let bytes = take_bytes(input, cursor)?;
     if bytes.len() != N {
-        return Err(ArcError::Parse("fixed-size field length mismatch"));
+        return Err(KyriotesCsk2Error::Parse("fixed-size field length mismatch"));
     }
     let mut out = [0u8; N];
     out.copy_from_slice(&bytes);
@@ -119,37 +128,40 @@ pub fn take_fixed_limited<const N: usize>(
     input: &[u8],
     cursor: &mut usize,
     max_len: usize,
-) -> Result<[u8; N], ArcError> {
+) -> Result<[u8; N], KyriotesCsk2Error> {
     let bytes = take_bytes_limited(input, cursor, max_len)?;
     if bytes.len() != N {
-        return Err(ArcError::Parse("fixed-size field length mismatch"));
+        return Err(KyriotesCsk2Error::Parse("fixed-size field length mismatch"));
     }
     let mut out = [0u8; N];
     out.copy_from_slice(&bytes);
     Ok(out)
 }
 
-pub fn take_str(input: &[u8], cursor: &mut usize) -> Result<String, ArcError> {
+pub fn take_str(input: &[u8], cursor: &mut usize) -> Result<String, KyriotesCsk2Error> {
     let bytes = take_bytes(input, cursor)?;
-    String::from_utf8(bytes).map_err(|_| ArcError::Parse("invalid UTF-8 string"))
+    String::from_utf8(bytes).map_err(|_| KyriotesCsk2Error::Parse("invalid UTF-8 string"))
 }
 
 pub fn take_str_limited(
     input: &[u8],
     cursor: &mut usize,
     max_len: usize,
-) -> Result<String, ArcError> {
+) -> Result<String, KyriotesCsk2Error> {
     let bytes = take_bytes_limited(input, cursor, max_len)?;
-    String::from_utf8(bytes).map_err(|_| ArcError::Parse("invalid UTF-8 string"))
+    String::from_utf8(bytes).map_err(|_| KyriotesCsk2Error::Parse("invalid UTF-8 string"))
 }
 
-pub fn take_rights(input: &[u8], cursor: &mut usize) -> Result<Rights, ArcError> {
+pub fn take_rights(input: &[u8], cursor: &mut usize) -> Result<Rights, KyriotesCsk2Error> {
     Ok(Rights(take_u16(input, cursor)?))
 }
 
-pub fn take_temporal_policy(input: &[u8], cursor: &mut usize) -> Result<TemporalPolicy, ArcError> {
+pub fn take_temporal_policy(
+    input: &[u8],
+    cursor: &mut usize,
+) -> Result<TemporalPolicy, KyriotesCsk2Error> {
     if input.len().saturating_sub(*cursor) < 1 {
-        return Err(ArcError::Parse(
+        return Err(KyriotesCsk2Error::Parse(
             "unexpected EOF while reading temporal policy tag",
         ));
     }
@@ -166,6 +178,6 @@ pub fn take_temporal_policy(input: &[u8], cursor: &mut usize) -> Result<Temporal
         0x04 => Ok(TemporalPolicy::ResealRequired {
             after: take_u64(input, cursor)?,
         }),
-        _ => Err(ArcError::Parse("unknown temporal policy tag")),
+        _ => Err(KyriotesCsk2Error::Parse("unknown temporal policy tag")),
     }
 }

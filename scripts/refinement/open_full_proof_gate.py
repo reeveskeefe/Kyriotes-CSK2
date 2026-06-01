@@ -85,7 +85,7 @@ def update_inventory(proven: bool) -> None:
     if proven:
         payload["boundary"] = (
             "Mechanical refinement inventory has all declared targets checked and "
-            "context_hash, decode_arc_object, encode_arc_object, verify, seal, and open "
+            "context_hash, decode_kyriotes_csk2_object, encode_kyriotes_csk2_object, verify, seal, and open "
             "verifier-backed proof lanes complete within their stated narrow scopes."
         )
 
@@ -96,8 +96,8 @@ def main() -> int:
     kani = shutil.which("cargo-kani") or shutil.which("kani")
 
     status = {
-        "schema": "arc.open.full_mechanical_proof_status.v1",
-        "target": "src/arc/engine.rs::open_with_verifier",
+        "schema": "kyriotes_csk2.open.full_mechanical_proof_status.v1",
+        "target": "src/kyriotes_csk2/engine.rs::open_with_verifier",
         "proof_tool": "kani",
         "required_harness_count": len(HARNESSES),
         "required_harnesses": HARNESSES,

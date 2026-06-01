@@ -1,4 +1,4 @@
-# ARC rotate_epoch_full Mechanical Refinement
+# Kyriotēs-CSK2 rotate_epoch_full Mechanical Refinement
 
 ## Status
 
@@ -10,7 +10,7 @@ All tracked Rust mechanical refinement targets are verifier-backed proven within
 
 ## Target
 
-    src/arc/engine.rs::begin_epoch_rotation_commit
+    src/kyriotes_csk2/engine.rs::begin_epoch_rotation_commit
 
 ## Completed Proof Boundary
 

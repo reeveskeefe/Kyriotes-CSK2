@@ -38,8 +38,8 @@ def main() -> int:
     source = read_all_rust()
 
     assert codec_path.exists(), "src/encoding/codec.rs must exist"
-    assert "decode_arc_object" in source, "decode_arc_object symbol must be discoverable"
-    assert "encode_arc_object" in source, "encode_arc_object symbol must be discoverable"
+    assert "decode_kyriotes_csk2_object" in source, "decode_kyriotes_csk2_object symbol must be discoverable"
+    assert "encode_kyriotes_csk2_object" in source, "encode_kyriotes_csk2_object symbol must be discoverable"
 
     print("Encode/decode refinement surface check passed.")
     return 0

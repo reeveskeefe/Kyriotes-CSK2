@@ -1,12 +1,12 @@
 #![no_main]
 
-use arc_core::{decode_arc_object, decode_capability};
+use kyriotes_csk2::{decode_kyriotes_csk2_object, decode_capability};
 use libfuzzer_sys::fuzz_target;
 
 fn fuzz_temporal_policy_surface(data: &[u8]) {
-    let epoch_a = arc_fuzz::bytes_to_u64(data);
-    let epoch_b = arc_fuzz::bytes_to_u64(data.get(8..).unwrap_or_default());
-    let epoch_c = arc_fuzz::bytes_to_u64(data.get(16..).unwrap_or_default());
+    let epoch_a = kyriotes_csk2_fuzz::bytes_to_u64(data);
+    let epoch_b = kyriotes_csk2_fuzz::bytes_to_u64(data.get(8..).unwrap_or_default());
+    let epoch_c = kyriotes_csk2_fuzz::bytes_to_u64(data.get(16..).unwrap_or_default());
 
     let _ = epoch_a.checked_add(epoch_b);
     let _ = epoch_a.checked_sub(epoch_b);
@@ -24,22 +24,22 @@ fn fuzz_temporal_policy_surface(data: &[u8]) {
     let _backward = epoch_b < epoch_a;
     let _forward = epoch_b > epoch_a;
 
-    let _ = decode_arc_object(data);
+    let _ = decode_kyriotes_csk2_object(data);
     let _ = decode_capability(data);
 
-    let mutated = arc_fuzz::mutate_one_byte(data.to_vec(), data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(&mutated);
+    let mutated = kyriotes_csk2_fuzz::mutate_one_byte(data.to_vec(), data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(&mutated);
     let _ = decode_capability(&mutated);
 
-    let truncated = arc_fuzz::truncate_by_selector(data, data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(truncated);
+    let truncated = kyriotes_csk2_fuzz::truncate_by_selector(data, data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(truncated);
     let _ = decode_capability(truncated);
 
-    let bomb = arc_fuzz::append_length_bomb(data.to_vec(), data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(&bomb);
+    let bomb = kyriotes_csk2_fuzz::append_length_bomb(data.to_vec(), data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(&bomb);
     let _ = decode_capability(&bomb);
 }
 
 fuzz_target!(|data: &[u8]| {
-    arc_fuzz::drive_parser_like_targets(data, fuzz_temporal_policy_surface);
+    kyriotes_csk2_fuzz::drive_parser_like_targets(data, fuzz_temporal_policy_surface);
 });

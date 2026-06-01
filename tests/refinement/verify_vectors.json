@@ -1,16 +1,16 @@
 {
   "claim_boundary": "Verification-gate refinement track; not full Coq/Rust semantic equivalence.",
-  "schema": "arc.verify.refinement_vectors.v1",
-  "target": "src/arc/engine.rs::verify",
+  "schema": "kyriotes_csk2.verify.refinement_vectors.v1",
+  "target": "src/kyriotes_csk2/engine.rs::verify",
   "vector_count": 10,
   "vectors": [
     {
       "category": "missing-object-rejection",
       "deterministic": true,
       "expected_result": "reject",
-      "gate_name": "arc_object",
+      "gate_name": "kyriotes_csk2_object",
       "id": "verify.db6cc7945d5c83f7",
-      "notes": "verify must reject when no valid ARC object is available."
+      "notes": "verify must reject when no valid Kyriotēs-CSK2 object is available."
     },
     {
       "category": "missing-capability-rejection",

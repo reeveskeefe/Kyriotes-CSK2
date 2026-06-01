@@ -1,4 +1,4 @@
-# ARC add_epoch_wrapper Mechanical Refinement
+# Kyriotēs-CSK2 add_epoch_wrapper Mechanical Refinement
 
 ## Status
 
@@ -10,7 +10,7 @@ All tracked Rust mechanical refinement targets are verifier-backed proven within
 
 ## Target
 
-    src/arc/engine.rs::add_epoch_wrapper_with_verifier
+    src/kyriotes_csk2/engine.rs::add_epoch_wrapper_with_verifier
 
 ## Completed Proof Boundary
 

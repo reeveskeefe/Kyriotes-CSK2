@@ -1,4 +1,4 @@
-# ARC verify Mechanical Refinement
+# Kyriotēs-CSK2 verify Mechanical Refinement
 
 ## Status
 
@@ -10,7 +10,7 @@ All tracked Rust mechanical refinement targets are verifier-backed proven within
 
 ## Target
 
-    src/arc/engine.rs::verify_with_verifier
+    src/kyriotes_csk2/engine.rs::verify_with_verifier
 
 ## Completed Proof Boundary
 

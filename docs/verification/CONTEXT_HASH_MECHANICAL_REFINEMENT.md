@@ -1,4 +1,4 @@
-# ARC Context Hash Mechanical Refinement
+# Kyriotēs-CSK2 Context Hash Mechanical Refinement
 
 ## Status
 
@@ -10,7 +10,7 @@ All tracked Rust mechanical refinement targets are verifier-backed proven within
 
 ## Target
 
-    src/arc/model.rs::context_hash
+    src/kyriotes_csk2/model.rs::context_hash
 
 ## Completed Proof Boundary
 

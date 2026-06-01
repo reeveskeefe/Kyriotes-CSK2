@@ -1,6 +1,6 @@
 #![no_main]
 
-use arc_core::{DecodeProfile, decode_profile_from_env, decode_profile_from_env_value};
+use kyriotes_csk2::{DecodeProfile, decode_profile_from_env, decode_profile_from_env_value};
 use std::str::FromStr;
 use libfuzzer_sys::fuzz_target;
 
@@ -26,5 +26,5 @@ fn fuzz_decode_profile_from_bytes(data: &[u8]) {
 }
 
 fuzz_target!(|data: &[u8]| {
-    arc_fuzz::drive_parser_like_targets(data, fuzz_decode_profile_from_bytes);
+    kyriotes_csk2_fuzz::drive_parser_like_targets(data, fuzz_decode_profile_from_bytes);
 });

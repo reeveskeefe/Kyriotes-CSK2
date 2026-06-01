@@ -16,7 +16,7 @@ def main() -> int:
         "arc.context_hash.full_mechanical_proof_status.v1",
         "arc.context_hash.full_mechanical_proof_status.v2",
     }
-    assert payload["target"] == "src/arc/model.rs::context_hash"
+    assert payload["target"] == "src/kyriotes_csk2/model.rs::context_hash"
     assert payload["mechanically_checked"] is True
     assert payload["proof_tool"] == "kani"
     assert isinstance(payload["mechanically_proven"], bool)

@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use arc_core::{
-    ArcError, AuthorityState, Capability, CapabilityProof, InMemoryTransparencyLog, OpenRequest,
-    RecipientKeyPair, TemporalPolicy, TransparencyProof,
+use kyriotes_csk2::{
+    AuthorityState, Capability, CapabilityProof, InMemoryTransparencyLog, KyriotesCsk2Error,
+    OpenRequest, RecipientKeyPair, TemporalPolicy, TransparencyProof,
 };
 
 use super::capability::{TestAuthority, sample_cap};
@@ -29,7 +29,7 @@ impl Scenario {
         Self::try_baseline(policy_label, epoch).expect("baseline scenario should be constructible")
     }
 
-    pub fn try_baseline(policy_label: &str, epoch: u64) -> Result<Self, ArcError> {
+    pub fn try_baseline(policy_label: &str, epoch: u64) -> Result<Self, KyriotesCsk2Error> {
         let p_hash = policy_hash(policy_label);
         let mut log = InMemoryTransparencyLog::new();
 

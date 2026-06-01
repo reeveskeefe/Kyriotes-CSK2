@@ -1,0 +1,258 @@
+/// Integration tests: TSIG wired into `CryptoAuthorityVerifier` (spec §7).
+///
+/// Verifies that when TSIG evidence is registered via `add_evidence_tsig`,
+/// the full cert-chain verifier dispatches to `tsig_verify` instead of the
+/// single-signer path, and that single-signer evidence still works unchanged.
+use kyriotes_csk2::{
+    AuthorityRootKeyPair, AuthorityState, AuthorityVerifier, CryptoAuthorityVerifier,
+    EpochSigningKeyPair, ThresholdSignatureSet, TransparencyProof, transparency_leaf_hash,
+    tsig_sign,
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+fn make_state(epoch: u64) -> AuthorityState {
+    let mut state = AuthorityState {
+        authority_root: [1u8; 32],
+        revocation_root: [2u8; 32],
+        transparency_root: [0u8; 32],
+        epoch,
+        authority_id: "auth-main".to_string(),
+        epoch_signature_valid: true,
+        epoch_key_cert_valid: true,
+        transparency_inclusion_valid: true,
+        root_pk: [0u8; 32],
+        revocation_count: 0,
+        prev_epoch_hash: [0u8; 32],
+    };
+    state.transparency_root = transparency_leaf_hash(&state);
+    state
+}
+
+fn sample_proof(state: &AuthorityState) -> TransparencyProof {
+    TransparencyProof {
+        leaf_hash: transparency_leaf_hash(state),
+        sibling_hashes: vec![],
+        leaf_index: 0,
+    }
+}
+
+/// Build n epoch key pairs and sign the epoch root message with each.
+fn make_tsig_set(
+    state: &AuthorityState,
+    kps: &[EpochSigningKeyPair],
+    threshold: u32,
+    signers: &[usize],
+) -> (ThresholdSignatureSet, Vec<[u8; 32]>) {
+    let authorized_keys: Vec<[u8; 32]> = kps.iter().map(|kp| kp.verifying_key_bytes()).collect();
+    let mut set = ThresholdSignatureSet::new(threshold);
+    for &idx in signers {
+        let partial = tsig_sign(
+            &state.authority_root,
+            &state.revocation_root,
+            &state.transparency_root,
+            state.epoch,
+            &state.prev_epoch_hash,
+            &kps[idx],
+            idx as u32,
+        );
+        set.add(partial);
+    }
+    (set, authorized_keys)
+}
+
+/// Build a `CryptoAuthorityVerifier` (with_root_pk) using TSIG evidence.
+fn tsig_verifier(
+    state: &AuthorityState,
+    root_kp: &AuthorityRootKeyPair,
+    kps: &[EpochSigningKeyPair],
+    threshold: u32,
+    signers: &[usize],
+) -> CryptoAuthorityVerifier {
+    let epoch_pk = kps[0].verifying_key_bytes();
+    // The cert covers the first signer's key; other signer certs could also be
+    // issued — for simplicity we certify only index 0 since the verifier only
+    // needs the cert to validate epoch_pk in the cert-chain path.
+    let cert = root_kp.issue_epoch_cert(&epoch_pk, state.epoch, 10);
+    let (set, authorized_keys) = make_tsig_set(state, kps, threshold, signers);
+
+    let mut verifier = CryptoAuthorityVerifier::with_root_pk(root_kp.verifying_key_bytes());
+    verifier.add_evidence_tsig(
+        state.authority_id.clone(),
+        state.epoch,
+        epoch_pk,
+        cert,
+        authorized_keys,
+        set,
+    );
+    verifier
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+/// A 2-of-3 threshold set with exactly 2 valid signatures passes the verifier.
+#[test]
+fn tsig_verifier_accepts_2_of_3() {
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let kps: Vec<EpochSigningKeyPair> = (0..3)
+        .map(|_| EpochSigningKeyPair::generate(&mut rng))
+        .collect();
+    let state = make_state(5);
+
+    let verifier = tsig_verifier(&state, &root_kp, &kps, 2, &[0, 2]);
+    verifier
+        .verify_state(&state, &sample_proof(&state))
+        .expect("2-of-3 with 2 valid sigs should pass");
+}
+
+/// A 3-of-3 threshold set with all 3 valid signatures passes.
+#[test]
+fn tsig_verifier_accepts_3_of_3() {
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let kps: Vec<EpochSigningKeyPair> = (0..3)
+        .map(|_| EpochSigningKeyPair::generate(&mut rng))
+        .collect();
+    let state = make_state(7);
+
+    let verifier = tsig_verifier(&state, &root_kp, &kps, 3, &[0, 1, 2]);
+    verifier
+        .verify_state(&state, &sample_proof(&state))
+        .expect("3-of-3 with all sigs should pass");
+}
+
+/// Only 1 of 2 required signatures → verifier rejects.
+#[test]
+fn tsig_verifier_rejects_below_threshold() {
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let kps: Vec<EpochSigningKeyPair> = (0..3)
+        .map(|_| EpochSigningKeyPair::generate(&mut rng))
+        .collect();
+    let state = make_state(3);
+
+    let verifier = tsig_verifier(&state, &root_kp, &kps, 2, &[1]); // only 1 sig
+    let err = verifier
+        .verify_state(&state, &sample_proof(&state))
+        .expect_err("1 of 2 required sigs should fail");
+    assert!(
+        matches!(
+            err,
+            kyriotes_csk2::KyriotesCsk2Error::AuthorityState(
+                "threshold epoch root signature failed"
+            )
+        ),
+        "unexpected error: {err:?}"
+    );
+}
+
+/// A tampered partial signature does not count; if that drops below threshold the verifier rejects.
+#[test]
+fn tsig_verifier_rejects_tampered_partial_sig() {
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let kps: Vec<EpochSigningKeyPair> = (0..3)
+        .map(|_| EpochSigningKeyPair::generate(&mut rng))
+        .collect();
+    let state = make_state(9);
+    let epoch_pk = kps[0].verifying_key_bytes();
+    let cert = root_kp.issue_epoch_cert(&epoch_pk, state.epoch, 10);
+
+    let (mut set, authorized_keys) = make_tsig_set(&state, &kps, 2, &[0, 1]);
+    // Corrupt signer 1's sig bytes so only signer 0 remains valid.
+    set.partials[1].sig[0] ^= 0xFF;
+
+    // Re-register with the tampered set.
+    let mut verifier = CryptoAuthorityVerifier::with_root_pk(root_kp.verifying_key_bytes());
+    verifier.add_evidence_tsig(
+        state.authority_id.clone(),
+        state.epoch,
+        epoch_pk,
+        cert,
+        authorized_keys,
+        set,
+    );
+
+    let err = verifier
+        .verify_state(&state, &sample_proof(&state))
+        .expect_err("tampered sig should drop below threshold");
+    assert!(
+        matches!(
+            err,
+            kyriotes_csk2::KyriotesCsk2Error::AuthorityState(
+                "threshold epoch root signature failed"
+            )
+        ),
+        "unexpected error: {err:?}"
+    );
+}
+
+/// Verify that authority-root tampering still causes the TSIG check to fail
+/// (the signed message includes the authority root).
+#[test]
+fn tsig_verifier_rejects_tampered_authority_root() {
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let kps: Vec<EpochSigningKeyPair> = (0..2)
+        .map(|_| EpochSigningKeyPair::generate(&mut rng))
+        .collect();
+    let original = make_state(11);
+
+    let verifier = tsig_verifier(&original, &root_kp, &kps, 2, &[0, 1]);
+
+    // Present a state with a different authority root.
+    let mut tampered = original.clone();
+    tampered.authority_root[0] ^= 0xAB;
+    tampered.transparency_root = transparency_leaf_hash(&tampered);
+
+    let err = verifier
+        .verify_state(&tampered, &sample_proof(&tampered))
+        .expect_err("tampered authority root must fail TSIG check");
+    assert!(
+        matches!(
+            err,
+            kyriotes_csk2::KyriotesCsk2Error::AuthorityState(
+                "threshold epoch root signature failed"
+            )
+        ),
+        "unexpected error: {err:?}"
+    );
+}
+
+/// The existing single-signer cert-chain path still works when TSIG is not
+/// registered (no regression for non-threshold callers).
+#[test]
+fn single_sig_cert_chain_still_works() {
+    let mut rng = rand::rngs::OsRng;
+    let root_kp = AuthorityRootKeyPair::generate(&mut rng);
+    let epoch_kp = EpochSigningKeyPair::generate(&mut rng);
+    let state = make_state(1);
+
+    let epoch_pk = epoch_kp.verifying_key_bytes();
+    let cert = root_kp.issue_epoch_cert(&epoch_pk, state.epoch, 10);
+    let epoch_root_sig = epoch_kp.sign_epoch_root(
+        &state.authority_root,
+        &state.revocation_root,
+        &state.transparency_root,
+        state.epoch,
+        &[0u8; 32],
+    );
+
+    let mut verifier = CryptoAuthorityVerifier::with_root_pk(root_kp.verifying_key_bytes());
+    verifier.add_evidence(
+        state.authority_id.clone(),
+        state.epoch,
+        epoch_pk,
+        epoch_root_sig,
+        cert,
+    );
+
+    verifier
+        .verify_state(&state, &sample_proof(&state))
+        .expect("single-signer cert-chain should still pass");
+}

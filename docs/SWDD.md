@@ -1,7 +1,7 @@
 # Software Design Document
 
-**Document ID:** SWDD-ARC-001  
-**Project Title:** ARC: Authenticated Routing Chain  
+**Document ID:** SWDD-KYRIOTES-CSK2-001
+**Project Title:** Kyriotēs-CSK2: Authenticated Routing Chain
 **Document Type:** Software Design Document  
 **Author:** Keefe Reeves  
 **Date:** May 31, 2026  
@@ -46,17 +46,17 @@
 
 ## 1.1 Purpose
 
-This Software Design Document describes the architecture and system design of ARC, the Authenticated Routing Chain encryption library.
+This Software Design Document describes the architecture and system design of Kyriotēs-CSK2, the Authenticated Routing Chain encryption library.
 
-The purpose of this document is to explain how ARC is structured, how its major components work together, and how the design satisfies the project’s security and functionality goals.
+The purpose of this document is to explain how Kyriotēs-CSK2 is structured, how its major components work together, and how the design satisfies the project’s security and functionality goals.
 
-This document is intended for developers, security reviewers, maintainers, formal-methods contributors, and future auditors who need to understand the internal structure of ARC before implementing, reviewing, testing, or extending the system.
+This document is intended for developers, security reviewers, maintainers, formal-methods contributors, and future auditors who need to understand the internal structure of Kyriotēs-CSK2 before implementing, reviewing, testing, or extending the system.
 
 ## 1.2 Scope
 
-ARC is a Rust cryptography library designed around capability-routed encryption. Opening ciphertext in ARC requires more than possession of secret key material. A valid open operation depends on both correct cryptographic key material and a valid, non-revoked authority capability proof bound to the correct authority context.
+Kyriotēs-CSK2 is a Rust cryptography library designed around capability-routed encryption. Opening ciphertext in Kyriotēs-CSK2 requires more than possession of secret key material. A valid open operation depends on both correct cryptographic key material and a valid, non-revoked authority capability proof bound to the correct authority context.
 
-The scope of ARC includes hybrid classical and post-quantum key encapsulation, authority-root binding, epoch-based state, revocation tracking, transparency commitments, rewrapping across epochs, delegation limits, canonical encoding, fuzz testing, and formal proof scaffolding in Coq.
+The scope of Kyriotēs-CSK2 includes hybrid classical and post-quantum key encapsulation, authority-root binding, epoch-based state, revocation tracking, transparency commitments, rewrapping across epochs, delegation limits, canonical encoding, fuzz testing, and formal proof scaffolding in Coq.
 
 The project is currently experimental and should be treated as an early-stage cryptographic construction. Its design goal is to explore a stronger authorization-bound encryption model where decryption is tied to authority state, capability rights, revocation status, epoch validity, and authenticated transcript binding.
 
@@ -78,8 +78,8 @@ Section 1 introduces the purpose, scope, references, and definitions. Section 2 
 
 The following materials were used as design references:
 
-- ARC source code and repository documentation.
-- ARC Coq proof files under `proofs/coq`.
+- Kyriotēs-CSK2 source code and repository documentation.
+- Kyriotēs-CSK2 Coq proof files under `proofs/coq`.
 - Rust cryptography crate documentation for ChaCha20Poly1305, HKDF-SHA256, Ed25519, ML-KEM, and X25519.
 - General Merkle tree literature for inclusion and non-revocation proof design.
 - General authenticated encryption and key encapsulation design practices.
@@ -91,7 +91,7 @@ The following materials were used as design references:
 
 **AEAD:** Authenticated Encryption with Associated Data.
 
-**ARC:** Authenticated Routing Chain.
+**Kyriotēs-CSK2:** Authenticated Routing Chain.
 
 **Capability:** A cryptographic authorization object that grants rights over a specific object, subject to epoch, delegation, and revocation constraints.
 
@@ -121,11 +121,11 @@ The following materials were used as design references:
 
 # 2.0 System Overview
 
-ARC is a Rust library for capability-routed encryption. Its core security model is that ciphertext should only open when the recipient has the correct key material and the presented capability is valid for the object, rights, epoch, revocation state, authority root, and transparency context.
+Kyriotēs-CSK2 is a Rust library for capability-routed encryption. Its core security model is that ciphertext should only open when the recipient has the correct key material and the presented capability is valid for the object, rights, epoch, revocation state, authority root, and transparency context.
 
-In a conventional encryption library, possession of the correct private key is usually enough to decrypt. ARC adds an authority layer around that process. A sealed object is bound to an authority state, a revocation state, an epoch, required rights, and a transcript/context hash. This means the open path must verify authorization context before or alongside cryptographic opening.
+In a conventional encryption library, possession of the correct private key is usually enough to decrypt. Kyriotēs-CSK2 adds an authority layer around that process. A sealed object is bound to an authority state, a revocation state, an epoch, required rights, and a transcript/context hash. This means the open path must verify authorization context before or alongside cryptographic opening.
 
-ARC supports capability issuance, capability delegation, revocation, epoch rotation, transparency commitments, resealing to a new recipient, and rewrapping across epochs.
+Kyriotēs-CSK2 supports capability issuance, capability delegation, revocation, epoch rotation, transparency commitments, resealing to a new recipient, and rewrapping across epochs.
 
 Delegation is constrained so child capabilities cannot exceed parent rights, expand the parent epoch window, break parent-stamp linkage, or exceed the maximum delegation depth.
 
@@ -137,13 +137,13 @@ The system also includes a growing Coq proof suite. These proofs currently model
 
 ## 3.1 Architectural Design
 
-ARC follows a layered architecture. Each layer has a clear responsibility so the system can be audited, tested, fuzzed, and formally modeled.
+Kyriotēs-CSK2 follows a layered architecture. Each layer has a clear responsibility so the system can be audited, tested, fuzzed, and formally modeled.
 
 The major layers are described below.
 
 ## Model Layer
 
-The model layer defines the core data structures used by ARC. These include capabilities, authority states, sealed objects, wrappers, signatures, proofs, revocation witnesses, transcript records, and compromise notices.
+The model layer defines the core data structures used by Kyriotēs-CSK2. These include capabilities, authority states, sealed objects, wrappers, signatures, proofs, revocation witnesses, transcript records, and compromise notices.
 
 ## Engine Layer
 
@@ -155,11 +155,11 @@ The verification layer checks whether an open operation is allowed. It verifies 
 
 ## Encoding Layer
 
-The encoding layer handles canonical serialization and decoding. This is important because cryptographic systems require unambiguous byte representations. ARC’s encoding layer is designed to prevent inconsistent serialization from creating hash, signature, or transcript mismatch issues.
+The encoding layer handles canonical serialization and decoding. This is important because cryptographic systems require unambiguous byte representations. Kyriotēs-CSK2’s encoding layer is designed to prevent inconsistent serialization from creating hash, signature, or transcript mismatch issues.
 
 ## Proof Layer
 
-The proof layer contains Coq files that model ARC’s security-relevant logic. These files machine-check properties around authorization gates, delegation, transcript binding, rewrap rules, revocation monotonicity, compromise notice handling, and reduction-shape reasoning.
+The proof layer contains Coq files that model Kyriotēs-CSK2’s security-relevant logic. These files machine-check properties around authorization gates, delegation, transcript binding, rewrap rules, revocation monotonicity, compromise notice handling, and reduction-shape reasoning.
 
 ## Testing and Fuzzing Layer
 
@@ -169,15 +169,15 @@ The high-level flow is:
 
 1. A capability is issued and committed to an authority root.
 2. A caller seals an object to a recipient under a required-rights policy.
-3. ARC derives cryptographic wrapping material using hybrid KEM and HKDF.
-4. ARC binds authority state, revocation state, transparency state, epoch, object ID, and required rights into the object context.
+3. Kyriotēs-CSK2 derives cryptographic wrapping material using hybrid KEM and HKDF.
+4. Kyriotēs-CSK2 binds authority state, revocation state, transparency state, epoch, object ID, and required rights into the object context.
 5. A recipient attempts to open the object.
-6. ARC verifies the capability, revocation status, authority state, transcript binding, and temporal policy.
-7. ARC only decrypts when the cryptographic and authorization gates both succeed.
+6. Kyriotēs-CSK2 verifies the capability, revocation status, authority state, transcript binding, and temporal policy.
+7. Kyriotēs-CSK2 only decrypts when the cryptographic and authorization gates both succeed.
 
 ## 3.2 Decomposition Description
 
-ARC can be decomposed into the following subsystems.
+Kyriotēs-CSK2 can be decomposed into the following subsystems.
 
 ## Capability Management Subsystem
 
@@ -209,7 +209,7 @@ Core responsibilities:
 
 ## Sealing Subsystem
 
-This subsystem transforms plaintext into an ARC sealed object.
+This subsystem transforms plaintext into a Kyriotēs-CSK2 sealed object.
 
 Core responsibilities:
 
@@ -280,8 +280,8 @@ This subsystem ensures canonical and bounded decoding.
 
 Core responsibilities:
 
-- Encode ARC objects.
-- Decode ARC objects.
+- Encode Kyriotēs-CSK2 objects.
+- Decode Kyriotēs-CSK2 objects.
 - Reject bad magic values.
 - Reject truncated input.
 - Reject oversized fields.
@@ -294,27 +294,27 @@ This subsystem provides Coq proof files for security-relevant design properties.
 
 Current proof files include:
 
-- `ArcTypes.v`
-- `ArcMerkle.v`
-- `ArcAuthority.v`
-- `ArcPolicy.v`
-- `ArcVerify.v`
-- `ArcSecurityGame.v`
-- `ArcTheorems.v`
-- `ArcStressProofs.v`
-- `ArcDelegationProofs.v`
-- `ArcCryptoReduction.v`
-- `ArcTemporalProofs.v`
-- `ArcTranscriptProofs.v`
-- `ArcRevocationCompromiseProofs.v`
+- `KyriotesCsk2Types.v`
+- `KyriotesCsk2Merkle.v`
+- `KyriotesCsk2Authority.v`
+- `KyriotesCsk2Policy.v`
+- `KyriotesCsk2Verify.v`
+- `KyriotesCsk2SecurityGame.v`
+- `KyriotesCsk2Theorems.v`
+- `KyriotesCsk2StressProofs.v`
+- `KyriotesCsk2DelegationProofs.v`
+- `KyriotesCsk2CryptoReduction.v`
+- `KyriotesCsk2TemporalProofs.v`
+- `KyriotesCsk2TranscriptProofs.v`
+- `KyriotesCsk2RevocationCompromiseProofs.v`
 
 ## 3.3 Design Rationale
 
-ARC is designed around the principle that encryption alone is not enough for certain systems. Some systems need cryptographic opening to be tied to authority, policy, revocation, and time. ARC therefore separates the idea of possessing a key from the idea of being authorized to open an object.
+Kyriotēs-CSK2 is designed around the principle that encryption alone is not enough for certain systems. Some systems need cryptographic opening to be tied to authority, policy, revocation, and time. Kyriotēs-CSK2 therefore separates the idea of possessing a key from the idea of being authorized to open an object.
 
 The architecture uses standard cryptographic building blocks where possible. ChaCha20Poly1305 provides AEAD encryption. HKDF derives keys from shared material. X25519 provides classical elliptic-curve key agreement. ML-KEM adds post-quantum key encapsulation. Ed25519 supports signatures for authority and epoch verification. Merkle trees support compact inclusion and non-revocation proofs.
 
-The main architectural tradeoff is complexity. ARC is more complex than a normal public-key encryption library because it includes authority state, revocation state, temporal policy, and transparency state. This complexity is accepted because it directly supports the project’s goal: opening ciphertext should require both cryptographic key possession and valid authorization context.
+The main architectural tradeoff is complexity. Kyriotēs-CSK2 is more complex than a normal public-key encryption library because it includes authority state, revocation state, temporal policy, and transparency state. This complexity is accepted because it directly supports the project’s goal: opening ciphertext should require both cryptographic key possession and valid authorization context.
 
 Alternative architectures considered include the following.
 
@@ -324,7 +324,7 @@ This was rejected because key possession alone does not express revocation, temp
 
 ## Server-Side Authorization Before Decryption
 
-This was rejected as the core design because ARC is intended to cryptographically bind authorization into the object itself rather than relying entirely on a hosted policy service.
+This was rejected as the core design because Kyriotēs-CSK2 is intended to cryptographically bind authorization into the object itself rather than relying entirely on a hosted policy service.
 
 ## Linear Revocation Lists
 
@@ -332,7 +332,7 @@ This was rejected because Merkle-based revocation is more efficient for proof-ba
 
 ## Classical-Only Key Encapsulation
 
-This was rejected because ARC aims to explore long-term security against future quantum-capable adversaries.
+This was rejected because Kyriotēs-CSK2 aims to explore long-term security against future quantum-capable adversaries.
 
 ---
 
@@ -340,7 +340,7 @@ This was rejected because ARC aims to explore long-term security against future 
 
 ## 4.1 Data Description
 
-ARC’s information domain is transformed into a set of cryptographic and authorization data structures.
+Kyriotēs-CSK2’s information domain is transformed into a set of cryptographic and authorization data structures.
 
 The most important data structures are capabilities, authority states, sealed objects, wrappers, proofs, revocation witnesses, transparency commits, transcript records, and compromise notices.
 
@@ -356,7 +356,7 @@ The Coq proof model abstracts these structures into natural-number-based records
 
 ## 4.2 Data Dictionary
 
-## ArcObject
+## KyriotesCsk2Object
 
 - `object_id`: Unique identifier for the sealed object.
 - `required_rights`: Rights needed to open the object.
@@ -392,7 +392,7 @@ The Coq proof model abstracts these structures into natural-number-based records
 - `notice_epoch_public_key`: Epoch public key affected by compromise.
 - `notice_recovery_root`: Recovery or replacement authority root.
 
-## ArcTranscript
+## KyriotesCsk2Transcript
 
 - `transcript_object_id`: Object ID included in the transcript.
 - `transcript_required_rights`: Required rights included in the transcript.
@@ -416,7 +416,7 @@ The Coq proof model abstracts these structures into natural-number-based records
 
 # 5.0 Component Design
 
-This section describes the major ARC components in procedural design form.
+This section describes the major Kyriotēs-CSK2 components in procedural design form.
 
 ## 5.1 Seal Procedure
 
@@ -556,19 +556,19 @@ procedure VERIFY(sealed_object, capability, authority_state):
 
 ```text
 procedure CHECK_COQ_PROOFS():
-    compile ArcTypes.v
-    compile ArcMerkle.v
-    compile ArcAuthority.v
-    compile ArcPolicy.v
-    compile ArcVerify.v
-    compile ArcSecurityGame.v
-    compile ArcTheorems.v
-    compile ArcStressProofs.v
-    compile ArcDelegationProofs.v
-    compile ArcCryptoReduction.v
-    compile ArcTemporalProofs.v
-    compile ArcTranscriptProofs.v
-    compile ArcRevocationCompromiseProofs.v
+    compile KyriotesCsk2Types.v
+    compile KyriotesCsk2Merkle.v
+    compile KyriotesCsk2Authority.v
+    compile KyriotesCsk2Policy.v
+    compile KyriotesCsk2Verify.v
+    compile KyriotesCsk2SecurityGame.v
+    compile KyriotesCsk2Theorems.v
+    compile KyriotesCsk2StressProofs.v
+    compile KyriotesCsk2DelegationProofs.v
+    compile KyriotesCsk2CryptoReduction.v
+    compile KyriotesCsk2TemporalProofs.v
+    compile KyriotesCsk2TranscriptProofs.v
+    compile KyriotesCsk2RevocationCompromiseProofs.v
     report success only if all files compile
 ```
 
@@ -578,29 +578,29 @@ procedure CHECK_COQ_PROOFS():
 
 ## 6.1 Overview of User Interface
 
-ARC is primarily a library, not a graphical application. Most users interact with ARC through Rust APIs, automated tests, command-line tools, or integration code.
+Kyriotēs-CSK2 is primarily a library, not a graphical application. Most users interact with Kyriotēs-CSK2 through Rust APIs, automated tests, command-line tools, or integration code.
 
-A developer uses ARC by importing the library and calling operations such as capability issuance, sealing, opening, revocation, delegation, epoch rotation, rewrap, reseal, and verification.
+A developer uses Kyriotēs-CSK2 by importing the library and calling operations such as capability issuance, sealing, opening, revocation, delegation, epoch rotation, rewrap, reseal, and verification.
 
 The expected feedback is returned through structured success values and error values. In command-line workflows, feedback is displayed as terminal output. In tests and proof workflows, feedback appears through `cargo test`, fuzzing output, or Coq compiler output.
 
 ## 6.2 Screen Images
 
-ARC does not currently require a graphical user interface. A command-line interface could use the following interaction style:
+Kyriotēs-CSK2 does not currently require a graphical user interface. A command-line interface could use the following interaction style:
 
 ```text
-$ arc-cli seal --cap capability.json --input secret.txt --output secret.arc
+$ kyriotes-csk2-cli seal --cap capability.json --input secret.txt --output secret.arc
 Sealed object written to secret.arc
 ```
 
 ```text
-$ arc-cli open --cap capability.json --secret-key recipient.key --input secret.arc --output secret.txt
+$ kyriotes-csk2-cli open --cap capability.json --secret-key recipient.key --input secret.arc --output secret.txt
 Object opened successfully.
 ```
 
 ```text
 $ ./proofs/coq/check.sh
-ARC Coq proofs compiled successfully.
+Kyriotēs-CSK2 Coq proofs compiled successfully.
 ```
 
 ```text
@@ -662,21 +662,21 @@ Errors should clearly explain whether failure came from decoding, missing rights
 
 ## Appendix A: Current Coq Proof Layers
 
-ARC currently includes the following proof layers:
+Kyriotēs-CSK2 currently includes the following proof layers:
 
-- `ArcTypes.v`: Core abstract types and basic helper lemmas.
-- `ArcMerkle.v`: Abstract Merkle inclusion and non-revocation model.
-- `ArcAuthority.v`: Abstract authority-state validity model.
-- `ArcPolicy.v`: Object, rights, and epoch policy model.
-- `ArcVerify.v`: Verified-open gate model.
-- `ArcSecurityGame.v`: Unauthorized open game model.
-- `ArcTheorems.v`: Main authorization safety theorems.
-- `ArcStressProofs.v`: Mutation rejection and gate stress proofs.
-- `ArcDelegationProofs.v`: Delegation rights, epoch, parent-stamp, and depth proofs.
-- `ArcCryptoReduction.v`: Abstract reduction-shape proof skeleton.
-- `ArcTemporalProofs.v`: Temporal and rewrap safety proofs.
-- `ArcTranscriptProofs.v`: Transcript and context binding proofs.
-- `ArcRevocationCompromiseProofs.v`: Revocation monotonicity and compromise notice proofs.
+- `KyriotesCsk2Types.v`: Core abstract types and basic helper lemmas.
+- `KyriotesCsk2Merkle.v`: Abstract Merkle inclusion and non-revocation model.
+- `KyriotesCsk2Authority.v`: Abstract authority-state validity model.
+- `KyriotesCsk2Policy.v`: Object, rights, and epoch policy model.
+- `KyriotesCsk2Verify.v`: Verified-open gate model.
+- `KyriotesCsk2SecurityGame.v`: Unauthorized open game model.
+- `KyriotesCsk2Theorems.v`: Main authorization safety theorems.
+- `KyriotesCsk2StressProofs.v`: Mutation rejection and gate stress proofs.
+- `KyriotesCsk2DelegationProofs.v`: Delegation rights, epoch, parent-stamp, and depth proofs.
+- `KyriotesCsk2CryptoReduction.v`: Abstract reduction-shape proof skeleton.
+- `KyriotesCsk2TemporalProofs.v`: Temporal and rewrap safety proofs.
+- `KyriotesCsk2TranscriptProofs.v`: Transcript and context binding proofs.
+- `KyriotesCsk2RevocationCompromiseProofs.v`: Revocation monotonicity and compromise notice proofs.
 
 ## Appendix B: Current Security Claims Supported by the Design
 

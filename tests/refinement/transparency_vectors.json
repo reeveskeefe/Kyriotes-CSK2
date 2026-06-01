@@ -1,7 +1,7 @@
 {
   "claim_boundary": "Transparency append/lookup/conflict refinement track; not full Coq/Rust semantic equivalence.",
-  "schema": "arc.transparency.refinement_vectors.v1",
-  "target": "src/arc/transparency.rs",
+  "schema": "kyriotes_csk2.transparency.refinement_vectors.v1",
+  "target": "src/kyriotes_csk2/transparency.rs",
   "vector_count": 12,
   "vectors": [
     {

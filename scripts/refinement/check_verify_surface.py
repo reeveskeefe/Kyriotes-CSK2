@@ -13,18 +13,18 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-ENGINE_PATH = PROJECT_ROOT / "src" / "arc" / "engine.rs"
+ENGINE_PATH = PROJECT_ROOT / "src" / "kyriotes-csk2" / "engine.rs"
 
 
 def main() -> int:
-    assert ENGINE_PATH.exists(), "src/arc/engine.rs must exist"
+    assert ENGINE_PATH.exists(), "src/kyriotes_csk2/engine.rs must exist"
 
     source = ENGINE_PATH.read_text(encoding="utf-8")
 
     assert "fn verify" in source or "pub fn verify" in source, "verify function must exist in engine.rs"
 
     required_terms = [
-        "ArcObject",
+        "KyriotesCsk2Object",
         "Capability",
         "CapabilityProof",
         "AuthorityState",
@@ -35,7 +35,7 @@ def main() -> int:
         assert term in source, f"verify surface must mention {term}"
 
     assert "Result" in source, "verify should expose Result-style fallible behavior"
-    assert "ArcError" in source, "verify should use ARC error surface"
+    assert "KyriotesCsk2Error" in source, "verify should use Kyriotēs-CSK2 error surface"
 
     print("verify surface check passed.")
     return 0

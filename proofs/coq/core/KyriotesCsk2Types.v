@@ -1,0 +1,71 @@
+From Stdlib Require Import List Bool Arith.PeanoNat Lia.
+Import ListNotations.
+
+Definition Bytes := list nat.
+Definition Hash := nat.
+Definition Signature := nat.
+Definition PublicKey := nat.
+Definition ObjectId := nat.
+Definition Epoch := nat.
+Definition Rights := nat.
+
+Record Capability := {
+  cap_subject : Bytes;
+  cap_object_id : ObjectId;
+  cap_rights : Rights;
+  cap_epoch_start : Epoch;
+  cap_epoch_end : Epoch;
+  cap_stamp : nat;
+  cap_parent_stamp : nat;
+  cap_delegation_depth : nat
+}.
+
+Record AuthorityState := {
+  authority_root : Hash;
+  revocation_root : Hash;
+  transparency_root : Hash;
+  epoch : Epoch;
+  epoch_public_key : PublicKey;
+  root_public_key : PublicKey
+}.
+
+Record KyriotesCsk2Object := {
+  object_id : ObjectId;
+  required_rights : Rights;
+  bound_authority_root : Hash;
+  bound_revocation_root : Hash;
+  bound_transparency_root : Hash;
+  bound_epoch : Epoch;
+  aad_context_hash : Hash
+}.
+
+Definition has_rights (granted required : Rights) : bool :=
+  Nat.eqb (Nat.land granted required) required.
+
+Definition epoch_in_window (e start finish : Epoch) : bool :=
+  Nat.leb start e && Nat.leb e finish.
+
+Lemma epoch_in_window_true_bounds :
+  forall e start finish,
+    epoch_in_window e start finish = true ->
+    start <= e /\ e <= finish.
+Proof.
+  intros e start finish H.
+  unfold epoch_in_window in H.
+  apply andb_true_iff in H.
+  destruct H as [H_start H_finish].
+  apply Nat.leb_le in H_start.
+  apply Nat.leb_le in H_finish.
+  split; assumption.
+Qed.
+
+Lemma has_rights_true :
+  forall granted required,
+    has_rights granted required = true ->
+    Nat.land granted required = required.
+Proof.
+  intros granted required H.
+  unfold has_rights in H.
+  apply Nat.eqb_eq in H.
+  exact H.
+Qed.

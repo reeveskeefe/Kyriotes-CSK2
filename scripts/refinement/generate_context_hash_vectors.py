@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Generate deterministic ARC context_hash refinement vectors.
+Generate deterministic Kyriotēs-CSK2 context_hash refinement vectors.
 
-This generator intentionally avoids importing ARC internals. It creates stable
+This generator intentionally avoids importing Kyriotēs-CSK2 internals. It creates stable
 model-side vectors that define the expected refinement evidence shape for the
 context_hash target. The Rust test/harness layer is responsible for connecting
 actual Rust behavior to these cases.
@@ -50,7 +50,7 @@ def expected_hash(
 ) -> str:
     payload = "|".join(
         [
-            "ARC_CONTEXT_HASH_REFINEMENT_V1",
+            "KYRIOTES_CSK2_CONTEXT_HASH_REFINEMENT_V1",
             object_id,
             str(required_rights),
             policy_hash_hex,
@@ -98,7 +98,7 @@ def build_vectors() -> list[ContextHashVector]:
         },
         {
             "id": "context.long-object-id",
-            "object_id": "arc-object-" + "x" * 128,
+            "object_id": "kyriotes-csk2-object-" + "x" * 128,
             "required_rights": 15,
             "policy_hash_hex": hex32("policy.long.object"),
             "authority_root_hex": hex32("authority.root.long"),
@@ -140,8 +140,8 @@ def main() -> int:
     vectors = build_vectors()
 
     payload = {
-        "schema": "arc.context_hash.refinement_vectors.v1",
-        "target": "src/arc/model.rs::context_hash",
+        "schema": "kyriotes_csk2.context_hash.refinement_vectors.v1",
+        "target": "src/kyriotes_csk2/model.rs::context_hash",
         "claim_boundary": "Deterministic mechanical check vectors; not full Coq/Rust semantic equivalence.",
         "vector_count": len(vectors),
         "hash_size_bytes": 32,

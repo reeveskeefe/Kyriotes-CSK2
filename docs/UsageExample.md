@@ -1,12 +1,12 @@
-# ARC: Usage Example — Encrypting Database Transmission Pipelines
+# Kyriotēs-CSK2: Usage Example — Encrypting Database Transmission Pipelines
 
 ## Overview
 
-This document demonstrates how ARC can be integrated into a Rust database ingestion pipeline.
+This document demonstrates how Kyriotēs-CSK2 can be integrated into a Rust database ingestion pipeline.
 
-The original pipeline simply validated sensor data and inserted plaintext values into PostgreSQL. ARC transforms this model into an authority-bound encrypted storage system where the database never receives readable sensor values.
+The original pipeline simply validated sensor data and inserted plaintext values into PostgreSQL. Kyriotēs-CSK2 transforms this model into an authority-bound encrypted storage system where the database never receives readable sensor values.
 
-Instead of storing plaintext records, the database stores an ARC sealed object containing:
+Instead of storing plaintext records, the database stores a Kyriotēs-CSK2 sealed object containing:
 
 * encrypted payload ciphertext
 * wrapped encryption material
@@ -22,7 +22,7 @@ The result is a cryptographically sealed object whose access depends on both val
 
 # Original Plaintext Database Pipeline
 
-The following Rust example shows the original plaintext ingestion model before ARC is introduced.
+The following Rust example shows the original plaintext ingestion model before Kyriotēs-CSK2 is introduced.
 
 The application:
 
@@ -136,11 +136,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 ---
 
-# Importing ARC Into the Pipeline
+# Importing Kyriotēs-CSK2 Into the Pipeline
 
-The next step is introducing ARC into the transmission layer.
+The next step is introducing Kyriotēs-CSK2 into the transmission layer.
 
-ARC adds:
+Kyriotēs-CSK2 adds:
 
 * authority state
 * recipient key material
@@ -152,16 +152,16 @@ ARC adds:
 
 The database layer remains PostgreSQL, but the payload path changes fundamentally.
 
-Instead of storing readable application fields directly, ARC seals the payload into a cryptographically bound object before insertion occurs.
+Instead of storing readable application fields directly, Kyriotēs-CSK2 seals the payload into a cryptographically bound object before insertion occurs.
 
 ```rust
-use arc_core::{
+use kyriotes_csk2::{
     capability_leaf_hash,
     capability_stamp,
-    encode_arc_object,
+    encode_kyriotes_csk2_object,
     hash_policy,
     seal,
-    ArcError,
+    KyriotesCsk2Error,
     AuthorityCapabilityTree,
     AuthorityRootKeyPair,
     AuthorityState,
@@ -184,7 +184,7 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 ```
 
-These imports introduce the core ARC primitives required for:
+These imports introduce the core Kyriotēs-CSK2 primitives required for:
 
 * capability issuance
 * authority root construction
@@ -204,15 +204,15 @@ The database transmitter still begins with ordinary application data:
 * reading_type
 * reading_value
 
-ARC does not encrypt Rust structs directly.
+Kyriotēs-CSK2 does not encrypt Rust structs directly.
 
 The payload must first be transformed into raw bytes.
 
-The validated application record is therefore serialized into JSON and then converted into a byte vector before ARC sealing occurs.
+The validated application record is therefore serialized into JSON and then converted into a byte vector before Kyriotēs-CSK2 sealing occurs.
 
 At this stage the payload is still plaintext.
 
-The actual authority-bound encryption happens later when ARC seal() is executed.
+The actual authority-bound encryption happens later when Kyriotēs-CSK2 seal() is executed.
 
 ```rust
 impl SensorRecord {
@@ -228,13 +228,13 @@ impl SensorRecord {
 }
 ```
 
-The JSON representation shown above is the final readable payload form before ARC transforms it into encrypted ciphertext.
+The JSON representation shown above is the final readable payload form before Kyriotēs-CSK2 transforms it into encrypted ciphertext.
 
 ---
 
-# ARC Authority Bundle
+# Kyriotēs-CSK2 Authority Bundle
 
-ARC is not designed as a simple key-only encryption system.
+Kyriotēs-CSK2 is not designed as a simple key-only encryption system.
 
 The payload becomes bound to a broader authority context containing:
 
@@ -246,17 +246,17 @@ The payload becomes bound to a broader authority context containing:
 * temporal epoch context
 * policy identity
 
-This collection of ARC materials is grouped into a single structure named ArcAuthorityBundle.
+This collection of Kyriotēs-CSK2 materials is grouped into a single structure named KyriotesCsk2AuthorityBundle.
 
 ```rust
-struct ArcAuthorityBundle {
+struct KyriotesCsk2AuthorityBundle {
     recipient: RecipientKeyPair,
     state: AuthorityState,
     capability: Capability,
     proof: CapabilityProof,
     request: OpenRequest,
     temporal_policy: TemporalPolicy,
-    transparency_proof: arc_core::TransparencyProof,
+    transparency_proof: kyriotes_csk2::TransparencyProof,
 }
 ```
 
@@ -264,7 +264,7 @@ The important conceptual difference is this:
 
 > The database no longer stores plaintext sensor records.
 >
-> The database stores an authority-bound ARC sealed object.
+> The database stores an authority-bound Kyriotēs-CSK2 sealed object.
 
 That sealed object becomes cryptographically associated with:
 
@@ -277,7 +277,7 @@ That sealed object becomes cryptographically associated with:
 * the transparency state
 * the object identity
 
-ARC therefore shifts encryption from:
+Kyriotēs-CSK2 therefore shifts encryption from:
 
 > “Who possesses the key?”
 
@@ -287,9 +287,9 @@ into:
 
 ---
 
-# ARC Context Construction
+# Kyriotēs-CSK2 Context Construction
 
-ArcAuthorityBundle::new() constructs the complete ARC environment required for sealing a payload.
+KyriotesCsk2AuthorityBundle::new() constructs the complete Kyriotēs-CSK2 environment required for sealing a payload.
 
 In production systems these values would typically come from:
 
@@ -301,7 +301,7 @@ In production systems these values would typically come from:
 
 For demonstration purposes this example constructs them locally.
 
-The ARC setup process performs the following steps:
+The Kyriotēs-CSK2 setup process performs the following steps:
 
 1. Generate recipient key material
 2. Construct policy hashes
@@ -319,7 +319,7 @@ The ARC setup process performs the following steps:
 
 # Policy Hash Binding
 
-ARC binds objects to policy hashes rather than relying on plain text policy labels.
+Kyriotēs-CSK2 binds objects to policy hashes rather than relying on plain text policy labels.
 
 The same policy hash must appear consistently across:
 
@@ -339,7 +339,7 @@ This prevents silent authority-context substitution attacks.
 
 # Recipient Key Material
 
-ARC seals the payload against a recipient public key.
+Kyriotēs-CSK2 seals the payload against a recipient public key.
 
 Only the matching recipient secret key can later participate in opening the object.
 
@@ -347,7 +347,7 @@ Only the matching recipient secret key can later participate in opening the obje
 let recipient = RecipientKeyPair::generate(&mut rng);
 ```
 
-This provides the cryptographic identity side of the ARC model.
+This provides the cryptographic identity side of the Kyriotēs-CSK2 model.
 
 ---
 
@@ -379,7 +379,7 @@ let capability = Capability {
 };
 ```
 
-This is one of the primary distinctions between ARC and traditional encryption.
+This is one of the primary distinctions between Kyriotēs-CSK2 and traditional encryption.
 
 The object is not merely encrypted to a key.
 
@@ -389,7 +389,7 @@ It is encrypted under an authority-controlled capability context.
 
 # Authority Root Hierarchy
 
-ARC separates root authority from epoch authority.
+Kyriotēs-CSK2 separates root authority from epoch authority.
 
 The chain is structured as:
 
@@ -400,7 +400,7 @@ root authority
 
 ```rust
 let authority_root_keypair = AuthorityRootKeyPair::generate(&mut rng);
-let epoch_signing_keypair = arc_core::EpochSigningKeyPair::generate(&mut rng);
+let epoch_signing_keypair = kyriotes_csk2::EpochSigningKeyPair::generate(&mut rng);
 ```
 
 This separation allows epoch rotation without replacing the entire root authority.
@@ -411,7 +411,7 @@ This separation allows epoch rotation without replacing the entire root authorit
 
 Capabilities are inserted into an authority tree.
 
-This allows ARC to prove that a capability actually belongs to the authority state.
+This allows Kyriotēs-CSK2 to prove that a capability actually belongs to the authority state.
 
 ```rust
 let mut capability_tree = AuthorityCapabilityTree::new();
@@ -443,7 +443,7 @@ let seed_state = AuthorityState {
     revocation_root: capability_tree.revocation_root(),
     transparency_root: [0u8; 32],
     epoch,
-    authority_id: "arc-db-ingest-authority".to_string(),
+    authority_id: "kyriotes-csk2-db-ingest-authority".to_string(),
     epoch_signature_valid: true,
     epoch_key_cert_valid: true,
     transparency_inclusion_valid: true,
@@ -459,7 +459,7 @@ The sealed database object becomes cryptographically attached to this authority 
 
 # Transparency Commitment
 
-ARC commits the authority state into a transparency log.
+Kyriotēs-CSK2 commits the authority state into a transparency log.
 
 This provides evidence that the authority snapshot existed within a committed log view.
 
@@ -474,7 +474,7 @@ In production deployments this would normally be a durable external transparency
 
 # Inclusion and Non-Revocation Proofs
 
-ARC must prove both:
+Kyriotēs-CSK2 must prove both:
 
 * the capability exists inside the authority tree
 * the capability has not been revoked
@@ -482,7 +482,7 @@ ARC must prove both:
 ```rust
 let inclusion = capability_tree
     .inclusion_proof(&capability)
-    .ok_or(ArcError::Capability("capability inclusion proof could not be built"))?;
+    .ok_or(KyriotesCsk2Error::Capability("capability inclusion proof could not be built"))?;
 ```
 
 ```rust
@@ -492,7 +492,7 @@ let stamp = capability_stamp(&capability, &state);
 ```rust
 let non_revocation = capability_tree
     .non_revocation_witness(&stamp)
-    .ok_or(ArcError::Capability("non-revocation witness could not be built"))?;
+    .ok_or(KyriotesCsk2Error::Capability("non-revocation witness could not be built"))?;
 ```
 
 This prevents revoked or fabricated capabilities from silently authorizing access.
@@ -501,7 +501,7 @@ This prevents revoked or fabricated capabilities from silently authorizing acces
 
 # Capability Issuance Signature
 
-ARC canonicalizes the capability into a leaf hash.
+Kyriotēs-CSK2 canonicalizes the capability into a leaf hash.
 
 The epoch signing authority then signs:
 
@@ -527,7 +527,7 @@ This proves the capability was legitimately issued under the certified epoch aut
 
 # Capability Proof Assembly
 
-ARC combines all proof material into a CapabilityProof.
+Kyriotēs-CSK2 combines all proof material into a CapabilityProof.
 
 ```rust
 let proof = CapabilityProof {
@@ -540,7 +540,7 @@ let proof = CapabilityProof {
 };
 ```
 
-This proof package is one of the core mechanisms that transforms ARC into an authority-bound encryption system instead of a conventional key-only encryption scheme.
+This proof package is one of the core mechanisms that transforms Kyriotēs-CSK2 into an authority-bound encryption system instead of a conventional key-only encryption scheme.
 
 ---
 
@@ -568,9 +568,9 @@ This ensures the sealed object remains tied to the intended authority context.
 
 ---
 
-# ARC Sealing
+# Kyriotēs-CSK2 Sealing
 
-This is the point where plaintext becomes an ARC sealed object.
+This is the point where plaintext becomes a Kyriotēs-CSK2 sealed object.
 
 The seal() operation produces an object containing:
 
@@ -584,7 +584,7 @@ The seal() operation produces an object containing:
 * transparency commitments
 
 ```rust
-fn seal_payload(&self, payload: &[u8]) -> Result<Vec<u8>, ArcError> {
+fn seal_payload(&self, payload: &[u8]) -> Result<Vec<u8>, KyriotesCsk2Error> {
     let object = seal(
         &self.recipient.public,
         payload,
@@ -596,13 +596,13 @@ fn seal_payload(&self, payload: &[u8]) -> Result<Vec<u8>, ArcError> {
         self.temporal_policy.clone(),
     )?;
 
-    Ok(encode_arc_object(&object))
+    Ok(encode_kyriotes_csk2_object(&object))
 }
 ```
 
 After this step the payload is no longer plaintext.
 
-The database receives only encoded ARC ciphertext objects.
+The database receives only encoded Kyriotēs-CSK2 ciphertext objects.
 
 ---
 
@@ -611,7 +611,7 @@ The database receives only encoded ARC ciphertext objects.
 Database insertion now stores:
 
 * object_id
-* encoded ARC sealed object
+* encoded Kyriotēs-CSK2 sealed object
 * timestamp
 
 The original plaintext sensor values are never inserted as readable database columns.
@@ -626,7 +626,7 @@ fn insert_encrypted_record(
         "
         INSERT INTO sensor_records (
             object_id,
-            arc_ciphertext,
+            kyriotes_csk2_ciphertext,
             created_at
         )
         VALUES ($1, $2, NOW())
@@ -644,7 +644,7 @@ The database therefore functions purely as encrypted object storage.
 
 # Final Result
 
-The completed ARC-enabled ingestion pipeline performs the following sequence:
+The completed Kyriotēs-CSK2-enabled ingestion pipeline performs the following sequence:
 
 1. Validate application data
 2. Serialize plaintext into payload bytes
@@ -653,13 +653,13 @@ The completed ARC-enabled ingestion pipeline performs the following sequence:
 5. Commit transparency state
 6. Generate revocation witnesses
 7. Bind object identity
-8. Seal payload into ARC object
-9. Encode ARC ciphertext
+8. Seal payload into Kyriotēs-CSK2 object
+9. Encode Kyriotēs-CSK2 ciphertext
 10. Insert encrypted object into PostgreSQL
 
 The database never receives the original plaintext sensor record.
 
-Instead, it receives a cryptographically sealed authority-bound ARC object whose opening requires:
+Instead, it receives a cryptographically sealed authority-bound Kyriotēs-CSK2 object whose opening requires:
 
 * valid recipient key material
 * valid authority context
@@ -670,7 +670,7 @@ Instead, it receives a cryptographically sealed authority-bound ARC object whose
 * valid object identity alignment
 * valid policy hash alignment
 
-ARC therefore transforms database storage from:
+Kyriotēs-CSK2 therefore transforms database storage from:
 
 > plaintext application storage
 
@@ -680,9 +680,9 @@ into:
 
 ---
 
-# Before ARC
+# Before Kyriotēs-CSK2
 
-Before ARC is introduced, the ingestion pipeline operates as a traditional plaintext database transmitter.
+Before Kyriotēs-CSK2 is introduced, the ingestion pipeline operates as a traditional plaintext database transmitter.
 
 The application:
 
@@ -731,9 +731,9 @@ Once the database itself is compromised, the plaintext records become immediatel
 
 ---
 
-# After ARC
+# After Kyriotēs-CSK2
 
-After ARC is integrated, the transmission pipeline becomes an authority-bound encrypted storage system.
+After Kyriotēs-CSK2 is integrated, the transmission pipeline becomes an authority-bound encrypted storage system.
 
 The application still validates sensor data, but the payload path fundamentally changes.
 
@@ -745,12 +745,12 @@ Instead of storing readable application fields, the pipeline:
 * binds transparency state
 * binds revocation state
 * binds temporal policy context
-* seals the payload into an ARC object
+* seals the payload into a Kyriotēs-CSK2 object
 * inserts only encoded ciphertext into PostgreSQL
 
 The database now stores:
 
-* ARC ciphertext
+* Kyriotēs-CSK2 ciphertext
 * authority-bound metadata
 * revocation-bound context
 * capability-bound wrappers
@@ -777,13 +777,13 @@ Validated Plaintext Record
     ↓
 Payload Serialization
     ↓
-ARC Authority Context Construction
+Kyriotēs-CSK2 Authority Context Construction
     ↓
 Capability Proof Assembly
     ↓
-ARC seal()
+Kyriotēs-CSK2 seal()
     ↓
-Encoded ARC Object
+Encoded Kyriotēs-CSK2 Object
     ↓
 PostgreSQL Insert
     ↓
@@ -803,7 +803,7 @@ The protected object now depends on:
 * policy hash alignment
 * object identity alignment
 
-This is the conceptual shift ARC introduces.
+This is the conceptual shift Kyriotēs-CSK2 introduces.
 
 The payload is no longer protected merely because:
 

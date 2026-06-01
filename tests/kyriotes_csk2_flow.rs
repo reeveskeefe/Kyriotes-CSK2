@@ -1,0 +1,147 @@
+mod helpers;
+
+use helpers::scenario::Scenario;
+use kyriotes_csk2::{KyriotesCsk2Error, TemporalPolicy, add_epoch_wrapper, open, seal};
+
+#[test]
+fn seal_open_historical_success() {
+    let s = Scenario::baseline("only-valid-current-capability", 42).with_message(b"secret bytes");
+
+    let object = seal(
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
+        s.temporal_policy.clone(),
+    )
+    .expect("seal should succeed");
+
+    let opened = open(&s.keypair.secret, &object, &s.cap, &s.proof, &s.open_state)
+        .expect("open should succeed");
+    assert_eq!(opened, b"secret bytes");
+}
+
+#[test]
+fn current_policy_requires_rewrap_for_new_epoch() {
+    let s = Scenario::baseline("current-only", 42)
+        .with_temporal_policy(TemporalPolicy::Current)
+        .with_message(b"draft-v1");
+
+    let s_open50 = Scenario::baseline("current-only", 42).with_open_epoch(50);
+    // Use the same underlying authority by building s50 from s.
+    let open_state50 = s.make_state_at_epoch(50);
+    let (open_state50, open_tp50) = {
+        use kyriotes_csk2::InMemoryTransparencyLog;
+        use kyriotes_csk2::TransparencyLog;
+        let mut log = InMemoryTransparencyLog::new();
+        let commit = log.commit_state(&open_state50).expect("commit");
+        (commit.state, commit.proof)
+    };
+
+    let mut object = seal(
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
+        s.temporal_policy.clone(),
+    )
+    .expect("seal should succeed");
+
+    let err = open(&s.keypair.secret, &object, &s.cap, &s.proof, &open_state50)
+        .expect_err("wrapper for epoch 50 missing");
+    assert!(matches!(err, KyriotesCsk2Error::MissingWrapper));
+
+    let proof_from = s.proof.clone();
+    add_epoch_wrapper(
+        &s.keypair.secret,
+        &s.keypair.public,
+        &mut object,
+        &s.cap,
+        &proof_from,
+        &s.seal_state,
+        &open_state50,
+        &open_tp50,
+    )
+    .expect("rewrap should succeed");
+
+    let proof_50 = s.build_proof_for_state(&open_state50);
+    let opened = open(&s.keypair.secret, &object, &s.cap, &proof_50, &open_state50)
+        .expect("open after rewrap succeeds");
+    assert_eq!(opened, b"draft-v1");
+    let _ = s_open50; // unused but keep to avoid confusion
+}
+
+#[test]
+fn open_with_wrong_recipient_key_fails() {
+    use kyriotes_csk2::RecipientKeyPair;
+
+    let s = Scenario::baseline("wrong-key", 42).with_message(b"secret");
+
+    let object = seal(
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
+        s.temporal_policy.clone(),
+    )
+    .expect("seal should succeed");
+
+    // Different keypair — X25519 DH produces a different shared secret,
+    // so AEAD authentication on the wrapped DEK will fail.
+    let wrong_keypair = RecipientKeyPair::generate(&mut rand::rngs::OsRng);
+    let err = open(
+        &wrong_keypair.secret,
+        &object,
+        &s.cap,
+        &s.proof,
+        &s.open_state,
+    )
+    .expect_err("wrong recipient key must cause decryption failure");
+
+    assert!(matches!(err, KyriotesCsk2Error::Crypto(_)));
+}
+
+/// V8 regression: authority_aad must commit to kem_ct_classical so that
+/// substituting the classical ephemeral ciphertext is detected by the AEAD tag.
+///
+/// Before the fix (AAD-v1), kem_ct_classical was omitted from the AAD.
+/// A party who knew the DEK could silently swap it for a chosen key and
+/// re-encrypt the wrapped DEK with the same AEAD tag, eliminating forward
+/// secrecy.  After the fix (AAD-v2) any mutation of kem_ct_classical causes
+/// AEAD authentication to fail.
+#[test]
+fn tampered_kem_ct_classical_is_rejected() {
+    let s = Scenario::baseline("aad-classical-binding", 42).with_message(b"sensitive");
+
+    let mut object = seal(
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
+        s.temporal_policy.clone(),
+    )
+    .expect("seal should succeed");
+
+    // Flip one byte in kem_ct_classical of the first wrapper.
+    object.wrappers[0].kem_ct_classical[0] ^= 0xff;
+
+    let err = open(&s.keypair.secret, &object, &s.cap, &s.proof, &s.open_state)
+        .expect_err("tampered kem_ct_classical must be rejected");
+
+    assert!(
+        matches!(err, KyriotesCsk2Error::Crypto(_)),
+        "expected AEAD authentication failure, got: {err:?}",
+    );
+}

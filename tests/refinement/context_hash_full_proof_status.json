@@ -67,6 +67,6 @@
     "context_transcript_model_binds_epoch",
     "context_transcript_model_binds_capability_stamp"
   ],
-  "schema": "arc.context_hash.full_mechanical_proof_status.v2",
-  "target": "src/arc/model.rs::context_hash"
+  "schema": "kyriotes_csk2.context_hash.full_mechanical_proof_status.v2",
+  "target": "src/kyriotes_csk2/model.rs::context_hash"
 }

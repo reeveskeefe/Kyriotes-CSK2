@@ -1,4 +1,4 @@
-use arc_core::{
+use kyriotes_csk2::{
     AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, Capability,
     CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair, Rights, capability_leaf_hash,
     capability_stamp,
@@ -9,7 +9,7 @@ use super::request_builders::DEFAULT_OBJECT_ID;
 pub struct TestAuthority {
     root_kp: AuthorityRootKeyPair,
     pub epoch_kp: EpochSigningKeyPair,
-    pub epoch_cert: arc_core::EpochKeyCert,
+    pub epoch_cert: kyriotes_csk2::EpochKeyCert,
     pub tree: AuthorityCapabilityTree,
 }
 

@@ -53,8 +53,8 @@ def build_vectors() -> list[AddEpochWrapperVector]:
         vector(
             "missing-object-rejection",
             "reject",
-            "arc_object",
-            "add_epoch_wrapper must require a mutable ARC object.",
+            "kyriotes_csk2_object",
+            "add_epoch_wrapper must require a mutable Kyriotēs-CSK2 object.",
         ),
         vector(
             "missing-capability-rejection",
@@ -110,8 +110,8 @@ def build_vectors() -> list[AddEpochWrapperVector]:
 def main() -> int:
     vectors = build_vectors()
     payload = {
-        "schema": "arc.add_epoch_wrapper.refinement_vectors.v1",
-        "target": "src/arc/engine.rs::add_epoch_wrapper",
+        "schema": "kyriotes_csk2.add_epoch_wrapper.refinement_vectors.v1",
+        "target": "src/kyriotes_csk2/engine.rs::add_epoch_wrapper",
         "claim_boundary": "Epoch-wrapper refinement track; not full Coq/Rust semantic equivalence.",
         "vector_count": len(vectors),
         "vectors": [asdict(item) for item in vectors],

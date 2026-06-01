@@ -8,13 +8,13 @@
     Production API impact: none
     Tracked Rust mechanical inventory impact: none
 
-This lane discharges the AEAD and AAD-binding portion of the seal/open crypto semantic contract story. ARC's tracked Rust mechanical refinement inventory remains unchanged at 11 / 11 verifier-backed proof lanes.
+This lane discharges the AEAD and AAD-binding portion of the seal/open crypto semantic contract story. Kyriotēs-CSK2's tracked Rust mechanical refinement inventory remains unchanged at 11 / 11 verifier-backed proof lanes.
 
 ## Concrete Evidence
 
 The concrete evidence lives in the private test module inside:
 
-    src/arc/engine.rs
+    src/kyriotes_csk2/engine.rs
 
 The tests exercise the actual production helper functions:
 
@@ -40,7 +40,7 @@ The tests check:
 
 The discharge status is recorded in:
 
-    proofs/coq/rust_refinement/ArcSealOpenCryptoSemanticContracts.v
+    proofs/coq/rust_refinement/KyriotesCsk2SealOpenCryptoSemanticContracts.v
 
 The key evidence record is:
 
@@ -52,7 +52,7 @@ The key theorem is:
 
 ## Boundary
 
-This does not prove ChaCha20Poly1305 itself. It discharges ARC's concrete use of the AEAD API and AAD construction for the bounded contract cases above. The primitive's cryptographic security remains inherited from the primitive and its implementation, not proven in this repository.
+This does not prove ChaCha20Poly1305 itself. It discharges Kyriotēs-CSK2's concrete use of the AEAD API and AAD construction for the bounded contract cases above. The primitive's cryptographic security remains inherited from the primitive and its implementation, not proven in this repository.
 
 ## Remaining Seal/Open Contract Work
 

@@ -1,7 +1,7 @@
 {
   "claim_boundary": "Capability-tree proof refinement track; not full Coq/Rust semantic equivalence.",
-  "schema": "arc.capability_tree.refinement_vectors.v1",
-  "target": "src/arc/capability_tree.rs",
+  "schema": "kyriotes_csk2.capability_tree.refinement_vectors.v1",
+  "target": "src/kyriotes_csk2/capability_tree.rs",
   "vector_count": 11,
   "vectors": [
     {

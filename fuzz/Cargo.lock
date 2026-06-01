@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "ARCencryption"
+name = "kyriotes-csk2"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -45,10 +45,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "arc-fuzz"
+name = "kyriotes-csk2-fuzz"
 version = "0.0.0"
 dependencies = [
- "ARCencryption",
+ "kyriotes-csk2",
  "arbitrary",
  "libfuzzer-sys",
 ]

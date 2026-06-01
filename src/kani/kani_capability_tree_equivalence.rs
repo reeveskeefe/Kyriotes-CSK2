@@ -1,7 +1,7 @@
 #![cfg(kani)]
 #![allow(dead_code)]
 
-use crate::arc::capability_tree::{NonRevocationWitness, verify_non_revocation};
+use crate::kyriotes_csk2::capability_tree::{NonRevocationWitness, verify_non_revocation};
 
 fn bytes32(seed: u8) -> [u8; 32] {
     let mut out = [0u8; 32];

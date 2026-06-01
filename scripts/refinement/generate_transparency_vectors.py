@@ -116,8 +116,8 @@ def build_vectors() -> list[TransparencyVector]:
 def main() -> int:
     vectors = build_vectors()
     payload = {
-        "schema": "arc.transparency.refinement_vectors.v1",
-        "target": "src/arc/transparency.rs",
+        "schema": "kyriotes_csk2.transparency.refinement_vectors.v1",
+        "target": "src/kyriotes_csk2/transparency.rs",
         "claim_boundary": "Transparency append/lookup/conflict refinement track; not full Coq/Rust semantic equivalence.",
         "vector_count": len(vectors),
         "vectors": [asdict(item) for item in vectors],

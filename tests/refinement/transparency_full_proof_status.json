@@ -95,6 +95,6 @@
     "transparency_bind_root_sets_supplied_transparency_root",
     "transparency_bind_root_is_deterministic_for_equal_inputs"
   ],
-  "schema": "arc.transparency.full_mechanical_proof_status.v1",
-  "target": "src/arc/transparency.rs::bind_transparency_root_to_state"
+  "schema": "kyriotes_csk2.transparency.full_mechanical_proof_status.v1",
+  "target": "src/kyriotes_csk2/transparency.rs::bind_transparency_root_to_state"
 }

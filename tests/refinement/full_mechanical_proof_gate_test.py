@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Development test for the ARC full mechanical proof gate.
+Development test for the Kyriotēs-CSK2 full mechanical proof gate.
 
 This test confirms that the gate correctly recognizes the current proof state as
 open. It should fail only if the inventory format is broken or if the project

@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::arc::model::AuthorityState;
-use crate::arc::model::context_hash;
+use crate::kyriotes_csk2::model::AuthorityState;
+use crate::kyriotes_csk2::model::context_hash;
 use crate::{Rights, TemporalPolicy};
 
 fn bytes32(seed: u8) -> [u8; 32] {

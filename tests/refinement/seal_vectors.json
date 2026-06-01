@@ -1,7 +1,7 @@
 {
   "claim_boundary": "Seal lifecycle refinement track; not full Coq/Rust semantic equivalence.",
-  "schema": "arc.seal.refinement_vectors.v1",
-  "target": "src/arc/engine.rs::seal",
+  "schema": "kyriotes_csk2.seal.refinement_vectors.v1",
+  "target": "src/kyriotes_csk2/engine.rs::seal",
   "vector_count": 10,
   "vectors": [
     {

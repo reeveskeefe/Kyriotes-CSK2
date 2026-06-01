@@ -13,7 +13,7 @@ def main() -> int:
     payload = json.loads(VECTOR_PATH.read_text(encoding="utf-8"))
 
     assert payload["schema"] == "arc.add_epoch_wrapper.refinement_vectors.v1"
-    assert payload["target"] == "src/arc/engine.rs::add_epoch_wrapper"
+    assert payload["target"] == "src/kyriotes_csk2/engine.rs::add_epoch_wrapper"
     assert payload["vector_count"] >= 11
 
     vectors = payload["vectors"]

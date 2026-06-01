@@ -13,7 +13,7 @@ def main() -> int:
     payload = json.loads(STATUS_PATH.read_text(encoding="utf-8"))
 
     assert payload["schema"] == "arc.capability_tree.full_mechanical_proof_status.v1"
-    assert payload["target"] == "src/arc/capability_tree.rs::verify_non_revocation"
+    assert payload["target"] == "src/kyriotes_csk2/capability_tree.rs::verify_non_revocation"
     assert payload["mechanically_checked"] is True
     assert payload["proof_tool"] == "kani"
     assert payload["required_harness_count"] == 5

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ARC full Rust-to-Coq mechanical proof gate.
+Kyriotēs-CSK2 full Rust-to-Coq mechanical proof gate.
 
 This script intentionally fails unless every target in the mechanical refinement
 inventory is both mechanically checked and mechanically proven.
@@ -62,7 +62,7 @@ def evaluate_inventory(payload: dict) -> tuple[bool, list[str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Check whether ARC may claim full Rust-to-Coq mechanical proof."
+        description="Check whether Kyriotēs-CSK2 may claim full Rust-to-Coq mechanical proof."
     )
     parser.add_argument(
         "--allow-open",
@@ -74,17 +74,17 @@ def main() -> int:
     payload = load_inventory()
     passed, failures = evaluate_inventory(payload)
 
-    print("ARC full Rust-to-Coq mechanical proof gate")
+    print("Kyriotēs-CSK2 full Rust-to-Coq mechanical proof gate")
     print(f"Inventory: {INVENTORY_PATH}")
     print(f"Targets: {payload.get('target_count', 0)}")
     print(f"Mechanically checked: {payload.get('mechanically_checked_count', 0)}")
     print(f"Mechanically proven: {payload.get('mechanically_proven_count', 0)}")
 
     if passed:
-        print("PASS: ARC may claim full Rust-to-Coq mechanical proof for the inventory.")
+        print("PASS: Kyriotēs-CSK2 may claim full Rust-to-Coq mechanical proof for the inventory.")
         return 0
 
-    print("OPEN: ARC may not yet claim full Rust-to-Coq mechanical proof.")
+    print("OPEN: Kyriotēs-CSK2 may not yet claim full Rust-to-Coq mechanical proof.")
     print("Open obligations:")
     for failure in failures:
         print(f"- {failure}")

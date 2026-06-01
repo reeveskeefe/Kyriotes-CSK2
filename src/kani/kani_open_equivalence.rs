@@ -1,16 +1,16 @@
 #![cfg(kani)]
 #![allow(dead_code)]
 
-use crate::arc::capability_tree::{
+use crate::kyriotes_csk2::capability_tree::{
     CapabilityInclusionProof, CapabilityIssuanceProof, NonRevocationWitness,
 };
-use crate::arc::engine::open_with_verifier;
-use crate::arc::model::{
-    ArcObject, AuthorityState, AuthorityWrapper, Capability, CapabilityProof, RecipientSecretKey,
-    TransparencyProof,
+use crate::kyriotes_csk2::engine::open_with_verifier;
+use crate::kyriotes_csk2::model::{
+    AuthorityState, AuthorityWrapper, Capability, CapabilityProof, KyriotesCsk2Object,
+    RecipientSecretKey, TransparencyProof,
 };
-use crate::arc::verify::AuthorityVerifier;
-use crate::{ArcError, Rights, TemporalPolicy};
+use crate::kyriotes_csk2::verify::AuthorityVerifier;
+use crate::{KyriotesCsk2Error, Rights, TemporalPolicy};
 
 struct RejectingAuthorityVerifier;
 
@@ -19,8 +19,10 @@ impl AuthorityVerifier for RejectingAuthorityVerifier {
         &self,
         _state: &AuthorityState,
         _transparency_proof: &TransparencyProof,
-    ) -> Result<(), ArcError> {
-        Err(ArcError::Parse("kani rejecting authority verifier"))
+    ) -> Result<(), KyriotesCsk2Error> {
+        Err(KyriotesCsk2Error::Parse(
+            "kani rejecting authority verifier",
+        ))
     }
 }
 
@@ -146,7 +148,7 @@ fn minimal_capability_proof() -> CapabilityProof {
         },
         issuance: CapabilityIssuanceProof {
             sig: bytes64(71),
-            epoch_cert: crate::arc::authority::EpochKeyCert {
+            epoch_cert: crate::kyriotes_csk2::authority::EpochKeyCert {
                 epoch_pk: bytes32(81),
                 epoch: 7,
                 validity_window: 1,
@@ -156,10 +158,10 @@ fn minimal_capability_proof() -> CapabilityProof {
     }
 }
 
-fn minimal_arc_object() -> ArcObject {
-    ArcObject {
+fn minimal_arc_object() -> KyriotesCsk2Object {
+    KyriotesCsk2Object {
         version: 1,
-        suite: "ARC-KANI-SUITE".to_string(),
+        suite: "KYRIOTES-CSK2-KANI-SUITE".to_string(),
         object_id: "kani-object".to_string(),
         required_rights: Rights::READ,
         policy_hash: bytes32(31),

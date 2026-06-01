@@ -13,7 +13,7 @@ def main() -> int:
     payload = json.loads(VECTOR_PATH.read_text(encoding="utf-8"))
 
     assert payload["schema"] == "arc.capability_tree.refinement_vectors.v1"
-    assert payload["target"] == "src/arc/capability_tree.rs"
+    assert payload["target"] == "src/kyriotes_csk2/capability_tree.rs"
     assert payload["vector_count"] >= 11
 
     vectors = payload["vectors"]

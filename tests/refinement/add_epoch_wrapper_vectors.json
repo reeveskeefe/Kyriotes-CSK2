@@ -1,7 +1,7 @@
 {
   "claim_boundary": "Epoch-wrapper refinement track; not full Coq/Rust semantic equivalence.",
-  "schema": "arc.add_epoch_wrapper.refinement_vectors.v1",
-  "target": "src/arc/engine.rs::add_epoch_wrapper",
+  "schema": "kyriotes_csk2.add_epoch_wrapper.refinement_vectors.v1",
+  "target": "src/kyriotes_csk2/engine.rs::add_epoch_wrapper",
   "vector_count": 11,
   "vectors": [
     {
@@ -24,9 +24,9 @@
       "category": "missing-object-rejection",
       "deterministic": true,
       "expected_result": "reject",
-      "gate_name": "arc_object",
+      "gate_name": "kyriotes_csk2_object",
       "id": "add_epoch_wrapper.db6cc7945d5c83f7",
-      "notes": "add_epoch_wrapper must require a mutable ARC object."
+      "notes": "add_epoch_wrapper must require a mutable Kyriotēs-CSK2 object."
     },
     {
       "category": "missing-capability-rejection",

@@ -1,10 +1,10 @@
 #![cfg(kani)]
 #![allow(dead_code)]
 
-use crate::ArcError;
-use crate::arc::engine::begin_epoch_rotation_commit;
-use crate::arc::model::{AuthorityState, TransparencyProof};
-use crate::arc::transparency::{TransparencyLog, TransparencyStateCommit};
+use crate::KyriotesCsk2Error;
+use crate::kyriotes_csk2::engine::begin_epoch_rotation_commit;
+use crate::kyriotes_csk2::model::{AuthorityState, TransparencyProof};
+use crate::kyriotes_csk2::transparency::{TransparencyLog, TransparencyStateCommit};
 
 struct RejectingTransparencyLog {
     store_chain_hash_called: bool,
@@ -22,12 +22,17 @@ impl TransparencyLog for RejectingTransparencyLog {
     fn commit_state(
         &mut self,
         _state: &AuthorityState,
-    ) -> Result<TransparencyStateCommit, ArcError> {
-        Err(ArcError::Parse("kani rejecting transparency log"))
+    ) -> Result<TransparencyStateCommit, KyriotesCsk2Error> {
+        Err(KyriotesCsk2Error::Parse("kani rejecting transparency log"))
     }
 
-    fn proof_for_state(&self, _state: &AuthorityState) -> Result<TransparencyProof, ArcError> {
-        Err(ArcError::Parse("kani rejecting transparency proof"))
+    fn proof_for_state(
+        &self,
+        _state: &AuthorityState,
+    ) -> Result<TransparencyProof, KyriotesCsk2Error> {
+        Err(KyriotesCsk2Error::Parse(
+            "kani rejecting transparency proof",
+        ))
     }
 
     fn current_root(&self) -> [u8; 32] {

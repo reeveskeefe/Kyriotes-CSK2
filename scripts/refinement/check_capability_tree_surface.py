@@ -5,11 +5,11 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-CAPABILITY_TREE_PATH = PROJECT_ROOT / "src" / "arc" / "capability_tree.rs"
+CAPABILITY_TREE_PATH = PROJECT_ROOT / "src" / "kyriotes-csk2" / "capability_tree.rs"
 
 
 def main() -> int:
-    assert CAPABILITY_TREE_PATH.exists(), "src/arc/capability_tree.rs must exist"
+    assert CAPABILITY_TREE_PATH.exists(), "src/kyriotes_csk2/capability_tree.rs must exist"
 
     source = CAPABILITY_TREE_PATH.read_text(encoding="utf-8")
     lowered = source.lower()

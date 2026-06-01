@@ -1,6 +1,6 @@
-# ARC crate publishing
+# Kyriotēs-CSK2 crate publishing
 
-This repository publishes the crate package `ARCencryption` (library name `arc_core`) to crates.io.
+This repository publishes the crate package `kyriotes-csk2` (library name `kyriotes_csk2`) to crates.io.
 
 ## One-time setup
 

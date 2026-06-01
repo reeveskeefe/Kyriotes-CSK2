@@ -49,8 +49,8 @@ def build_vectors() -> list[VerifyVector]:
         vector(
             "missing-object-rejection",
             "reject",
-            "arc_object",
-            "verify must reject when no valid ARC object is available.",
+            "kyriotes_csk2_object",
+            "verify must reject when no valid Kyriotēs-CSK2 object is available.",
         ),
         vector(
             "missing-capability-rejection",
@@ -113,8 +113,8 @@ def main() -> int:
     vectors = build_vectors()
 
     payload = {
-        "schema": "arc.verify.refinement_vectors.v1",
-        "target": "src/arc/engine.rs::verify",
+        "schema": "kyriotes_csk2.verify.refinement_vectors.v1",
+        "target": "src/kyriotes_csk2/engine.rs::verify",
         "claim_boundary": "Verification-gate refinement track; not full Coq/Rust semantic equivalence.",
         "vector_count": len(vectors),
         "vectors": [asdict(item) for item in vectors],

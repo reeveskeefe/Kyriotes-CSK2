@@ -1,8 +1,8 @@
 #![no_main]
 
-use arc_core::decode_arc_object;
-use arc_core::decode_capability;
-use arc_core::decode_threshold_signature_set;
+use kyriotes_csk2::decode_kyriotes_csk2_object;
+use kyriotes_csk2::decode_capability;
+use kyriotes_csk2::decode_threshold_signature_set;
 use libfuzzer_sys::fuzz_target;
 
 fn fuzz_seal_and_commit_from_bytes(data: &[u8]) {
@@ -11,31 +11,31 @@ fn fuzz_seal_and_commit_from_bytes(data: &[u8]) {
     // take generic verifier/log trait objects that cannot be constructed from
     // raw bytes. Exercise the wire decode surface which covers the sealed
     // payload format that these functions produce and consume.
-    let _ = decode_arc_object(data);
+    let _ = decode_kyriotes_csk2_object(data);
     let _ = decode_capability(data);
     let _ = decode_threshold_signature_set(data);
 
-    let mutated = arc_fuzz::mutate_one_byte(data.to_vec(), data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(&mutated);
+    let mutated = kyriotes_csk2_fuzz::mutate_one_byte(data.to_vec(), data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(&mutated);
     let _ = decode_capability(&mutated);
     let _ = decode_threshold_signature_set(&mutated);
 
-    let truncated = arc_fuzz::truncate_by_selector(data, data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(truncated);
+    let truncated = kyriotes_csk2_fuzz::truncate_by_selector(data, data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(truncated);
     let _ = decode_capability(truncated);
     let _ = decode_threshold_signature_set(truncated);
 
-    let repeated = arc_fuzz::repeat_small(data, data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(&repeated);
+    let repeated = kyriotes_csk2_fuzz::repeat_small(data, data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(&repeated);
     let _ = decode_capability(&repeated);
     let _ = decode_threshold_signature_set(&repeated);
 
-    let bomb = arc_fuzz::append_length_bomb(data.to_vec(), data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(&bomb);
+    let bomb = kyriotes_csk2_fuzz::append_length_bomb(data.to_vec(), data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(&bomb);
     let _ = decode_capability(&bomb);
     let _ = decode_threshold_signature_set(&bomb);
 }
 
 fuzz_target!(|data: &[u8]| {
-    arc_fuzz::drive_parser_like_targets(data, fuzz_seal_and_commit_from_bytes);
+    kyriotes_csk2_fuzz::drive_parser_like_targets(data, fuzz_seal_and_commit_from_bytes);
 });

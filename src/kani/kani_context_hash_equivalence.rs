@@ -1,7 +1,7 @@
 #![cfg(kani)]
 #![allow(dead_code)]
 
-use crate::arc::model::AuthorityState;
+use crate::kyriotes_csk2::model::AuthorityState;
 use crate::{Rights, TemporalPolicy};
 
 fn bytes32(seed: u8) -> [u8; 32] {
@@ -71,7 +71,7 @@ fn context_transcript_model(
 ) -> u64 {
     let mut acc = 0xcbf29ce484222325u64;
 
-    acc = fold_bytes(acc, b"ARC-CONTEXT-v1");
+    acc = fold_bytes(acc, b"KYRIOTES-CSK2-CONTEXT-v1");
     acc = fold_bytes(acc, object_id.as_bytes());
     acc = acc.wrapping_mul(131).wrapping_add(required_rights.0 as u64);
     acc = fold_bytes32(acc, policy_hash);

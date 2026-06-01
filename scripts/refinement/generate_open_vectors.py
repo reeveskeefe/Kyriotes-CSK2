@@ -47,8 +47,8 @@ def build_vectors() -> list[OpenVector]:
         vector(
             "missing-object-rejection",
             "reject",
-            "arc_object",
-            "open must require an ARC object.",
+            "kyriotes_csk2_object",
+            "open must require an Kyriotēs-CSK2 object.",
         ),
         vector(
             "missing-capability-rejection",
@@ -104,8 +104,8 @@ def build_vectors() -> list[OpenVector]:
 def main() -> int:
     vectors = build_vectors()
     payload = {
-        "schema": "arc.open.refinement_vectors.v1",
-        "target": "src/arc/engine.rs::open",
+        "schema": "kyriotes_csk2.open.refinement_vectors.v1",
+        "target": "src/kyriotes_csk2/engine.rs::open",
         "claim_boundary": "Open authorization refinement track; not full Coq/Rust semantic equivalence.",
         "vector_count": len(vectors),
         "vectors": [asdict(item) for item in vectors],

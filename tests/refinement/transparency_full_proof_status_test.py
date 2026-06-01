@@ -13,7 +13,7 @@ def main() -> int:
     payload = json.loads(STATUS_PATH.read_text(encoding="utf-8"))
 
     assert payload["schema"] == "arc.transparency.full_mechanical_proof_status.v1"
-    assert payload["target"] == "src/arc/transparency.rs::bind_transparency_root_to_state"
+    assert payload["target"] == "src/kyriotes_csk2/transparency.rs::bind_transparency_root_to_state"
     assert payload["mechanically_checked"] is True
     assert payload["proof_tool"] == "kani"
     assert payload["required_harness_count"] == 6

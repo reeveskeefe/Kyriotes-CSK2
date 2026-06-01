@@ -1,8 +1,8 @@
 #![cfg(kani)]
 #![allow(dead_code)]
 
-use crate::arc::engine::rotated_authority_state;
-use crate::arc::model::AuthorityState;
+use crate::kyriotes_csk2::engine::rotated_authority_state;
+use crate::kyriotes_csk2::model::AuthorityState;
 
 fn bytes32(seed: u8) -> [u8; 32] {
     let mut out = [0u8; 32];

@@ -67,6 +67,6 @@
     "open_with_verifier_rejects_before_capability_validation_can_succeed",
     "open_with_verifier_rejects_invalid_authority_surface_without_panic"
   ],
-  "schema": "arc.open.full_mechanical_proof_status.v1",
-  "target": "src/arc/engine.rs::open_with_verifier"
+  "schema": "kyriotes_csk2.open.full_mechanical_proof_status.v1",
+  "target": "src/kyriotes_csk2/engine.rs::open_with_verifier"
 }

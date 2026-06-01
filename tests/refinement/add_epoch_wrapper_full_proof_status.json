@@ -67,6 +67,6 @@
     "add_epoch_wrapper_with_verifier_rejects_before_capability_validation_can_succeed",
     "add_epoch_wrapper_with_verifier_does_not_change_wrapper_count_on_rejection"
   ],
-  "schema": "arc.add_epoch_wrapper.full_mechanical_proof_status.v1",
-  "target": "src/arc/engine.rs::add_epoch_wrapper_with_verifier"
+  "schema": "kyriotes_csk2.add_epoch_wrapper.full_mechanical_proof_status.v1",
+  "target": "src/kyriotes_csk2/engine.rs::add_epoch_wrapper_with_verifier"
 }

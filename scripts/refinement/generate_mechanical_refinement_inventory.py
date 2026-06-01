@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate ARC Rust mechanical-refinement inventory.
+Generate Kyriotēs-CSK2 Rust mechanical-refinement inventory.
 
 This script creates a deterministic inventory of Rust surfaces that are intended
 to become mechanically refined against the Coq model.
@@ -52,30 +52,30 @@ class MechanicalInventoryEntry:
 
 TARGETS: tuple[MechanicalTarget, ...] = (
     MechanicalTarget(
-        id="codec.decode_arc_object",
+        id="codec.decode_kyriotes_csk2_object",
         rust_file="src/encoding/codec.rs",
-        rust_symbol="decode_arc_object",
-        coq_model="ArcEncodingProofs",
-        obligation="Rust decoder must reject malformed and over-limit ARC objects consistently with Coq encoding safety assumptions.",
+        rust_symbol="decode_kyriotes_csk2_object",
+        coq_model="KyriotesCsk2EncodingProofs",
+        obligation="Rust decoder must reject malformed and over-limit Kyriotēs-CSK2 objects consistently with Coq encoding safety assumptions.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
         mechanically_proven=False,
     ),
     MechanicalTarget(
-        id="codec.encode_arc_object",
+        id="codec.encode_kyriotes_csk2_object",
         rust_file="src/encoding/codec.rs",
-        rust_symbol="encode_arc_object",
-        coq_model="ArcEncodingProofs",
-        obligation="Rust encoder must produce canonical ARC object encodings compatible with the Coq encoding model.",
+        rust_symbol="encode_kyriotes_csk2_object",
+        coq_model="KyriotesCsk2EncodingProofs",
+        obligation="Rust encoder must produce canonical Kyriotēs-CSK2 object encodings compatible with the Coq encoding model.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
         mechanically_proven=False,
     ),
     MechanicalTarget(
         id="model.context_hash",
-        rust_file="src/arc/model.rs",
+        rust_file="src/kyriotes_csk2/model.rs",
         rust_symbol="context_hash",
-        coq_model="ArcTranscriptProofs",
+        coq_model="KyriotesCsk2TranscriptProofs",
         obligation="Rust context_hash must bind object, rights, policy, authority, and temporal context as modeled in Coq.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
@@ -83,9 +83,9 @@ TARGETS: tuple[MechanicalTarget, ...] = (
     ),
     MechanicalTarget(
         id="engine.verify",
-        rust_file="src/arc/engine.rs",
+        rust_file="src/kyriotes_csk2/engine.rs",
         rust_symbol="verify",
-        coq_model="ArcVerify",
+        coq_model="KyriotesCsk2Verify",
         obligation="Rust verify must accept only when capability, revocation, temporal, authority, wrapper, and transparency gates hold.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
@@ -93,9 +93,9 @@ TARGETS: tuple[MechanicalTarget, ...] = (
     ),
     MechanicalTarget(
         id="engine.open",
-        rust_file="src/arc/engine.rs",
+        rust_file="src/kyriotes_csk2/engine.rs",
         rust_symbol="open",
-        coq_model="ArcMasterInvariantProofs",
+        coq_model="KyriotesCsk2MasterInvariantProofs",
         obligation="Rust open must refine the Coq master open invariant and reject missing authorization gates.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
@@ -103,9 +103,9 @@ TARGETS: tuple[MechanicalTarget, ...] = (
     ),
     MechanicalTarget(
         id="engine.seal",
-        rust_file="src/arc/engine.rs",
+        rust_file="src/kyriotes_csk2/engine.rs",
         rust_symbol="seal",
-        coq_model="ArcLifecycleProofs",
+        coq_model="KyriotesCsk2LifecycleProofs",
         obligation="Rust seal must refine the Coq lifecycle seal transition.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
@@ -113,9 +113,9 @@ TARGETS: tuple[MechanicalTarget, ...] = (
     ),
     MechanicalTarget(
         id="engine.add_epoch_wrapper",
-        rust_file="src/arc/engine.rs",
+        rust_file="src/kyriotes_csk2/engine.rs",
         rust_symbol="add_epoch_wrapper",
-        coq_model="ArcStateMachineCompleteness",
+        coq_model="KyriotesCsk2StateMachineCompleteness",
         obligation="Rust add_epoch_wrapper must refine rewrap and epoch-wrapper state-machine rules.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
@@ -123,9 +123,9 @@ TARGETS: tuple[MechanicalTarget, ...] = (
     ),
     MechanicalTarget(
         id="engine.rotate_epoch",
-        rust_file="src/arc/engine.rs",
+        rust_file="src/kyriotes_csk2/engine.rs",
         rust_symbol="rotate_epoch",
-        coq_model="ArcStateMachineCompleteness",
+        coq_model="KyriotesCsk2StateMachineCompleteness",
         obligation="Rust rotate_epoch must strictly advance epoch state.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
@@ -133,9 +133,9 @@ TARGETS: tuple[MechanicalTarget, ...] = (
     ),
     MechanicalTarget(
         id="engine.rotate_epoch_full",
-        rust_file="src/arc/engine.rs",
+        rust_file="src/kyriotes_csk2/engine.rs",
         rust_symbol="rotate_epoch_full",
-        coq_model="ArcStateMachineCompleteness",
+        coq_model="KyriotesCsk2StateMachineCompleteness",
         obligation="Rust rotate_epoch_full must preserve authority transition and transparency linkage obligations.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
@@ -143,9 +143,9 @@ TARGETS: tuple[MechanicalTarget, ...] = (
     ),
     MechanicalTarget(
         id="capability_tree.proofs",
-        rust_file="src/arc/capability_tree.rs",
+        rust_file="src/kyriotes_csk2/capability_tree.rs",
         rust_symbol="proof",
-        coq_model="ArcMerkleTransparencyCompleteness",
+        coq_model="KyriotesCsk2MerkleTransparencyCompleteness",
         obligation="Rust capability tree proof logic must refine Coq Merkle membership and revocation models.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
@@ -153,9 +153,9 @@ TARGETS: tuple[MechanicalTarget, ...] = (
     ),
     MechanicalTarget(
         id="transparency.append",
-        rust_file="src/arc/transparency.rs",
+        rust_file="src/kyriotes_csk2/transparency.rs",
         rust_symbol="append",
-        coq_model="ArcTransparencyAppendOnly",
+        coq_model="KyriotesCsk2TransparencyAppendOnly",
         obligation="Rust transparency append or equivalent log extension logic must refine Coq append-only behavior.",
         harness_level="MechanicallyHarnessed",
         mechanically_checked=False,
@@ -222,7 +222,7 @@ def main() -> int:
     entries = build_inventory(TARGETS)
 
     payload = {
-        "schema": "arc.rust_mechanical_refinement_inventory.v1",
+        "schema": "kyriotes_csk2.rust_mechanical_refinement_inventory.v1",
         "generated_by": "scripts/refinement/generate_mechanical_refinement_inventory.py",
         "boundary": "Mechanical refinement harness inventory; mechanically_checked and mechanically_proven remain false until a verifier or proof-producing pipeline is attached.",
         "target_count": len(entries),

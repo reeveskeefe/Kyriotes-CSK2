@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use arc_core::AuthorityState;
+use kyriotes_csk2::AuthorityState;
 
 pub fn sample_state(epoch: u64) -> AuthorityState {
     AuthorityState {

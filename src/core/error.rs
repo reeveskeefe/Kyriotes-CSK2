@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ArcError {
+pub enum KyriotesCsk2Error {
     #[error("invalid capability: {0}")]
     InvalidCapability(&'static str),
     #[error("temporal policy rejected open request")]

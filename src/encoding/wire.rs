@@ -1,13 +1,15 @@
-use crate::ArcError;
-use crate::arc::model::{ArcObject, AuthorityWrapper, Capability, TransparencyProof};
-use crate::arc::tsig::{ThresholdPartialSig, ThresholdSignatureSet};
+use crate::KyriotesCsk2Error;
 use crate::encoding::codec::{
     put_bytes, put_rights, put_str, put_temporal_policy, put_u16, put_u32, put_u64,
     take_bytes_limited, take_fixed_limited, take_rights, take_str_limited, take_temporal_policy,
     take_u16, take_u32, take_u64,
 };
+use crate::kyriotes_csk2::model::{
+    AuthorityWrapper, Capability, KyriotesCsk2Object, TransparencyProof,
+};
+use crate::kyriotes_csk2::tsig::{ThresholdPartialSig, ThresholdSignatureSet};
 
-const MAGIC: &[u8; 4] = b"ARCO";
+const MAGIC: &[u8; 4] = b"KCS2";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DecodeLimits {
@@ -55,10 +57,10 @@ impl DecodeProfile {
 }
 
 impl core::str::FromStr for DecodeProfile {
-    type Err = ArcError;
+    type Err = KyriotesCsk2Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        DecodeProfile::from_cli_value(s).ok_or(ArcError::Parse("unknown decode profile"))
+        DecodeProfile::from_cli_value(s).ok_or(KyriotesCsk2Error::Parse("unknown decode profile"))
     }
 }
 
@@ -117,7 +119,7 @@ impl Default for DecodeLimits {
     }
 }
 
-pub fn encode_arc_object(object: &ArcObject) -> Vec<u8> {
+pub fn encode_kyriotes_csk2_object(object: &KyriotesCsk2Object) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(MAGIC);
     put_u16(&mut out, object.version);
@@ -134,7 +136,8 @@ pub fn encode_arc_object(object: &ArcObject) -> Vec<u8> {
 
     put_u32(
         &mut out,
-        u32::try_from(object.wrappers.len()).expect("ARC object wrapper count exceeds u32::MAX"),
+        u32::try_from(object.wrappers.len())
+            .expect("Kyriotēs-CSK2 object wrapper count exceeds u32::MAX"),
     );
     for w in &object.wrappers {
         put_u64(&mut out, w.epoch);
@@ -159,21 +162,23 @@ pub fn encode_arc_object(object: &ArcObject) -> Vec<u8> {
     out
 }
 
-pub fn decode_arc_object(input: &[u8]) -> Result<ArcObject, ArcError> {
-    decode_arc_object_with_limits(input, DecodeLimits::default())
+pub fn decode_kyriotes_csk2_object(input: &[u8]) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
+    decode_kyriotes_csk2_object_with_limits(input, DecodeLimits::default())
 }
 
-pub fn decode_arc_object_with_limits(
+pub fn decode_kyriotes_csk2_object_with_limits(
     input: &[u8],
     limits: DecodeLimits,
-) -> Result<ArcObject, ArcError> {
+) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
     let mut cursor = 0usize;
 
     if input.len() < MAGIC.len() {
-        return Err(ArcError::Parse("input too short for magic"));
+        return Err(KyriotesCsk2Error::Parse("input too short for magic"));
     }
     if &input[..4] != MAGIC {
-        return Err(ArcError::Parse("invalid ARC object magic"));
+        return Err(KyriotesCsk2Error::Parse(
+            "invalid Kyriotēs-CSK2 object magic",
+        ));
     }
     cursor += 4;
 
@@ -192,7 +197,9 @@ pub fn decode_arc_object_with_limits(
 
     let wrappers_len = take_u32(input, &mut cursor)? as usize;
     if wrappers_len > limits.max_wrappers {
-        return Err(ArcError::Parse("wrapper count exceeds maximum allowed"));
+        return Err(KyriotesCsk2Error::Parse(
+            "wrapper count exceeds maximum allowed",
+        ));
     }
     let mut wrappers = Vec::with_capacity(wrappers_len);
     for _ in 0..wrappers_len {
@@ -209,7 +216,7 @@ pub fn decode_arc_object_with_limits(
                 let leaf_index = take_u64(input, &mut cursor)?;
                 let siblings_len = take_u32(input, &mut cursor)? as usize;
                 if siblings_len > limits.max_transparency_siblings {
-                    return Err(ArcError::Parse(
+                    return Err(KyriotesCsk2Error::Parse(
                         "transparency sibling count exceeds maximum allowed",
                     ));
                 }
@@ -227,10 +234,12 @@ pub fn decode_arc_object_with_limits(
     }
 
     if cursor != input.len() {
-        return Err(ArcError::Parse("trailing bytes after ARC object"));
+        return Err(KyriotesCsk2Error::Parse(
+            "trailing bytes after Kyriotēs-CSK2 object",
+        ));
     }
 
-    Ok(ArcObject {
+    Ok(KyriotesCsk2Object {
         version,
         suite,
         object_id,
@@ -281,7 +290,7 @@ pub fn encode_capability(cap: &Capability) -> Vec<u8> {
 }
 
 /// Decode a [`Capability`] using default length limits (1024 bytes for each string field).
-pub fn decode_capability(input: &[u8]) -> Result<Capability, ArcError> {
+pub fn decode_capability(input: &[u8]) -> Result<Capability, KyriotesCsk2Error> {
     decode_capability_with_limits(input, 1024, 1024)
 }
 
@@ -290,7 +299,7 @@ pub fn decode_capability_with_limits(
     input: &[u8],
     max_subject_len: usize,
     max_object_id_len: usize,
-) -> Result<Capability, ArcError> {
+) -> Result<Capability, KyriotesCsk2Error> {
     let mut cursor = 0usize;
     let version = take_u16(input, &mut cursor)?;
     let subject = take_str_limited(input, &mut cursor, max_subject_len)?;
@@ -304,7 +313,7 @@ pub fn decode_capability_with_limits(
     let nonce = take_fixed_limited::<16>(input, &mut cursor, 16)?;
 
     if cursor != input.len() {
-        return Err(ArcError::Parse("trailing bytes after capability"));
+        return Err(KyriotesCsk2Error::Parse("trailing bytes after capability"));
     }
 
     Ok(Capability {
@@ -348,7 +357,9 @@ pub fn encode_threshold_signature_set(set: &ThresholdSignatureSet) -> Vec<u8> {
 }
 
 /// Decode a [`ThresholdSignatureSet`] using the default max of 1024 partial signatures.
-pub fn decode_threshold_signature_set(input: &[u8]) -> Result<ThresholdSignatureSet, ArcError> {
+pub fn decode_threshold_signature_set(
+    input: &[u8],
+) -> Result<ThresholdSignatureSet, KyriotesCsk2Error> {
     decode_threshold_signature_set_with_max(input, 1024)
 }
 
@@ -356,12 +367,12 @@ pub fn decode_threshold_signature_set(input: &[u8]) -> Result<ThresholdSignature
 pub fn decode_threshold_signature_set_with_max(
     input: &[u8],
     max_partials: usize,
-) -> Result<ThresholdSignatureSet, ArcError> {
+) -> Result<ThresholdSignatureSet, KyriotesCsk2Error> {
     let mut cursor = 0usize;
     let threshold = take_u32(input, &mut cursor)?;
     let count = take_u32(input, &mut cursor)? as usize;
     if count > max_partials {
-        return Err(ArcError::Parse(
+        return Err(KyriotesCsk2Error::Parse(
             "partial signature count exceeds maximum allowed",
         ));
     }
@@ -369,7 +380,7 @@ pub fn decode_threshold_signature_set_with_max(
     for _ in 0..count {
         let signer_index = take_u32(input, &mut cursor)?;
         if cursor + 64 > input.len() {
-            return Err(ArcError::Parse(
+            return Err(KyriotesCsk2Error::Parse(
                 "unexpected EOF reading partial signature bytes",
             ));
         }
@@ -380,7 +391,7 @@ pub fn decode_threshold_signature_set_with_max(
     }
 
     if cursor != input.len() {
-        return Err(ArcError::Parse(
+        return Err(KyriotesCsk2Error::Parse(
             "trailing bytes after threshold signature set",
         ));
     }

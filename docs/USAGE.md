@@ -1,6 +1,6 @@
-# ARC Rust Usage Guide
+# Kyriotēs-CSK2 Rust Usage Guide
 
-This guide shows how to use the current ARC Rust implementation end to end.
+This guide shows how to use the current Kyriotēs-CSK2 Rust implementation end to end.
 
 Scope of this guide:
 
@@ -48,7 +48,7 @@ Open data sealed by someone else
 Transition an object to a new epoch
   -> Rewrap for newer authority epoch
 
-Persist or transmit an ARC object
+Persist or transmit a Kyriotēs-CSK2 object
   -> Wire format encode/decode
 
 Handle untrusted input from the network
@@ -73,7 +73,7 @@ Handle a declared epoch key compromise
 cargo test
 ```
 
-## 2. Add ARC in your app
+## 2. Add Kyriotēs-CSK2 in your app
 
 Use crates.io for normal integration and a local path dependency when you need to test unreleased changes.
 
@@ -82,7 +82,7 @@ Use crates.io for normal integration and a local path dependency when you need t
 ```toml
 # Cargo.toml
 [dependencies]
-ARCencryption = "0.1"
+kyriotes-csk2 = "0.1"
 ```
 
 ### Option B: local workspace dependency (for unreleased work)
@@ -90,10 +90,10 @@ ARCencryption = "0.1"
 ```toml
 # Cargo.toml
 [dependencies]
-arc_core = { package = "ARCencryption", path = "../ARC" }
+kyriotes_csk2 = { package = "kyriotes-csk2", path = "../Kyriotēs-CSK2" }
 ```
 
-The package name is `ARCencryption`, while Rust code imports the library as `arc_core`.
+The package name is `kyriotes-csk2`, while Rust code imports the library as `kyriotes_csk2`.
 
 ## 3. Minimal Seal/Open example (annotated)
 
@@ -102,23 +102,23 @@ This is the smallest realistic flow:
 1. define authority state for the current epoch
 2. define capability plus proof
 3. define a request for object and rights
-4. seal bytes into an ARC object
+4. seal bytes into a Kyriotēs-CSK2 object
 5. open with matching authority and capability context
 
 When this example fails, the error usually points directly to a mismatch in object, rights, policy, or epoch.
 
 ```rust
-use arc_core::{
-    ArcError, AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, Capability,
+use kyriotes_csk2::{
+    KyriotesCsk2Error, AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, Capability,
     CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair, OpenRequest,
     RecipientKeyPair, Rights, TemporalPolicy, TransparencyProof,
     capability_leaf_hash, capability_stamp, hash_policy, open, seal,
 };
 use rand::rngs::OsRng;
 
-fn example() -> Result<Vec<u8>, ArcError> {
+fn example() -> Result<Vec<u8>, KyriotesCsk2Error> {
     // hash_policy turns a human-readable policy string into the 32-byte policy_hash
-    // used throughout ARC. Use a consistent string per policy.
+    // used throughout Kyriotēs-CSK2. Use a consistent string per policy.
     let policy_hash = hash_policy("only-valid-current-capability");
     let epoch: u64 = 42;
 
@@ -201,7 +201,7 @@ fn example() -> Result<Vec<u8>, ArcError> {
     )?;
 
     // Stage 7: Open.
-    // open() reconstructs the request context from ArcObject fields.
+    // open() reconstructs the request context from KyriotesCsk2Object fields.
     let plaintext = open(&recipient.secret, &object, &cap, &proof, &state)?;
 
     // Empty plaintext is valid: Ok(vec![]) means authenticated empty content.
@@ -234,15 +234,15 @@ Why rewrap exists:
 - this makes epoch transitions much cheaper than full reseal
 
 ```rust
-use arc_core::{
-    ArcError, AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, Capability,
+use kyriotes_csk2::{
+    KyriotesCsk2Error, AuthorityCapabilityTree, AuthorityRootKeyPair, AuthorityState, Capability,
     CapabilityIssuanceProof, CapabilityProof, EpochSigningKeyPair, InMemoryTransparencyLog,
     OpenRequest, RecipientKeyPair, Rights, TemporalPolicy, TransparencyLog,
     capability_leaf_hash, capability_stamp, hash_policy, add_epoch_wrapper, open, seal,
 };
 use rand::rngs::OsRng;
 
-fn rewrap_example() -> Result<Vec<u8>, ArcError> {
+fn rewrap_example() -> Result<Vec<u8>, KyriotesCsk2Error> {
     let policy_hash = hash_policy("current-only");
     let epoch42: u64 = 42;
 
@@ -374,22 +374,22 @@ What to customize first:
 
 Treat these as diagnostics, not just failures. They usually map directly to one class of integration mismatch.
 
-- `ArcError::InvalidCapability("object mismatch")`
+- `KyriotesCsk2Error::InvalidCapability("object mismatch")`
   - request object does not match capability object
-- `ArcError::InvalidCapability("policy hash mismatch")`
+- `KyriotesCsk2Error::InvalidCapability("policy hash mismatch")`
   - request policy hash differs from capability policy hash
-- `ArcError::InvalidCapability("capability revoked")`
+- `KyriotesCsk2Error::InvalidCapability("capability revoked")`
   - proof indicates capability is revoked
-- `ArcError::TemporalRejected`
+- `KyriotesCsk2Error::TemporalRejected`
   - temporal policy does not allow opening in current epoch
-- `ArcError::MissingWrapper`
+- `KyriotesCsk2Error::MissingWrapper`
   - required epoch wrapper not present
-- `ArcError::AuthorityState(...)`
+- `KyriotesCsk2Error::AuthorityState(...)`
   - authority chain, cert, transparency, or context checks failed
-- `ArcError::Crypto(...)`
+- `KyriotesCsk2Error::Crypto(...)`
     - cryptographic verification failed (for example inclusion proof, non-revocation witness,
         epoch cert chain, or issuance signature verification)
-- `ArcError::Parse(...)`
+- `KyriotesCsk2Error::Parse(...)`
   - malformed wire payload or decode limit exceeded
 
 ## 6. Wire format encode/decode
@@ -398,16 +398,16 @@ Use these APIs for transport or storage.
 
 Use cases:
 
-- persist ARC objects in databases or object stores
-- send ARC objects over message queues
-- bridge ARC objects between services
+- persist Kyriotēs-CSK2 objects in databases or object stores
+- send Kyriotēs-CSK2 objects over message queues
+- bridge Kyriotēs-CSK2 objects between services
 
 ```rust
-use arc_core::{decode_arc_object, encode_arc_object, ArcError, ArcObject};
+use kyriotes_csk2::{decode_kyriotes_csk2_object, encode_kyriotes_csk2_object, KyriotesCsk2Error, KyriotesCsk2Object};
 
-fn wire_roundtrip(object: &ArcObject) -> Result<ArcObject, ArcError> {
-    let bytes = encode_arc_object(object);
-    decode_arc_object(&bytes)
+fn wire_roundtrip(object: &KyriotesCsk2Object) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
+    let bytes = encode_kyriotes_csk2_object(object);
+    decode_kyriotes_csk2_object(&bytes)
 }
 ```
 
@@ -415,18 +415,18 @@ Decode defensively in service boundaries and prefer explicit limits for untruste
 
 Object and encoding notes:
 
-- `ArcObject` is `Clone`, so cloning in memory is supported.
-- `ArcObject` is not `serde` serializable by default in this implementation.
-- `encode_arc_object` is deterministic for identical field values and wrapper order.
+- `KyriotesCsk2Object` is `Clone`, so cloning in memory is supported.
+- `KyriotesCsk2Object` is not `serde` serializable by default in this implementation.
+- `encode_kyriotes_csk2_object` is deterministic for identical field values and wrapper order.
 
 ## 7. Decode limits (default and custom)
 
 If you arrived here from the decision tree, this section defines the decode guardrails
 to choose before applying the wire APIs in Section 6.
 
-`decode_arc_object` uses strict defaults.
+`decode_kyriotes_csk2_object` uses strict defaults.
 
-If you need tuning, call `decode_arc_object_with_limits`.
+If you need tuning, call `decode_kyriotes_csk2_object_with_limits`.
 
 When to tune limits:
 
@@ -435,16 +435,16 @@ When to tune limits:
 - you need different limits across edge, worker, and backend tiers
 
 ```rust
-use arc_core::{decode_arc_object_with_limits, DecodeLimits, ArcError, ArcObject};
+use kyriotes_csk2::{decode_kyriotes_csk2_object_with_limits, DecodeLimits, KyriotesCsk2Error, KyriotesCsk2Object};
 
-fn decode_with_custom_limits(bytes: &[u8]) -> Result<ArcObject, ArcError> {
+fn decode_with_custom_limits(bytes: &[u8]) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
     let limits = DecodeLimits {
         max_payload_ciphertext_len: 32 * 1024 * 1024,
         max_wrapped_dek_len: 8 * 1024,
         ..DecodeLimits::default()
     };
 
-    decode_arc_object_with_limits(bytes, limits)
+    decode_kyriotes_csk2_object_with_limits(bytes, limits)
 }
 ```
 
@@ -457,20 +457,20 @@ Practical advice:
 Defensive decode pattern in services:
 
 ```rust
-use arc_core::{decode_arc_object_with_limits, ArcError, DecodeProfile};
+use kyriotes_csk2::{decode_kyriotes_csk2_object_with_limits, KyriotesCsk2Error, DecodeProfile};
 
-fn decode_untrusted(bytes: &[u8]) -> Result<(), ArcError> {
+fn decode_untrusted(bytes: &[u8]) -> Result<(), KyriotesCsk2Error> {
     let limits = DecodeProfile::Strict.limits();
 
-    match decode_arc_object_with_limits(bytes, limits) {
+    match decode_kyriotes_csk2_object_with_limits(bytes, limits) {
         Ok(_obj) => {
             // Continue with capability and authority validation.
             Ok(())
         }
-        Err(ArcError::Parse(msg)) => {
+        Err(KyriotesCsk2Error::Parse(msg)) => {
             // Reject malformed or oversized input at the boundary.
-            eprintln!("rejecting ARC payload at decode boundary: {msg}");
-            Err(ArcError::Parse(msg))
+            eprintln!("rejecting Kyriotēs-CSK2 payload at decode boundary: {msg}");
+            Err(KyriotesCsk2Error::Parse(msg))
         }
         Err(other) => Err(other),
     }
@@ -490,10 +490,10 @@ Named profiles map to concrete limits:
 Example:
 
 ```rust
-use arc_core::{decode_arc_object_with_limits, DecodeProfile, ArcError, ArcObject};
+use kyriotes_csk2::{decode_kyriotes_csk2_object_with_limits, DecodeProfile, KyriotesCsk2Error, KyriotesCsk2Object};
 
-fn decode_server_profile(bytes: &[u8]) -> Result<ArcObject, ArcError> {
-    decode_arc_object_with_limits(bytes, DecodeProfile::Server.limits())
+fn decode_server_profile(bytes: &[u8]) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
+    decode_kyriotes_csk2_object_with_limits(bytes, DecodeProfile::Server.limits())
 }
 ```
 
@@ -505,22 +505,22 @@ This gives you a secure fallback posture for misconfigured environments.
 
 Recommended deployment pattern:
 
-1. set `ARC_DECODE_PROFILE` per environment
+1. set `KYRIOTES_CSK2_DECODE_PROFILE` per environment
 2. log the resolved profile at process start
 3. monitor parse failures and limit rejections
 
 ```rust
-use arc_core::{decode_arc_object_with_limits, decode_profile_from_env, ArcError, ArcObject};
+use kyriotes_csk2::{decode_kyriotes_csk2_object_with_limits, decode_profile_from_env, KyriotesCsk2Error, KyriotesCsk2Object};
 
-fn decode_from_env(bytes: &[u8]) -> Result<ArcObject, ArcError> {
-    let profile = decode_profile_from_env("ARC_DECODE_PROFILE");
-    decode_arc_object_with_limits(bytes, profile.limits())
+fn decode_from_env(bytes: &[u8]) -> Result<KyriotesCsk2Object, KyriotesCsk2Error> {
+    let profile = decode_profile_from_env("KYRIOTES_CSK2_DECODE_PROFILE");
+    decode_kyriotes_csk2_object_with_limits(bytes, profile.limits())
 }
 ```
 
 Behavior summary:
 
-- if `ARC_DECODE_PROFILE` is unset: `Strict`
+- if `KYRIOTES_CSK2_DECODE_PROFILE` is unset: `Strict`
 - if it is set to an unknown value: `Strict`
 - if it is set to a recognized value: parsed profile is used
 
@@ -532,7 +532,7 @@ Accepted values (case-insensitive, trims whitespace):
 
 ## 10. Transparency backends
 
-ARC defines two traits for plugging in your own transparency log service:
+Kyriotēs-CSK2 defines two traits for plugging in your own transparency log service:
 
 | Trait | Use when |
 |---|---|
@@ -542,8 +542,8 @@ ARC defines two traits for plugging in your own transparency log service:
 Both traits expose the same three operations:
 
 ```rust
-async fn commit_state(&mut self, state: &AuthorityState) -> Result<TransparencyStateCommit, ArcError>;
-async fn proof_for_state(&self, state: &AuthorityState) -> Result<TransparencyProof, ArcError>;
+async fn commit_state(&mut self, state: &AuthorityState) -> Result<TransparencyStateCommit, KyriotesCsk2Error>;
+async fn proof_for_state(&self, state: &AuthorityState) -> Result<TransparencyProof, KyriotesCsk2Error>;
 async fn current_root(&self) -> [u8; 32];
 ```
 
@@ -556,7 +556,7 @@ To plug in a real log service, implement `AsyncTransparencyLog` for your
 client type:
 
 ```rust
-use arc_core::{ArcError, AsyncTransparencyLog, AuthorityState, TransparencyProof, TransparencyStateCommit};
+use kyriotes_csk2::{KyriotesCsk2Error, AsyncTransparencyLog, AuthorityState, TransparencyProof, TransparencyStateCommit};
 use async_trait::async_trait;
 
 pub struct RekorTransparencyLog {
@@ -566,14 +566,14 @@ pub struct RekorTransparencyLog {
 
 #[async_trait]
 impl AsyncTransparencyLog for RekorTransparencyLog {
-    async fn commit_state(&mut self, state: &AuthorityState) -> Result<TransparencyStateCommit, ArcError> {
+    async fn commit_state(&mut self, state: &AuthorityState) -> Result<TransparencyStateCommit, KyriotesCsk2Error> {
         // POST the state to your log service, get back the Merkle proof
-        Err(ArcError::AuthorityState("backend-specific commit_state implementation required"))
+        Err(KyriotesCsk2Error::AuthorityState("backend-specific commit_state implementation required"))
     }
 
-    async fn proof_for_state(&self, state: &AuthorityState) -> Result<TransparencyProof, ArcError> {
+    async fn proof_for_state(&self, state: &AuthorityState) -> Result<TransparencyProof, KyriotesCsk2Error> {
         // GET proof by state leaf hash from your log service
-        Err(ArcError::AuthorityState("backend-specific proof_for_state implementation required"))
+        Err(KyriotesCsk2Error::AuthorityState("backend-specific proof_for_state implementation required"))
     }
 
     async fn current_root(&self) -> [u8; 32] {
@@ -613,7 +613,7 @@ let log: Box<dyn AsyncTransparencyLog> = if cfg!(test) {
 Sections 3 and 4 already use real `CapabilityProof` values end to end.  This
 section is a reference that explains each proof building block independently so
 you can reason about construction, verification, and trust boundaries when
-integrating ARC in your own authority pipeline.
+integrating Kyriotēs-CSK2 in your own authority pipeline.
 
 ### 11a. Building authority roots with `AuthorityCapabilityTree`
 
@@ -622,7 +622,7 @@ capability set and the revoked stamp set respectively.  Instead of hardcoding
 byte arrays, build them from the actual capability set.
 
 ```rust
-use arc_core::{
+use kyriotes_csk2::{
     AuthorityCapabilityTree, AuthorityState, Capability, Rights, hash_policy,
 };
 
@@ -676,7 +676,7 @@ to a specific epoch.  Keep `AuthorityRootKeyPair` offline.  Use
 `EpochSigningKeyPair` for all per-epoch operations.
 
 ```rust
-use arc_core::{AuthorityRootKeyPair, EpochSigningKeyPair, verify_epoch_cert};
+use kyriotes_csk2::{AuthorityRootKeyPair, EpochSigningKeyPair, verify_epoch_cert};
 use rand::rngs::OsRng;
 
 // illustrative fragment — adapt into your function
@@ -696,12 +696,12 @@ verify_epoch_cert(&root_pk, &cert).expect("cert must verify");
 ```
 
 Distribute `root_pk` out-of-band (pinned in client config or hardware).  Distribute
-`cert` alongside every authority state or ARC object for the epoch.
+`cert` alongside every authority state or Kyriotēs-CSK2 object for the epoch.
 
 ### 11c. Merkle capability inclusion proof (§9 check 1)
 
 ```rust
-use arc_core::{AuthorityCapabilityTree, verify_capability_inclusion};
+use kyriotes_csk2::{AuthorityCapabilityTree, verify_capability_inclusion};
 
 // illustrative fragment — adapt into your function
 
@@ -734,7 +734,7 @@ never construct `NonRevocationBound` by hand; it comes out of
 `non_revocation_witness`.
 
 ```rust
-use arc_core::{
+use kyriotes_csk2::{
     AuthorityCapabilityTree, NonRevocationBound, NonRevocationWitness,
     capability_stamp, verify_non_revocation,
 };
@@ -765,7 +765,7 @@ authority chain.  The verifier authenticates the signing key via the epoch
 cert before checking the signature.
 
 ```rust
-use arc_core::{
+use kyriotes_csk2::{
     AuthorityCapabilityTree, AuthorityRootKeyPair, CapabilityIssuanceProof,
     EpochSigningKeyPair, capability_leaf_hash, verify_capability_issuance,
 };
@@ -804,7 +804,7 @@ verify_capability_issuance(
 from the authority tree and signing keys, then pass it unchanged to `seal` and `open`.
 
 ```rust
-use arc_core::{
+use kyriotes_csk2::{
     AuthorityCapabilityTree, AuthorityState, Capability, CapabilityIssuanceProof,
     CapabilityProof, EpochKeyCert, EpochSigningKeyPair,
     capability_leaf_hash, capability_stamp,
@@ -856,7 +856,7 @@ authority state is rejected immediately with `"capability revoked"`.
 Revoking a capability adds its stamp to the revocation tree, then publishes the
 resulting authority state so every verifier sees the updated revocation root.  Any
 `open` or `validate_capability` call that presents the revoked capability will fail
-with `ArcError::InvalidCapability("capability revoked")`.
+with `KyriotesCsk2Error::InvalidCapability("capability revoked")`.
 
 Two commit helpers exist depending on your transparency backend:
 
@@ -868,8 +868,8 @@ Two commit helpers exist depending on your transparency backend:
 ### Synchronous revocation
 
 ```rust
-use arc_core::{
-    ArcError, AuthorityCapabilityTree, Capability, AuthorityState,
+use kyriotes_csk2::{
+    KyriotesCsk2Error, AuthorityCapabilityTree, Capability, AuthorityState,
     InMemoryTransparencyLog, TransparencyStateCommit,
     revoke_capability_and_commit,
 };
@@ -879,7 +879,7 @@ fn revoke_sync(
     tree: &mut AuthorityCapabilityTree,
     cap: &Capability,
     state: &AuthorityState,
-) -> Result<TransparencyStateCommit, ArcError> {
+) -> Result<TransparencyStateCommit, KyriotesCsk2Error> {
     // illustrative fragment — adapt into your function
 
     // revoke_epoch must be strictly greater than state.epoch.
@@ -903,8 +903,8 @@ implementations.  The function accepts `&mut dyn AsyncTransparencyLog`, so it
 works with both concrete types and `Box<dyn AsyncTransparencyLog>`.
 
 ```rust
-use arc_core::{
-    ArcError, AsyncTransparencyLog, AuthorityCapabilityTree, Capability,
+use kyriotes_csk2::{
+    KyriotesCsk2Error, AsyncTransparencyLog, AuthorityCapabilityTree, Capability,
     AuthorityState, TransparencyStateCommit,
     revoke_capability_and_commit_async,
 };
@@ -914,7 +914,7 @@ async fn revoke_async(
     tree: &mut AuthorityCapabilityTree,
     cap: &Capability,
     state: &AuthorityState,
-) -> Result<TransparencyStateCommit, ArcError> {
+) -> Result<TransparencyStateCommit, KyriotesCsk2Error> {
     // illustrative fragment — adapt into your function
     revoke_capability_and_commit_async(log, tree, cap, state, state.epoch + 1).await
 }
@@ -932,9 +932,9 @@ let commit = revoke_capability_and_commit_async(log.as_mut(), &mut tree, &cap, &
 
 ### Revocation error cases
 
-- `ArcError::AuthorityState("revocation epoch must be greater than base authority epoch")`
+- `KyriotesCsk2Error::AuthorityState("revocation epoch must be greater than base authority epoch")`
   — `revoke_epoch` must be strictly greater than `state.epoch`.
-- `ArcError::AuthorityState("revocation root does not match capability tree")`
+- `KyriotesCsk2Error::AuthorityState("revocation root does not match capability tree")`
   — `state.revocation_root` must match `tree.revocation_root()` at call time;
     ensure tree and state are in sync before calling.
 
@@ -953,7 +953,7 @@ only uses of `compromised_epoch_pk` at or after the boundary epoch are blocked.
 Call `issue_compromise_notice` on `AuthorityRootKeyPair` (offline, cold-storage key).
 
 ```rust
-use arc_core::{AuthorityRootKeyPair, CompromiseNotice, EpochSigningKeyPair};
+use kyriotes_csk2::{AuthorityRootKeyPair, CompromiseNotice, EpochSigningKeyPair};
 use rand::rngs::OsRng;
 
 // illustrative fragment — adapt into your function
@@ -981,7 +981,7 @@ you use for authority state updates.
 Clients must verify the notice signature before trusting its fields:
 
 ```rust
-use arc_core::{ArcError, CompromiseNotice, verify_compromise_notice};
+use kyriotes_csk2::{KyriotesCsk2Error, CompromiseNotice, verify_compromise_notice};
 
 // illustrative fragment — adapt into your function
 
@@ -991,7 +991,7 @@ verify_compromise_notice(&root_pk, &notice)
 ```
 
 An invalid signature returns
-`ArcError::AuthorityState("compromise notice signature invalid")`.
+`KyriotesCsk2Error::AuthorityState("compromise notice signature invalid")`.
 
 ### Checking whether an epoch key is compromised
 
@@ -999,7 +999,7 @@ After verifying the notice, call `check_epoch_not_compromised` to determine
 whether a specific (epoch, epoch_pk) pair is blocked:
 
 ```rust
-use arc_core::{ArcError, check_epoch_not_compromised};
+use kyriotes_csk2::{KyriotesCsk2Error, check_epoch_not_compromised};
 
 // illustrative fragment — adapt into your function
 
@@ -1010,7 +1010,7 @@ match check_epoch_not_compromised(state.epoch, &presented_epoch_pk, &notice) {
 }
 ```
 
-Returns `Err(ArcError::AuthorityState("epoch key has been declared compromised"))`
+Returns `Err(KyriotesCsk2Error::AuthorityState("epoch key has been declared compromised"))`
 when `presented_epoch_pk == notice.compromised_epoch_pk` and
 `state.epoch >= notice.compromised_epoch`.
 
@@ -1039,7 +1039,7 @@ check_epoch_not_compromised(state.epoch, &presented_epoch_pk, &notice)?;
 
 For production rollout, add metrics around:
 
-- open failures by ArcError variant
+- open failures by KyriotesCsk2Error variant
 - decode rejections by limit type
 - rewrap backlog and latency per epoch transition
 - revocation latency from decision to committed state
@@ -1061,15 +1061,15 @@ cargo clippy --all-targets --all-features -D warnings
 
 Integration tests to inspect for examples:
 
-- `tests/arc_flow.rs` — end-to-end seal/open flows and epoch rewrap
-- `tests/arc_guards.rs` — rejection and error-condition coverage (revocation, policy mismatches, tampering)
-- `tests/arc_wire.rs` — wire-format encode/decode roundtrips and decode-limit enforcement
-- `tests/arc_async_transparency.rs` — transparency log trait integration and object-safety
-- `tests/arc_capability_tree.rs` — authority capability tree, inclusion proofs, non-revocation witnesses, issuance proofs
-- `tests/arc_crypto_verifier.rs` — full epoch cert chain verification end-to-end
-- `tests/arc_revocation.rs` — synchronous capability revocation and commit
-- `tests/arc_async_revocation.rs` — async capability revocation via `AsyncTransparencyLog` and boxed dyn
-- `tests/arc_compromise_notice.rs` — `CompromiseNotice` issue/verify roundtrips and `check_epoch_not_compromised` enforcement
+- `tests/kyriotes_csk2_flow.rs` — end-to-end seal/open flows and epoch rewrap
+- `tests/kyriotes_csk2_guards.rs` — rejection and error-condition coverage (revocation, policy mismatches, tampering)
+- `tests/kyriotes_csk2_wire.rs` — wire-format encode/decode roundtrips and decode-limit enforcement
+- `tests/kyriotes_csk2_async_transparency.rs` — transparency log trait integration and object-safety
+- `tests/kyriotes_csk2_capability_tree.rs` — authority capability tree, inclusion proofs, non-revocation witnesses, issuance proofs
+- `tests/kyriotes_csk2_crypto_verifier.rs` — full epoch cert chain verification end-to-end
+- `tests/kyriotes_csk2_revocation.rs` — synchronous capability revocation and commit
+- `tests/kyriotes_csk2_async_revocation.rs` — async capability revocation via `AsyncTransparencyLog` and boxed dyn
+- `tests/kyriotes_csk2_compromise_notice.rs` — `CompromiseNotice` issue/verify roundtrips and `check_epoch_not_compromised` enforcement
 
 Suggested daily loop for contributors:
 

@@ -110,8 +110,8 @@ def build_vectors() -> list[CapabilityTreeVector]:
 def main() -> int:
     vectors = build_vectors()
     payload = {
-        "schema": "arc.capability_tree.refinement_vectors.v1",
-        "target": "src/arc/capability_tree.rs",
+        "schema": "kyriotes_csk2.capability_tree.refinement_vectors.v1",
+        "target": "src/kyriotes_csk2/capability_tree.rs",
         "claim_boundary": "Capability-tree proof refinement track; not full Coq/Rust semantic equivalence.",
         "vector_count": len(vectors),
         "vectors": [asdict(item) for item in vectors],

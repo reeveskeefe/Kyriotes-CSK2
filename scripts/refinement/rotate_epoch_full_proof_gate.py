@@ -99,8 +99,8 @@ def main() -> int:
     kani = shutil.which("cargo-kani") or shutil.which("kani")
 
     status = {
-        "schema": "arc.rotate_epoch.full_mechanical_proof_status.v1",
-        "target": "src/arc/engine.rs::rotated_authority_state",
+        "schema": "kyriotes_csk2.rotate_epoch.full_mechanical_proof_status.v1",
+        "target": "src/kyriotes_csk2/engine.rs::rotated_authority_state",
         "proof_tool": "kani",
         "required_harness_count": len(HARNESSES),
         "required_harnesses": HARNESSES,

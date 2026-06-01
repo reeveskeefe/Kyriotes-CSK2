@@ -1,4 +1,4 @@
-# ARC seal Mechanical Refinement
+# Kyriotēs-CSK2 seal Mechanical Refinement
 
 ## Status
 
@@ -10,7 +10,7 @@ All tracked Rust mechanical refinement targets are verifier-backed proven within
 
 ## Target
 
-    src/arc/engine.rs::seal_with_verifier
+    src/kyriotes_csk2/engine.rs::seal_with_verifier
 
 ## Completed Proof Boundary
 

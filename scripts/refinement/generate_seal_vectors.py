@@ -104,8 +104,8 @@ def build_vectors() -> list[SealVector]:
 def main() -> int:
     vectors = build_vectors()
     payload = {
-        "schema": "arc.seal.refinement_vectors.v1",
-        "target": "src/arc/engine.rs::seal",
+        "schema": "kyriotes_csk2.seal.refinement_vectors.v1",
+        "target": "src/kyriotes_csk2/engine.rs::seal",
         "claim_boundary": "Seal lifecycle refinement track; not full Coq/Rust semantic equivalence.",
         "vector_count": len(vectors),
         "vectors": [asdict(item) for item in vectors],

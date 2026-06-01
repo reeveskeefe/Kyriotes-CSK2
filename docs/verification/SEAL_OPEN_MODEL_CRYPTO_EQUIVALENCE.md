@@ -7,7 +7,7 @@
     Verifier-backed Kani proof evidence: yes
     Tracked Rust mechanical inventory impact: none
 
-ARC's tracked Rust mechanical refinement inventory remains complete at 11 / 11 verifier-backed proof lanes. This document records the first deeper verification-expansion lane beyond that tracked inventory.
+Kyriotēs-CSK2's tracked Rust mechanical refinement inventory remains complete at 11 / 11 verifier-backed proof lanes. This document records the first deeper verification-expansion lane beyond that tracked inventory.
 
 ## Proof Claim
 
@@ -17,7 +17,7 @@ This is a model-crypto equivalence proof. It is not a proof of X25519, ML-KEM, C
 
 ## Coq Artifact
 
-    proofs/coq/rust_refinement/ArcSealOpenModelCryptoEquivalence.v
+    proofs/coq/rust_refinement/KyriotesCsk2SealOpenModelCryptoEquivalence.v
 
 The Coq lane models seal/open monolithically over deterministic symbolic operations:
 
@@ -40,7 +40,7 @@ The negative theorems cover wrong recipient secret, altered object id, altered p
 
     src/kani/kani_seal_open_model_crypto_equivalence.rs
 
-The Kani lane mirrors the Coq model with fixed-size deterministic model key material, structured model ciphertexts, explicit binding digests, and deterministic rejection on mismatch. It is independent of ARC's production crypto primitives.
+The Kani lane mirrors the Coq model with fixed-size deterministic model key material, structured model ciphertexts, explicit binding digests, and deterministic rejection on mismatch. It is independent of Kyriotēs-CSK2's production crypto primitives.
 
 Representative harnesses:
 

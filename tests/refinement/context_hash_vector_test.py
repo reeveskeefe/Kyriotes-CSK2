@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Mechanical refinement vector test for ARC context_hash.
+Mechanical refinement vector test for Kyriotēs-CSK2 context_hash.
 
 This checks the deterministic context_hash vector artifact. It confirms schema,
 target identity, vector count, 32-byte hash shape, and mutation sensitivity.
@@ -26,7 +26,7 @@ def main() -> int:
     payload = json.loads(VECTOR_PATH.read_text(encoding="utf-8"))
 
     assert payload["schema"] == "arc.context_hash.refinement_vectors.v1"
-    assert payload["target"] == "src/arc/model.rs::context_hash"
+    assert payload["target"] == "src/kyriotes_csk2/model.rs::context_hash"
     assert payload["hash_size_bytes"] == 32
     assert payload["vector_count"] >= 4
 

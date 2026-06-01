@@ -1,4 +1,4 @@
-# ARC capability_tree Mechanical Refinement
+# Kyriotēs-CSK2 capability_tree Mechanical Refinement
 
 ## Status
 
@@ -10,7 +10,7 @@ All tracked Rust mechanical refinement targets are verifier-backed proven within
 
 ## Target
 
-    src/arc/capability_tree.rs::verify_non_revocation
+    src/kyriotes_csk2/capability_tree.rs::verify_non_revocation
 
 ## Completed Proof Boundary
 

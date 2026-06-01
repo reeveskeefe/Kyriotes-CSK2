@@ -1,9 +1,9 @@
 #![no_main]
 
-use arc_core::arc::transparency::{
+use kyriotes_csk2::kyriotes_csk2::transparency::{
     hash_transparency_node, merkle_root, transparency_log_entry_hash,
 };
-use arc_core::{decode_arc_object, decode_capability, decode_threshold_signature_set};
+use kyriotes_csk2::{decode_kyriotes_csk2_object, decode_capability, decode_threshold_signature_set};
 use libfuzzer_sys::fuzz_target;
 
 fn seed32(data: &[u8], offset: usize) -> [u8; 32] {
@@ -33,7 +33,7 @@ fn fuzz_transparency_surface(data: &[u8]) {
     let epoch_pk = seed32(data, 96);
     let epoch_root_sig = seed64(data, 128);
     let extra = seed32(data, 192);
-    let epoch = arc_fuzz::bytes_to_u64(data.get(200..).unwrap_or_default());
+    let epoch = kyriotes_csk2_fuzz::bytes_to_u64(data.get(200..).unwrap_or_default());
 
     // --- hash_transparency_node ------------------------------------------
     let _ = hash_transparency_node(prev_hash, authority_root);
@@ -92,31 +92,31 @@ fn fuzz_transparency_surface(data: &[u8]) {
     let _ = merkle_root(&leaves);
 
     // --- wire-decode layer -----------------------------------------------
-    let _ = decode_arc_object(data);
+    let _ = decode_kyriotes_csk2_object(data);
     let _ = decode_capability(data);
     let _ = decode_threshold_signature_set(data);
 
-    let mutated = arc_fuzz::mutate_one_byte(data.to_vec(), data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(&mutated);
+    let mutated = kyriotes_csk2_fuzz::mutate_one_byte(data.to_vec(), data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(&mutated);
     let _ = decode_capability(&mutated);
     let _ = decode_threshold_signature_set(&mutated);
 
-    let truncated = arc_fuzz::truncate_by_selector(data, data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(truncated);
+    let truncated = kyriotes_csk2_fuzz::truncate_by_selector(data, data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(truncated);
     let _ = decode_capability(truncated);
     let _ = decode_threshold_signature_set(truncated);
 
-    let repeated = arc_fuzz::repeat_small(data, data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(&repeated);
+    let repeated = kyriotes_csk2_fuzz::repeat_small(data, data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(&repeated);
     let _ = decode_capability(&repeated);
     let _ = decode_threshold_signature_set(&repeated);
 
-    let bomb = arc_fuzz::append_length_bomb(data.to_vec(), data.first().copied().unwrap_or(0));
-    let _ = decode_arc_object(&bomb);
+    let bomb = kyriotes_csk2_fuzz::append_length_bomb(data.to_vec(), data.first().copied().unwrap_or(0));
+    let _ = decode_kyriotes_csk2_object(&bomb);
     let _ = decode_capability(&bomb);
     let _ = decode_threshold_signature_set(&bomb);
 }
 
 fuzz_target!(|data: &[u8]| {
-    arc_fuzz::drive_parser_like_targets(data, fuzz_transparency_surface);
+    kyriotes_csk2_fuzz::drive_parser_like_targets(data, fuzz_transparency_surface);
 });

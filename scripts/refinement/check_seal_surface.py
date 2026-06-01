@@ -5,11 +5,11 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-ENGINE_PATH = PROJECT_ROOT / "src" / "arc" / "engine.rs"
+ENGINE_PATH = PROJECT_ROOT / "src" / "kyriotes-csk2" / "engine.rs"
 
 
 def main() -> int:
-    assert ENGINE_PATH.exists(), "src/arc/engine.rs must exist"
+    assert ENGINE_PATH.exists(), "src/kyriotes_csk2/engine.rs must exist"
 
     source = ENGINE_PATH.read_text(encoding="utf-8")
 
@@ -22,14 +22,14 @@ def main() -> int:
         "AuthorityState",
         "TransparencyProof",
         "TemporalPolicy",
-        "ArcObject",
+        "KyriotesCsk2Object",
     ]
 
     for term in required_terms:
         assert term in source, f"seal surface must mention {term}"
 
     assert "Result" in source, "seal should expose Result-style fallible behavior"
-    assert "ArcError" in source, "seal should use ARC error surface"
+    assert "KyriotesCsk2Error" in source, "seal should use Kyriotēs-CSK2 error surface"
 
     print("seal surface check passed.")
     return 0

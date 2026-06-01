@@ -1,16 +1,16 @@
-# ARC Rust-to-Coq Refinement Evidence Plan
+# Kyriotēs-CSK2 Rust-to-Coq Refinement Evidence Plan
 
-ARC now has machine-checked Coq closure for the current abstract protocol, design-model, state-machine, Merkle/transparency, and symbolic crypto-reduction checklists.
+Kyriotēs-CSK2 now has machine-checked Coq closure for the current abstract protocol, design-model, state-machine, Merkle/transparency, and symbolic crypto-reduction checklists.
 
-ARC's tracked Rust mechanical refinement inventory is complete at 11 / 11 verifier-backed proof lanes, with each lane scoped and recorded by explicit proof-boundary language.
+Kyriotēs-CSK2's tracked Rust mechanical refinement inventory is complete at 11 / 11 verifier-backed proof lanes, with each lane scoped and recorded by explicit proof-boundary language.
 
 ## Purpose
 
-The Coq model proves ARC's protocol rules at the abstract design level. Rust-to-Coq refinement evidence tracks how the actual Rust implementation relates to those Coq concepts.
+The Coq model proves Kyriotēs-CSK2's protocol rules at the abstract design level. Rust-to-Coq refinement evidence tracks how the actual Rust implementation relates to those Coq concepts.
 
 The tracked Rust mechanical refinement inventory is now complete. All 11 declared targets have mechanical check coverage and verifier-backed Kani proof evidence within their recorded proof boundaries. These proof lanes cover bounded parser rejection, encoding surface stability, context transcript binding, fail-closed engine behavior, epoch transition structure, transparency commit failure boundaries, transparency-root state binding, and selected capability-tree non-revocation behavior.
 
-This milestone should not be read as full end-to-end cryptographic verification of ARC. Several completed lanes intentionally prove narrowed implementation properties rather than full protocol semantics. In particular, full SHA/Merkle soundness, full capability-tree non-empty witness soundness, full encode/decode canonical round-trip equivalence, and full seal/open cryptographic semantic equivalence remain future verification-expansion targets.
+This milestone should not be read as full end-to-end cryptographic verification of Kyriotēs-CSK2. Several completed lanes intentionally prove narrowed implementation properties rather than full protocol semantics. In particular, full SHA/Merkle soundness, full capability-tree non-empty witness soundness, full encode/decode canonical round-trip equivalence, and full seal/open cryptographic semantic equivalence remain future verification-expansion targets.
 
 ## Refinement Levels
 
@@ -20,7 +20,7 @@ The Rust symbol has a documented conceptual relationship to a Coq model concept.
 
 Example:
 
-    src/arc/engine.rs::open
+    src/kyriotes_csk2/engine.rs::open
     maps to
     Coq lifecycle open and master invariant gates
 
@@ -53,23 +53,23 @@ All tracked Rust mechanical refinement targets are verifier-backed proven within
 
 | Rust surface | Completed lane |
 |---|---|
-| src/encoding/codec.rs::decode_arc_object | bounded malformed-input parser rejection |
-| src/encoding/codec.rs::encode_arc_object | selected encoding surface stability |
-| src/arc/model.rs::context_hash | transcript-model binding checks |
-| src/arc/engine.rs::verify_with_verifier | fail-closed authority rejection behavior |
-| src/arc/engine.rs::seal_with_verifier | fail-closed authority rejection behavior |
-| src/arc/engine.rs::open_with_verifier | fail-closed authority rejection behavior |
-| src/arc/engine.rs::add_epoch_wrapper_with_verifier | fail-closed wrapper rejection behavior |
-| src/arc/engine.rs::rotated_authority_state | extracted epoch transition structure |
-| src/arc/engine.rs::begin_epoch_rotation_commit | extracted rotate_epoch_full commit/finalization boundary |
-| src/arc/capability_tree.rs::verify_non_revocation | selected empty-set non-revocation behavior |
-| src/arc/transparency.rs::bind_transparency_root_to_state | extracted transparency-root state binding |
+| src/encoding/codec.rs::decode_kyriotes_csk2_object | bounded malformed-input parser rejection |
+| src/encoding/codec.rs::encode_kyriotes_csk2_object | selected encoding surface stability |
+| src/kyriotes_csk2/model.rs::context_hash | transcript-model binding checks |
+| src/kyriotes_csk2/engine.rs::verify_with_verifier | fail-closed authority rejection behavior |
+| src/kyriotes_csk2/engine.rs::seal_with_verifier | fail-closed authority rejection behavior |
+| src/kyriotes_csk2/engine.rs::open_with_verifier | fail-closed authority rejection behavior |
+| src/kyriotes_csk2/engine.rs::add_epoch_wrapper_with_verifier | fail-closed wrapper rejection behavior |
+| src/kyriotes_csk2/engine.rs::rotated_authority_state | extracted epoch transition structure |
+| src/kyriotes_csk2/engine.rs::begin_epoch_rotation_commit | extracted rotate_epoch_full commit/finalization boundary |
+| src/kyriotes_csk2/capability_tree.rs::verify_non_revocation | selected empty-set non-revocation behavior |
+| src/kyriotes_csk2/transparency.rs::bind_transparency_root_to_state | extracted transparency-root state binding |
 
 ## Coq Evidence Layer
 
 The Coq evidence layer is:
 
-    proofs/coq/rust_refinement/ArcRustRefinementEvidence.v
+    proofs/coq/rust_refinement/KyriotesCsk2RustRefinementEvidence.v
 
 It defines the refinement evidence surface and records the current executable evidence layer. The Rust mechanical refinement inventory closure is tracked separately by the generated refinement inventory and the Kani proof-status artifacts.
 
@@ -78,7 +78,7 @@ It defines the refinement evidence surface and records the current executable ev
 A verification CI job should run:
 
     cargo test
-    cargo +nightly fuzz build fuzz_decode_arc_object
+    cargo +nightly fuzz build fuzz_decode_kyriotes_csk2_object
     ./scripts/refinement/generate_refinement_evidence.py
     ./proofs/coq/check.sh
 

@@ -8,19 +8,19 @@
     Production API impact: none
     Tracked Rust mechanical inventory impact: none
 
-This lane records concrete implementation evidence for the remaining seal/open crypto semantic contracts after the AEAD + AAD discharge. ARC's tracked Rust mechanical refinement inventory remains unchanged at 11 / 11 verifier-backed proof lanes.
+This lane records concrete implementation evidence for the remaining seal/open crypto semantic contracts after the AEAD + AAD discharge. Kyriotēs-CSK2's tracked Rust mechanical refinement inventory remains unchanged at 11 / 11 verifier-backed proof lanes.
 
 ## Concrete Evidence
 
 The implementation evidence is split across:
 
-    src/arc/engine.rs
-    tests/arc_seal_open_crypto_semantic.rs
+    src/kyriotes_csk2/engine.rs
+    tests/kyriotes_csk2_seal_open_crypto_semantic.rs
 
 CI records this evidence in the `Seal/open concrete Rust evidence` job. The job uploads the `seal-open-rust-evidence` artifact containing:
 
     crypto-contract-discharge-tests.log
-    arc-seal-open-crypto-semantic.log
+    kyriotes-csk2-seal-open-crypto-semantic.log
     seal-open-rust-summary.md
 
 The private engine tests cover:
@@ -49,7 +49,7 @@ The production composed tests cover:
 
 The discharge status is recorded in:
 
-    proofs/coq/rust_refinement/ArcSealOpenCryptoSemanticContracts.v
+    proofs/coq/rust_refinement/KyriotesCsk2SealOpenCryptoSemanticContracts.v
 
 CI compiles the Coq proof tree in the `Coq proof check` job by running:
 
@@ -72,7 +72,7 @@ The bridge definitions for `crypto_contract_seal` and `crypto_contract_open` are
 
 ## Boundary
 
-This is concrete implementation evidence for ARC's use of the primitives and binding surfaces. It does not prove X25519, ML-KEM, ChaCha20Poly1305, HKDF, or SHA as cryptographic primitives. It also does not replace external primitive analysis or third-party implementation audits.
+This is concrete implementation evidence for Kyriotēs-CSK2's use of the primitives and binding surfaces. It does not prove X25519, ML-KEM, ChaCha20Poly1305, HKDF, or SHA as cryptographic primitives. It also does not replace external primitive analysis or third-party implementation audits.
 
 ## Remaining Work
 

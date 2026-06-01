@@ -5,11 +5,11 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-ENGINE_PATH = PROJECT_ROOT / "src" / "arc" / "engine.rs"
+ENGINE_PATH = PROJECT_ROOT / "src" / "kyriotes-csk2" / "engine.rs"
 
 
 def main() -> int:
-    assert ENGINE_PATH.exists(), "src/arc/engine.rs must exist"
+    assert ENGINE_PATH.exists(), "src/kyriotes_csk2/engine.rs must exist"
 
     source = ENGINE_PATH.read_text(encoding="utf-8")
 
@@ -18,7 +18,7 @@ def main() -> int:
     required_terms = [
         "RecipientSecretKey",
         "RecipientPublicKey",
-        "ArcObject",
+        "KyriotesCsk2Object",
         "Capability",
         "CapabilityProof",
         "AuthorityState",
@@ -29,7 +29,7 @@ def main() -> int:
         assert term in source, f"add_epoch_wrapper surface must mention {term}"
 
     assert "Result" in source, "add_epoch_wrapper should expose Result-style fallible behavior"
-    assert "ArcError" in source, "add_epoch_wrapper should use ARC error surface"
+    assert "KyriotesCsk2Error" in source, "add_epoch_wrapper should use Kyriotēs-CSK2 error surface"
 
     print("add_epoch_wrapper surface check passed.")
     return 0

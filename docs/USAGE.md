@@ -82,7 +82,7 @@ Use crates.io for normal integration and a local path dependency when you need t
 ```toml
 # Cargo.toml
 [dependencies]
-kyriotes-csk2 = "0.1"
+kyriotes-csk2 = "0.1.1"
 ```
 
 ### Option B: local workspace dependency (for unreleased work)

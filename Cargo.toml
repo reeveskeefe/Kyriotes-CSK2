@@ -6,8 +6,8 @@ rust-version = "1.87"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/reeveskeefe/Kyriotēs-CSK2"
-keywords = ["kyriotes-csk2", "capabilities", "encryption", "cryptography"]
-categories = ["cryptography"]
+keywords = ["encryption", "capabilities", "access-control", "aead", "kem"]
+categories = ["cryptography", "authentication", "data-structures"]
 # crates.io requires a non-empty description before publish. Fill this in manually.
 description = "Kyriotēs-CSK2 makes encrypted data require permission, not just a key. Even if someone has the decryption key, Kyriotēs-CSK2 can still refuse access unless the current authority proof says they are allowed to open that exact object."
 include = [
@@ -15,7 +15,7 @@ include = [
     "Cargo.lock",
     "LICENSE",
     "README.md",
-    "Kyriotēs-CSK2LogoRectangular.png",
+    "Kyriotes-CSK2LogoRectangular.png",
     "Kyriotēs-CSK2LogoSquare.png",
     "docs/**/*.md",
     "src/**/*.rs",

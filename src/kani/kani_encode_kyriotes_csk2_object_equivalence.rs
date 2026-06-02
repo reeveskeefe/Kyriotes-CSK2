@@ -27,7 +27,7 @@ fn bytes12(seed: u8) -> [u8; 12] {
     out
 }
 
-fn minimal_arc_object_with_object_id(object_id: &str) -> KyriotesCsk2Object {
+fn minimal_kyriotes_csk2_object_with_object_id(object_id: &str) -> KyriotesCsk2Object {
     KyriotesCsk2Object {
         version: 1,
         suite: "KYRIOTES-CSK2-KANI-SUITE".to_string(),
@@ -44,13 +44,13 @@ fn minimal_arc_object_with_object_id(object_id: &str) -> KyriotesCsk2Object {
     }
 }
 
-fn minimal_arc_object() -> KyriotesCsk2Object {
-    minimal_arc_object_with_object_id("kani-object")
+fn minimal_kyriotes_csk2_object() -> KyriotesCsk2Object {
+    minimal_kyriotes_csk2_object_with_object_id("kani-object")
 }
 
 #[kani::proof]
 fn encode_kyriotes_csk2_object_is_deterministic_for_equal_input() {
-    let object = minimal_arc_object();
+    let object = minimal_kyriotes_csk2_object();
 
     let first = encode_kyriotes_csk2_object(&object);
     let second = encode_kyriotes_csk2_object(&object);
@@ -60,7 +60,7 @@ fn encode_kyriotes_csk2_object_is_deterministic_for_equal_input() {
 
 #[kani::proof]
 fn encode_kyriotes_csk2_object_returns_non_empty_bytes() {
-    let object = minimal_arc_object();
+    let object = minimal_kyriotes_csk2_object();
     let encoded = encode_kyriotes_csk2_object(&object);
 
     assert!(!encoded.is_empty());
@@ -68,19 +68,19 @@ fn encode_kyriotes_csk2_object_returns_non_empty_bytes() {
 
 #[kani::proof]
 fn encode_kyriotes_csk2_object_starts_with_kyriotes_csk2_magic() {
-    let object = minimal_arc_object();
+    let object = minimal_kyriotes_csk2_object();
     let encoded = encode_kyriotes_csk2_object(&object);
 
     assert!(encoded.len() >= 4);
-    assert_eq!(encoded[0], b'A');
-    assert_eq!(encoded[1], b'R');
-    assert_eq!(encoded[2], b'C');
-    assert_eq!(encoded[3], b'O');
+    assert_eq!(encoded[0], b'K');
+    assert_eq!(encoded[1], b'C');
+    assert_eq!(encoded[2], b'S');
+    assert_eq!(encoded[3], b'2');
 }
 
 #[kani::proof]
 fn encode_kyriotes_csk2_object_version_one_layout_is_stable() {
-    let object = minimal_arc_object();
+    let object = minimal_kyriotes_csk2_object();
     let encoded = encode_kyriotes_csk2_object(&object);
 
     assert!(encoded.len() >= 6);
@@ -90,8 +90,8 @@ fn encode_kyriotes_csk2_object_version_one_layout_is_stable() {
 
 #[kani::proof]
 fn encode_kyriotes_csk2_object_binds_object_id() {
-    let first = minimal_arc_object_with_object_id("kani-object-a");
-    let second = minimal_arc_object_with_object_id("kani-object-b");
+    let first = minimal_kyriotes_csk2_object_with_object_id("kani-object-a");
+    let second = minimal_kyriotes_csk2_object_with_object_id("kani-object-b");
 
     let first_encoded = encode_kyriotes_csk2_object(&first);
     let second_encoded = encode_kyriotes_csk2_object(&second);

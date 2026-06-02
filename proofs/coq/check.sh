@@ -75,6 +75,7 @@ proofs=(
   rust_refinement/KyriotesCsk2OpenRustRefinement.v
   rust_refinement/KyriotesCsk2SealOpenModelCryptoEquivalence.v
   rust_refinement/KyriotesCsk2SealOpenCryptoSemanticContracts.v
+  rust_refinement/KyriotesCsk2EncodeDecodeRoundTripRustRefinement.v
   rust_refinement/KyriotesCsk2CapabilityTreeWitnessSoundness.v
   rust_refinement/KyriotesCsk2AddEpochWrapperRustRefinement.v
   rust_refinement/KyriotesCsk2RotateEpochRustRefinement.v

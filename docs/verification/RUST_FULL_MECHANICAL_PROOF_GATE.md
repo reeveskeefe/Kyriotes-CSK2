@@ -40,5 +40,6 @@ The current completed gate is backed by repeatable Kani proof lanes and recorded
 
 1. Full transparency append and Merkle soundness.
 2. Capability-tree non-empty witness and Merkle-path soundness.
-3. Encode/decode canonical round-trip equivalence.
-4. Active expansion lane: seal/open crypto semantic contracts over explicit AEAD/KEM/HKDF/SHA assumptions.
+3. Seal/open encode/decode round-trip preservation for recorded seal-produced objects: complete within the scoped expansion lane.
+4. Exhaustive encode/decode canonical equivalence over arbitrary bytes and the unbounded object space.
+5. Active expansion lane: seal/open crypto semantic contracts over explicit AEAD/KEM/HKDF/SHA assumptions.

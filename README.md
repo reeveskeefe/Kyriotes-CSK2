@@ -5,7 +5,7 @@
 
 <p align="center">
 
-  <img src="Kyriotēs-CSK2LogoRectangular.png" alt="The Kyriotēs-CSK2 logo">
+  <img src="Kyriotes-CSK2LogoRectangular.png" alt="The Kyriotēs-CSK2 logo">
 
 </p>
 

@@ -15,6 +15,7 @@ This lane records concrete implementation evidence for the remaining seal/open c
 The implementation evidence is split across:
 
     src/kyriotes_csk2/engine.rs
+    src/kani/kani_seal_open_helper_surface_equivalence.rs
     tests/kyriotes_csk2_seal_open_crypto_semantic.rs
 
 CI records this evidence in the `Seal/open concrete Rust evidence` job. The job uploads the `seal-open-rust-evidence` artifact containing:
@@ -44,6 +45,32 @@ The production composed tests cover:
     context hash tamper rejects
     classical KEM ciphertext tamper rejects
     PQ KEM ciphertext tamper rejects
+    wrapper swapped from another object rejects
+    missing epoch wrapper rejects
+    wrong epoch wrapper rejects
+    swapped capability proof rejects
+    swapped authority state rejects
+    stale transparency root rejects
+    altered temporal policy rejects
+    well-formed decoded object with policy tamper rejects
+    well-formed decoded object with temporal-policy tamper rejects
+
+The Kani helper-surface model records extracted boundary evidence for Kyriotēs-CSK2-owned composition helpers without relying on production crypto internals. It covers:
+
+    context hash binding for transcript fields and capability stamp
+    classical KEM agreement, wrong-secret rejection, and ciphertext-tamper rejection
+    hybrid shared-secret binding to both classical and PQ shares
+    HKDF/KEK determinism
+    HKDF/KEK binding to context hash and authority digest
+    authority AAD binding to context hash, classical KEM ciphertext, and PQ KEM ciphertext
+    payload AAD binding to object identity, rights, policy hash, and seal epoch
+    context-hash versus KEK domain separation
+
+The seal/open serialization gap is covered by the separate scoped expansion lane:
+
+    docs/verification/SEAL_OPEN_ENCODE_DECODE_ROUNDTRIP.md
+
+That lane records production and Kani evidence that recorded seal-produced objects encode and decode back to the same semantic object.
 
 ## Coq Evidence Record
 
@@ -63,10 +90,32 @@ The job uploads the `coq-proof-check-evidence` artifact containing:
 The key evidence record is:
 
     SealOpenConcreteDischargeEvidence
+    SealOpenKaniCompositionEvidence
+    SealOpenHelperSurfaceEvidence
+
+The evidence record now has a separate `concrete_production_extended_tamper_rejection_tests` flag for the wrapper/state/proof/temporal/well-formed-decode tamper cases.
+
+The Coq bridge also links Kani composition evidence to explicit lemmas for Kyriotēs-CSK2-owned logic:
+
+    owned_composition_evidence_implies_boundary_extraction
+    owned_composition_evidence_implies_aad_binding_evidence
+    owned_composition_evidence_implies_wrapper_selection_evidence
+    owned_composition_evidence_implies_composed_roundtrip_and_tamper_evidence
+
+These lemmas make the composition bridge less assumption-shaped by deriving local binding, wrapper-selection, round-trip, and tamper-rejection claims from recorded Rust/Kani evidence. Primitive security contracts remain external assumptions.
+
+The helper-surface bridge adds:
+
+    current_helper_surface_evidence_complete
+    helper_surface_evidence_implies_kem_hkdf_context_boundaries
+    current_helper_surface_evidence_implies_kem_hkdf_context_boundaries
+
+These lemmas record the extracted Kani helper-model evidence for KEM agreement/rejection, HKDF/context binding, authority AAD binding, payload AAD binding, and helper-level domain separation.
 
 The key theorem is:
 
     current_kem_hkdf_context_and_production_contracts_discharged
+    current_owned_composition_evidence_complete
 
 The bridge definitions for `crypto_contract_seal` and `crypto_contract_open` are constructive aliases over the model seal/open functions. The semantic round-trip theorem now depends on the model theorem directly instead of an abstract Coq axiom, and the tamper theorem is discharged by explicit case analysis over model-backed tamper cases.
 
@@ -74,10 +123,12 @@ The bridge definitions for `crypto_contract_seal` and `crypto_contract_open` are
 
 This is concrete implementation evidence for Kyriotēs-CSK2's use of the primitives and binding surfaces. It does not prove X25519, ML-KEM, ChaCha20Poly1305, HKDF, or SHA as cryptographic primitives. It also does not replace external primitive analysis or third-party implementation audits.
 
+For the explicit primitive assumptions and standards references used by this lane, see [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md).
+
 ## Remaining Work
 
-The remaining step for a stronger full seal/open story is to connect these concrete tests to stronger proof automation or external primitive proofs:
+The remaining steps for a stronger full seal/open story are:
 
-1. Kani-friendly extracted models for the concrete KEM/HKDF/context helper surfaces.
-2. External primitive-security references for X25519, ML-KEM, ChaCha20Poly1305, HKDF, and SHA.
-3. Long-term retention or release attachment of CI evidence artifacts for audit packages.
+1. Exhaustive encode/decode canonical equivalence over arbitrary bytes and the unbounded object space.
+2. Long-term retention or release attachment of CI evidence artifacts for audit packages.
+3. Periodic review of [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md) when primitive crates or standards references change.

@@ -37,8 +37,6 @@ It does not prove X25519, ML-KEM, ChaCha20Poly1305, HKDF, SHA, or Merkle securit
 
 For a detailed list of primitive assumptions, see [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md).
 
-For a detailed list of primitive assumptions, see [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md).
-
 ## Coq Artifact
 
     proofs/coq/rust_refinement/KyriotesCsk2SealOpenCryptoSemanticContracts.v
@@ -85,6 +83,12 @@ The KEM agreement, HKDF/context separation, deeper context-hash binding, and pro
 
 This discharges the remaining implementation-level contract evidence for Kyriotēs-CSK2's current seal/open composition, while preserving the boundary that primitive cryptographic security is inherited rather than proven here.
 
+The seal/open serialization gap now has scoped encode/decode round-trip evidence recorded in:
+
+    docs/verification/SEAL_OPEN_ENCODE_DECODE_ROUNDTRIP.md
+
+This proves that recorded seal-produced objects and bounded semantic-object fixtures encode and decode back to the same semantic object under the production wire codec. Full arbitrary-byte grammar equivalence and exhaustive canonicality over the unbounded object space remain outside that narrow claim.
+
 The Coq proof tree is compiled in CI by the `Coq proof check` job, which runs `./proofs/coq/check.sh` and uploads the `coq-proof-check-evidence` artifact.
 
 ## Production Helper Boundaries
@@ -96,5 +100,5 @@ The open path now has explicit helper boundaries for wrapper selection and open-
 Next proof-expansion work should replace portions of the contract assumptions with deeper evidence:
 
 1. Kani-friendly extracted models for the concrete KEM/HKDF/context helper surfaces.
-2. External primitive-security references for X25519, ML-KEM, ChaCha20Poly1305, HKDF, and SHA.
-3. Long-term retention or release attachment of CI evidence artifacts for audit packages.
+2. Long-term retention or release attachment of CI evidence artifacts for audit packages.
+3. Periodic review of [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md) when primitive crates or standards references change.

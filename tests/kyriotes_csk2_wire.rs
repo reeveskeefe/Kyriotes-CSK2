@@ -23,6 +23,27 @@ fn sample_transparency_proof() -> TransparencyProof {
     commit.proof
 }
 
+fn sealed_object_for_temporal_policy(
+    policy_label: &str,
+    policy: TemporalPolicy,
+) -> KyriotesCsk2Object {
+    let s = Scenario::baseline(policy_label, 42)
+        .with_temporal_policy(policy)
+        .with_message(b"sealed wire payload");
+
+    seal(
+        &s.keypair.public,
+        &s.message,
+        &s.cap,
+        &s.proof,
+        &s.seal_transparency_proof,
+        &s.seal_state,
+        &s.req,
+        s.temporal_policy.clone(),
+    )
+    .expect("seal should succeed")
+}
+
 #[test]
 fn kyriotes_csk2_object_roundtrip_wire_codec() {
     let s = Scenario::baseline("wire-roundtrip", 42)
@@ -45,6 +66,30 @@ fn kyriotes_csk2_object_roundtrip_wire_codec() {
     let decoded = decode_kyriotes_csk2_object(&encoded).expect("decode should succeed");
 
     assert_eq!(decoded, object);
+}
+
+#[test]
+fn sealed_object_encode_decode_roundtrip_preserves_semantic_object_for_temporal_policies() {
+    let cases = [
+        ("wire-roundtrip-current", TemporalPolicy::Current),
+        ("wire-roundtrip-historical", TemporalPolicy::Historical(42)),
+        (
+            "wire-roundtrip-window",
+            TemporalPolicy::Window { start: 40, end: 44 },
+        ),
+        (
+            "wire-roundtrip-reseal-required",
+            TemporalPolicy::ResealRequired { after: 43 },
+        ),
+    ];
+
+    for (policy_label, policy) in cases {
+        let object = sealed_object_for_temporal_policy(policy_label, policy);
+        let encoded = encode_kyriotes_csk2_object(&object);
+        let decoded = decode_kyriotes_csk2_object(&encoded).expect("decode should succeed");
+
+        assert_eq!(decoded, object);
+    }
 }
 
 #[test]

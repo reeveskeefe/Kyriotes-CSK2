@@ -55,6 +55,7 @@ proofs=(
   completeness/KyriotesCsk2MasterInvariantProofs.v
   merkle_transparency/KyriotesCsk2MerkleConcreteTree.v
   merkle_transparency/KyriotesCsk2TransparencyAppendOnly.v
+  merkle_transparency/KyriotesCsk2FullTransparencyMerkleSoundness.v
   lifecycle/KyriotesCsk2LifecycleProofs.v
   lifecycle/KyriotesCsk2PredicateRefinementProofs.v
   security/KyriotesCsk2AdversaryGame.v

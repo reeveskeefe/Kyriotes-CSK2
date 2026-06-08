@@ -17,4 +17,5 @@ mod kani_seal_open_crypto_boundary_equivalence;
 mod kani_seal_open_helper_surface_equivalence;
 mod kani_seal_open_model_crypto_equivalence;
 mod kani_transparency_equivalence;
+mod kani_transparency_merkle_soundness;
 mod kani_verify_equivalence;

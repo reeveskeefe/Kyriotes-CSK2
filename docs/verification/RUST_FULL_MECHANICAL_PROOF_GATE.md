@@ -8,7 +8,7 @@ This means every target currently listed in the Rust mechanical refinement inven
     backed by Kani verifier evidence
     recorded with an explicit proof boundary
 
-This does not mea Kyriotēs-CSK2 has full cryptographic semantic equivalence across the entire protocol. The completed milestone proves the tracked implementation-level refinement lanes within their stated scopes.
+This does not mean Kyriotēs-CSK2 has full cryptographic semantic equivalence across the entire protocol. The completed milestone proves the tracked implementation-level refinement lanes within their stated scopes.
 
 ## Current Gate Status
 
@@ -38,7 +38,7 @@ The current completed gate is backed by repeatable Kani proof lanes and recorded
 
 ## Next Verification Expansion Targets
 
-1. Full transparency append and Merkle soundness.
+1. Transparency append and Merkle owned-composition soundness: complete under explicit SHA-256 assumptions; preserve CI evidence per release.
 2. Capability-tree non-empty witness and Merkle-path soundness.
 3. Seal/open encode/decode round-trip preservation for recorded seal-produced objects: complete within the scoped expansion lane.
 4. Exhaustive encode/decode canonical equivalence over arbitrary bytes and the unbounded object space.

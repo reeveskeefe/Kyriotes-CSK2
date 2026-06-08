@@ -64,6 +64,8 @@ CI records the current verification evidence in named jobs:
 
 These artifacts support the scoped seal/open semantic-equivalence expansion lanes. They do not prove the underlying cryptographic primitives themselves.
 
+The computational adversary model, target security games, and reduction roadmap are documented in [SECURITY_MODEL.md](docs/verification/SECURITY_MODEL.md). External primitive assumptions and standards references are documented in [PRIMITIVE_BOUNDARY.md](docs/verification/PRIMITIVE_BOUNDARY.md).
+
 ## Publishing
 
 Publishing is automated with the GitHub Actions workflow in `.github/workflows/publish.yml`.

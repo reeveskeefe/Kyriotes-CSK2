@@ -2,7 +2,7 @@
 
 Kyriotēs-CSK2 proves composition and binding around cryptographic primitives. It does not prove the primitive algorithms internally.
 
-This file records the primitive contracts assumed by the seal/open crypto semantic contract lane. These assumptions are external inputs to Kyriotēs-CSK2's proof story, not internally proven theorems.
+This file records the primitive contracts and computational assumptions used by Kyriotēs-CSK2 security arguments. These assumptions are external inputs to the proof story, not internally proven theorems. The games and reduction obligations are defined in [SECURITY_MODEL.md](SECURITY_MODEL.md).
 
 ## Implementation Surface
 
@@ -13,6 +13,7 @@ The current Rust implementation uses the following primitive crates:
 - `chacha20poly1305` for ChaCha20Poly1305 AEAD.
 - `hkdf` with SHA-256 for HKDF-SHA256.
 - `sha2` for SHA-256 transcript and tree hashing.
+- `ed25519-dalek` for Ed25519 signatures.
 
 The verification lanes check Kyriotēs-CSK2's use of these APIs: agreement composition, context construction, associated-data construction, deterministic binding, and defined tamper rejection. They do not audit crate internals, prove constant-time behavior, prove randomness quality, or prove cryptanalytic hardness.
 
@@ -83,6 +84,27 @@ Kyriotēs-CSK2 assumes:
 
 Kyriotēs-CSK2 proves only that transcript fields are included in the intended order and that selected context changes alter the hashed transcript surface. It does not prove SHA-256 collision resistance.
 
+### Ed25519
+
+Reference: [RFC 8032, Edwards-Curve Digital Signature Algorithm](https://www.rfc-editor.org/rfc/rfc8032).
+
+Kyriotēs-CSK2 assumes:
+
+- Ed25519 signing and verification are implemented according to RFC 8032.
+- The signature scheme is existentially unforgeable under chosen-message attack for the deployed parameter set.
+- Secret signing keys remain confidential and are generated with adequate entropy.
+- Verification rejects malformed, altered, or context-mismatched signatures according to the implementation contract.
+
+Kyriotēs-CSK2 proves only that authority, epoch, capability, and threshold-signature verification receives the intended bound messages and keys. It does not prove Ed25519's underlying hardness assumptions or the `ed25519-dalek` implementation.
+
+## Correctness Versus Security
+
+Primitive correctness contracts state functional behavior such as matching KEM keys agreeing or AEAD decryption recovering the encrypted plaintext.
+
+Computational security assumptions state that a probabilistic polynomial-time adversary has only negligible advantage in games such as IND-CCA, AEAD integrity, EUF-CMA, collision resistance, or second-preimage resistance.
+
+Kyriotēs-CSK2's reduction claims must identify which category is used. Functional tests and Kani contracts do not discharge computational security assumptions.
+
 ## Resulting Claim Boundary
 
 Under the primitive contracts above, Kyriotēs-CSK2's seal/open proof lane supports the following scoped claim:
@@ -95,4 +117,4 @@ It does not support the following stronger claims:
     Kyriotēs-CSK2 proves end-to-end cryptographic security without external primitive assumptions.
     Kyriotēs-CSK2 proves side-channel resistance or implementation audit results for dependency crates.
 
-These assumptions support Kyriotēs-CSK2's seal/open crypto semantic contract lane. They are not claims that Kyriotēs-CSK2 independently verifies the primitive cryptographic algorithms.
+These assumptions support Kyriotēs-CSK2's seal/open, capability, epoch, signature, and transparency security arguments. They are not claims that Kyriotēs-CSK2 independently verifies the primitive cryptographic algorithms.

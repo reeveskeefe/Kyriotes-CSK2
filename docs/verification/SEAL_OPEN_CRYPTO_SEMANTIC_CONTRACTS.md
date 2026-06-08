@@ -33,9 +33,10 @@ Defined tampering cases should reject before plaintext recovery.
 
 This is a crypto-contract lane, not a primitive-security proof. It assumes contract behavior for AEAD round trip and tamper rejection, KEM encapsulation/decapsulation agreement for matching keys, HKDF determinism, and SHA/context binding.
 
-It does not prove X25519, ML-KEM, ChaCha20Poly1305, HKDF, SHA, or Merkle security. Those remain separate primitive-analysis or reduction targets.
+It does not prove X25519, ML-KEM, ChaCha20Poly1305, Ed25519, HKDF, or SHA security internally. Those properties remain explicit assumptions discharged only through standards, external analysis, and completed reduction arguments.
 
 For a detailed list of primitive assumptions, see [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md).
+The adversary model, target security games, and reduction obligations are defined in [SECURITY_MODEL.md](SECURITY_MODEL.md).
 
 ## Coq Artifact
 
@@ -99,6 +100,7 @@ The open path now has explicit helper boundaries for wrapper selection and open-
 
 Next proof-expansion work should replace portions of the contract assumptions with deeper evidence:
 
-1. Kani-friendly extracted models for the concrete KEM/HKDF/context helper surfaces.
-2. Long-term retention or release attachment of CI evidence artifacts for audit packages.
-3. Periodic review of [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md) when primitive crates or standards references change.
+1. Mechanize the two-gate opening game and reduction hybrids defined in [SECURITY_MODEL.md](SECURITY_MODEL.md).
+2. Add explicit advantage bounds for AEAD, KEM, KDF, signature, and hash failure events.
+3. Retain or attach CI and game-proof evidence artifacts to releases.
+4. Review [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md) whenever primitive crates or standards references change.

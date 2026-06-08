@@ -4,8 +4,10 @@ use crate::encoding::codec::{put_bytes, put_str, put_u64};
 use ed25519_dalek::{Signature, VerifyingKey};
 
 use super::authority::{EpochKeyCert, verify_epoch_cert, verify_epoch_root_sig};
-use super::model::{AuthorityState, TransparencyProof, transparency_leaf_hash};
-use super::transparency::hash_transparency_node;
+#[cfg(test)]
+use super::model::transparency_leaf_hash;
+use super::model::{AuthorityState, TransparencyProof};
+use super::transparency::verify_transparency_proof;
 use super::tsig::{ThresholdSignatureSet, tsig_verify};
 
 mod private {
@@ -111,7 +113,7 @@ impl AuthorityVerifier for StubAuthorityVerifier {
         state: &AuthorityState,
         transparency_proof: &TransparencyProof,
     ) -> Result<VerifiedAuthorityState, KyriotesCsk2Error> {
-        verify_transparency_inclusion(state, transparency_proof)?;
+        verify_transparency_proof(state, transparency_proof)?;
         Ok(VerifiedAuthorityState::new(
             state.clone(),
             AuthorityVerificationEvidence {
@@ -351,44 +353,13 @@ impl AuthorityVerifier for CryptoAuthorityVerifier {
             }
         };
 
-        verify_transparency_inclusion(state, transparency_proof)?;
+        verify_transparency_proof(state, transparency_proof)?;
 
         Ok(VerifiedAuthorityState::new(
             state.clone(),
             AuthorityVerificationEvidence { path },
         ))
     }
-}
-
-fn verify_transparency_inclusion(
-    state: &AuthorityState,
-    proof: &TransparencyProof,
-) -> Result<(), KyriotesCsk2Error> {
-    let expected_leaf = transparency_leaf_hash(state);
-    if proof.leaf_hash != expected_leaf {
-        return Err(KyriotesCsk2Error::AuthorityState(
-            "transparency proof leaf does not match authority state",
-        ));
-    }
-
-    let mut idx = proof.leaf_index;
-    let mut acc = proof.leaf_hash;
-    for sibling in &proof.sibling_hashes {
-        acc = if idx & 1 == 0 {
-            hash_transparency_node(acc, *sibling)
-        } else {
-            hash_transparency_node(*sibling, acc)
-        };
-        idx >>= 1;
-    }
-
-    if acc != state.transparency_root {
-        return Err(KyriotesCsk2Error::AuthorityState(
-            "transparency proof root mismatch",
-        ));
-    }
-
-    Ok(())
 }
 
 pub fn authority_state_signing_message(state: &AuthorityState) -> Vec<u8> {

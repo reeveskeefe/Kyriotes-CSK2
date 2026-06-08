@@ -254,8 +254,16 @@ pub fn merkle_root(leaves: &[[u8; 32]]) -> [u8; 32] {
     level[0]
 }
 
-fn merkle_proof_for_index(leaves: &[[u8; 32]], index: usize) -> Vec<[u8; 32]> {
-    if leaves.is_empty() {
+pub(crate) fn merkle_sibling_is_right(index: u64) -> bool {
+    index & 1 == 0
+}
+
+pub(crate) fn next_merkle_index(index: u64) -> u64 {
+    index >> 1
+}
+
+pub(crate) fn merkle_proof_for_index(leaves: &[[u8; 32]], index: usize) -> Vec<[u8; 32]> {
+    if leaves.is_empty() || index >= leaves.len() {
         return Vec::new();
     }
 
@@ -266,7 +274,7 @@ fn merkle_proof_for_index(leaves: &[[u8; 32]], index: usize) -> Vec<[u8; 32]> {
     while level.len() > 1 {
         // Record the sibling used at this level.  For a lone (unpaired) node
         // the sibling is LONE_NODE_SENTINEL, matching what merkle_root builds.
-        if idx.is_multiple_of(2) {
+        if merkle_sibling_is_right(idx as u64) {
             if idx + 1 < level.len() {
                 siblings.push(level[idx + 1]);
             } else {
@@ -289,11 +297,53 @@ fn merkle_proof_for_index(leaves: &[[u8; 32]], index: usize) -> Vec<[u8; 32]> {
             i += 2;
         }
 
-        idx /= 2;
+        idx = next_merkle_index(idx as u64) as usize;
         level = next;
     }
 
     siblings
+}
+
+pub(crate) fn merkle_root_from_proof(
+    leaf: [u8; 32],
+    sibling_hashes: &[[u8; 32]],
+    leaf_index: u64,
+) -> [u8; 32] {
+    let mut idx = leaf_index;
+    let mut acc = leaf;
+
+    for sibling in sibling_hashes {
+        acc = if merkle_sibling_is_right(idx) {
+            hash_transparency_node(acc, *sibling)
+        } else {
+            hash_transparency_node(*sibling, acc)
+        };
+        idx = next_merkle_index(idx);
+    }
+
+    acc
+}
+
+pub(crate) fn verify_transparency_proof(
+    state: &AuthorityState,
+    proof: &TransparencyProof,
+) -> Result<(), KyriotesCsk2Error> {
+    let expected_leaf = transparency_leaf_hash(state);
+    if proof.leaf_hash != expected_leaf {
+        return Err(KyriotesCsk2Error::AuthorityState(
+            "transparency proof leaf does not match authority state",
+        ));
+    }
+
+    if merkle_root_from_proof(proof.leaf_hash, &proof.sibling_hashes, proof.leaf_index)
+        != state.transparency_root
+    {
+        return Err(KyriotesCsk2Error::AuthorityState(
+            "transparency proof root mismatch",
+        ));
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -338,5 +388,85 @@ mod tests {
             err,
             KyriotesCsk2Error::AuthorityState("state not found in transparency log")
         ));
+    }
+
+    #[test]
+    fn generated_proofs_verify_for_every_leaf_and_odd_tree_sizes() {
+        for count in 1..=9 {
+            let leaves: Vec<[u8; 32]> = (0..count).map(|i| [i as u8 + 1; 32]).collect();
+            let root = merkle_root(&leaves);
+
+            for index in 0..count {
+                let proof = merkle_proof_for_index(&leaves, index);
+                assert_eq!(
+                    merkle_root_from_proof(leaves[index], &proof, index as u64),
+                    root,
+                    "count={count}, index={index}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn generated_proof_rejects_wrong_leaf_sibling_index_and_root() {
+        let leaves = [[1u8; 32], [2u8; 32], [3u8; 32], [4u8; 32]];
+        let root = merkle_root(&leaves);
+        let proof = merkle_proof_for_index(&leaves, 2);
+
+        assert_ne!(merkle_root_from_proof([9u8; 32], &proof, 2), root);
+
+        let mut wrong_sibling = proof.clone();
+        wrong_sibling[0][0] ^= 1;
+        assert_ne!(merkle_root_from_proof(leaves[2], &wrong_sibling, 2), root);
+
+        assert_ne!(merkle_root_from_proof(leaves[2], &proof, 3), root);
+        assert_ne!(root, [0u8; 32]);
+    }
+
+    #[test]
+    fn odd_leaf_uses_lone_node_sentinel() {
+        let leaves = [[1u8; 32], [2u8; 32], [3u8; 32]];
+        let proof = merkle_proof_for_index(&leaves, 2);
+
+        assert_eq!(proof[0], LONE_NODE_SENTINEL);
+        assert_eq!(
+            merkle_root_from_proof(leaves[2], &proof, 2),
+            merkle_root(&leaves)
+        );
+    }
+
+    #[test]
+    fn commits_preserve_historical_entries_and_regenerate_valid_proofs() {
+        let mut log = InMemoryTransparencyLog::new();
+        let states: Vec<_> = (0..6).map(sample_state).collect();
+
+        for state in &states {
+            log.commit_state(state).expect("append");
+        }
+
+        assert_eq!(log.entries.len(), states.len());
+        for state in &states {
+            let proof = log.proof_for_state(state).expect("historical proof");
+            let committed = bind_transparency_root_to_state(state, log.current_root());
+            verify_transparency_proof(&committed, &proof).expect("proof verifies");
+        }
+    }
+
+    #[test]
+    fn identical_commit_is_idempotent_and_conflicting_commit_rejects() {
+        let mut log = InMemoryTransparencyLog::new();
+        let state = sample_state(7);
+        log.commit_state(&state).expect("first commit");
+        let root = log.current_root();
+
+        log.commit_state(&state).expect("idempotent commit");
+        assert_eq!(log.entries.len(), 1);
+        assert_eq!(log.current_root(), root);
+
+        let mut conflict = state;
+        conflict.authority_root[0] ^= 1;
+        assert!(log.commit_state(&conflict).is_err());
+        assert_eq!(log.entries.len(), 1);
+        assert_eq!(log.current_root(), root);
     }
 }

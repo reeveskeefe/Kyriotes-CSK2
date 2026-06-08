@@ -155,3 +155,17 @@ path = "fuzz_targets/fuzz_verify_and_open.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "fuzz_canonical_codecs"
+path = "fuzz_targets/fuzz_canonical_codecs.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_transparency_state_machine"
+path = "fuzz_targets/fuzz_transparency_state_machine.rs"
+test = false
+doc = false
+bench = false

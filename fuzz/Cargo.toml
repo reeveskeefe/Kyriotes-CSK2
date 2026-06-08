@@ -8,9 +8,10 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
-kyriotes_csk2 = { path = "..", package = "kyriotes-csk2" }
+kyriotes_csk2 = { path = "..", package = "kyriotes-csk2", features = ["insecure-stub-verifier"] }
 libfuzzer-sys = "0.4"
 arbitrary = { version = "1", features = ["derive"] }
+rand = "0.8"
 
 [profile.release]
 debug = 1
@@ -144,6 +145,13 @@ bench = false
 [[bin]]
 name = "fuzz_full_lifecycle"
 path = "fuzz_targets/fuzz_full_lifecycle.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_verify_and_open"
+path = "fuzz_targets/fuzz_verify_and_open.rs"
 test = false
 doc = false
 bench = false

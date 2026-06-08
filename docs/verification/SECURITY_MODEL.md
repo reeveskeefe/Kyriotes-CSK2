@@ -143,8 +143,8 @@ Not acceptable until the corresponding reduction is complete:
 
 ## Next Formal Work
 
-1. Formalize the two-gate opening game and its challenge restrictions.
-2. Define the hybrid KEM and AEAD advantage interfaces.
+1. Two-gate opening game shape and challenge restrictions: formalized in `KyriotesCsk2TwoGateOpeningGame.v`.
+2. Define probabilistic hybrid KEM and AEAD advantage interfaces and instantiate the reduction obligation.
 3. Prove the Merkle binding reduction from an accepted false path to a node-hash collision or second preimage.
 4. Formalize capability/object/policy/epoch binding as a game.
 5. Add concrete advantage accounting and reduction status to each security claim.

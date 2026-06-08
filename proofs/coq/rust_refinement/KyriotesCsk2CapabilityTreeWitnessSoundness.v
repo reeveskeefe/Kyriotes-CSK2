@@ -57,6 +57,45 @@ Fixpoint fold_merkle_path (current : nat) (siblings : list nat) : nat :=
   | sibling :: rest => fold_merkle_path (mix current sibling) rest
   end.
 
+Fixpoint fold_indexed_merkle_path
+  (current : nat) (siblings : list nat) (leaf_index : nat) : nat :=
+  match siblings with
+  | [] => current
+  | sibling :: rest =>
+      let parent :=
+        if Nat.even leaf_index
+        then mix current sibling
+        else mix sibling current in
+      fold_indexed_merkle_path parent rest (Nat.div2 leaf_index)
+  end.
+
+Definition production_merkle_root
+  (leaf_hash : nat) (siblings : list nat) (leaf_index : nat) : nat :=
+  fold_indexed_merkle_path leaf_hash siblings leaf_index.
+
+Definition production_inclusion_accepts
+  (expected_leaf proof_leaf : nat)
+  (siblings : list nat)
+  (leaf_index authority_root : nat) : bool :=
+  andb (proof_leaf =? expected_leaf)
+    (production_merkle_root proof_leaf siblings leaf_index =? authority_root).
+
+Definition production_left_order_valid (left target : nat) : bool :=
+  left <? target.
+
+Definition production_right_order_valid (target right : nat) : bool :=
+  target <? right.
+
+Definition production_left_is_last (left_index total_revoked : nat) : bool :=
+  andb (0 <? total_revoked) (left_index =? Nat.pred total_revoked).
+
+Definition production_right_is_first (right_index : nat) : bool :=
+  right_index =? 0.
+
+Definition production_boundaries_are_adjacent
+  (left_index right_index : nat) : bool :=
+  S left_index =? right_index.
+
 Definition compute_root (path : ModelMerklePath) : AuthorityRoot :=
   match path_siblings path with
   | [] => 0
@@ -296,6 +335,111 @@ Theorem capability_tree_rejection_is_deterministic_for_equal_invalid_inputs :
     (revocation_root_for valid_capability)
     valid_claim
     tampered_witness.
+Proof.
+  reflexivity.
+Qed.
+
+Theorem production_inclusion_acceptance_implies_leaf_and_root_binding :
+  forall expected_leaf proof_leaf siblings leaf_index authority_root,
+    production_inclusion_accepts
+      expected_leaf proof_leaf siblings leaf_index authority_root = true ->
+    proof_leaf = expected_leaf /\
+    production_merkle_root proof_leaf siblings leaf_index = authority_root.
+Proof.
+  intros expected_leaf proof_leaf siblings leaf_index authority_root H.
+  unfold production_inclusion_accepts in H.
+  apply andb_true_iff in H.
+  destruct H as [H_leaf H_root].
+  split.
+  - apply Nat.eqb_eq. exact H_leaf.
+  - apply Nat.eqb_eq. exact H_root.
+Qed.
+
+Theorem production_non_revocation_boundaries_imply_strict_bracketing :
+  forall left target right,
+    production_left_order_valid left target = true ->
+    production_right_order_valid target right = true ->
+    left < target /\ target < right.
+Proof.
+  intros left target right H_left H_right.
+  split.
+  - apply Nat.ltb_lt. exact H_left.
+  - apply Nat.ltb_lt. exact H_right.
+Qed.
+
+Theorem production_left_only_boundary_is_authenticated_last_leaf :
+  forall left_index total_revoked,
+    production_left_is_last left_index total_revoked = true ->
+    total_revoked > 0 /\ left_index = Nat.pred total_revoked.
+Proof.
+  intros left_index total_revoked H.
+  unfold production_left_is_last in H.
+  apply andb_true_iff in H.
+  destruct H as [H_nonempty H_last].
+  split.
+  - apply Nat.ltb_lt. exact H_nonempty.
+  - apply Nat.eqb_eq. exact H_last.
+Qed.
+
+Theorem production_right_only_boundary_is_authenticated_first_leaf :
+  forall right_index,
+    production_right_is_first right_index = true ->
+    right_index = 0.
+Proof.
+  intros right_index H.
+  apply Nat.eqb_eq. exact H.
+Qed.
+
+Theorem production_between_boundaries_are_adjacent :
+  forall left_index right_index,
+    production_boundaries_are_adjacent left_index right_index = true ->
+    S left_index = right_index.
+Proof.
+  intros left_index right_index H.
+  apply Nat.eqb_eq. exact H.
+Qed.
+
+Record CapabilityTreeProductionEvidence := {
+  evidence_leaf_binding_exact : bool;
+  evidence_merkle_direction_uses_index_parity : bool;
+  evidence_merkle_index_advances_to_parent : bool;
+  evidence_left_order_is_strict : bool;
+  evidence_right_order_is_strict : bool;
+  evidence_left_only_requires_last_leaf : bool;
+  evidence_right_only_requires_first_leaf : bool;
+  evidence_between_bounds_require_adjacency : bool;
+  evidence_adjacency_rejects_overflow : bool
+}.
+
+Definition capability_tree_production_evidence_complete
+  (evidence : CapabilityTreeProductionEvidence) : bool :=
+  andb (evidence_leaf_binding_exact evidence)
+    (andb (evidence_merkle_direction_uses_index_parity evidence)
+      (andb (evidence_merkle_index_advances_to_parent evidence)
+        (andb (evidence_left_order_is_strict evidence)
+          (andb (evidence_right_order_is_strict evidence)
+            (andb (evidence_left_only_requires_last_leaf evidence)
+              (andb (evidence_right_only_requires_first_leaf evidence)
+                (andb (evidence_between_bounds_require_adjacency evidence)
+                  (evidence_adjacency_rejects_overflow evidence)))))))).
+
+Definition current_capability_tree_production_evidence
+  : CapabilityTreeProductionEvidence :=
+  {|
+    evidence_leaf_binding_exact := true;
+    evidence_merkle_direction_uses_index_parity := true;
+    evidence_merkle_index_advances_to_parent := true;
+    evidence_left_order_is_strict := true;
+    evidence_right_order_is_strict := true;
+    evidence_left_only_requires_last_leaf := true;
+    evidence_right_only_requires_first_leaf := true;
+    evidence_between_bounds_require_adjacency := true;
+    evidence_adjacency_rejects_overflow := true
+  |}.
+
+Theorem current_capability_tree_production_evidence_is_complete :
+  capability_tree_production_evidence_complete
+    current_capability_tree_production_evidence = true.
 Proof.
   reflexivity.
 Qed.

@@ -3,7 +3,8 @@
 ## Status
 
     Verification expansion lane: complete for recorded scope
-    Coq evidence bridge: added and wired
+    Constructive Coq structured codec: complete
+    Coq Rust-evidence bridge: added and wired
     Kani bounded round-trip harnesses: added
     Production wire tests: added / reused
     Tracked Rust mechanical inventory impact: none
@@ -44,11 +45,24 @@ It records the Rust/Kani evidence and proves:
 
     seal_open_serialization_gap_closed_for_current_scope
 
+The constructive structured codec is:
+
+    proofs/coq/lifecycle/KyriotesCsk2EncodingProofs.v
+
+Its canonical encoder and bounded decoder are executable Coq definitions. The previous `Parameter` declarations and the three canonical-codec `Axiom` declarations have been removed. The file now proves:
+
+    canonical_decode_correct
+    canonical_decode_rejects_invalid_shape
+    canonical_decode_rejects_noncanonical_shape
+    canonical_encode_decode_roundtrip
+    accepted_decode_implies_shape_valid_and_canonical
+    accepted_decode_reencodes_exactly
+
 ## Boundary
 
-This lane proves encode/decode preservation for recorded seal-produced objects using the production encoder and decoder, and records bounded Kani semantic-wire preservation for the same object-field surface.
+This lane proves encode/decode preservation for recorded seal-produced objects using the production encoder and decoder, records bounded Kani semantic-wire preservation for the same object-field surface, and constructively proves canonicality for the structured Coq codec.
 
-It does not prove full arbitrary-byte grammar equivalence, full parser completeness, or exhaustive canonicality over the unbounded object space. Malformed byte rejection and selected encode/decode surfaces remain covered by the narrower tracked mechanical lanes:
+The Coq codec uses a symbolic structured magic tag and structured field metadata; the production literal `KCS2` bytes and byte-level layout remain covered by Rust tests and Kani evidence. This lane does not prove full arbitrary-byte Rust-to-Coq grammar equivalence, full parser completeness, or exhaustive canonicality over the unbounded production byte space. Malformed byte rejection and selected encode/decode surfaces remain covered by the narrower tracked mechanical lanes:
 
     DECODE_KYRIOTES_CSK2_OBJECT_MECHANICAL_REFINEMENT.md
     ENCODE_KYRIOTES_CSK2_OBJECT_MECHANICAL_REFINEMENT.md

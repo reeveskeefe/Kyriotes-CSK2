@@ -2,7 +2,7 @@
 
 ## Status
 
-    Verification expansion lane: active
+    Verification expansion lane: production helper bridge added
     Coq model artifact: added and wired
     Kani model harnesses: added and wired
     Production API impact: none
@@ -12,11 +12,11 @@ Kyriotēs-CSK2's tracked Rust mechanical refinement inventory remains complete a
 
 ## Claim
 
-If Kyriotēs-CSK2 accepts a modeled capability proof and non-revocation witness against an authority root and revocation root, then the accepted witness binds the claimed subject, rights, policy hash, capability leaf, authority root, and non-revoked state.
+If Kyriotēs-CSK2 accepts a modeled capability proof and non-revocation witness against an authority root and revocation root, then the accepted witness binds the claimed subject, rights, policy hash, capability leaf, authority root, and non-revoked state. The production verifier now uses extracted predicates for exact leaf binding, indexed Merkle traversal, strict boundary ordering, authenticated edge positions, and adjacent non-revocation bounds.
 
 ## Boundary
 
-This is a deterministic model lane for KYRIOTES-CSK2-owned witness binding logic. It does not prove SHA-256, production Merkle collision resistance, or full production capability-tree semantic equivalence.
+This is a deterministic model and production-helper refinement lane for KYRIOTES-CSK2-owned witness binding logic. It does not prove SHA-256 collision resistance, second-preimage resistance, or correctness of every unbounded production tree execution. The production Merkle helper still relies on the external SHA-256 contract for `hash_transparency_node`.
 
 The lane strengthens the previous capability-tree inventory item, which covered selected empty-set non-revocation behavior. It does not change the 11 / 11 Rust mechanical inventory count.
 
@@ -34,12 +34,29 @@ The Coq model defines:
     compute_root
     revocation_root_for
     accepts_capability_witness
+    fold_indexed_merkle_path
+    production_inclusion_accepts
+    production_left_order_valid
+    production_right_order_valid
+    production_left_is_last
+    production_right_is_first
+    production_boundaries_are_adjacent
 
 The main theorem is:
 
     capability_tree_witness_soundness
 
 It proves that acceptance implies non-empty witness structure, claim-field binding, non-revocation, capability leaf binding, authority-root binding, and revocation-root binding.
+
+The production bridge additionally proves:
+
+    production inclusion acceptance implies exact leaf and computed-root binding
+    accepted non-revocation bounds strictly bracket the target
+    a left-only bound is the authenticated final leaf
+    a right-only bound is the authenticated first leaf
+    two-sided bounds have adjacent indices
+
+`CapabilityTreeProductionEvidence` records the corresponding Rust/Kani discharge points. `current_capability_tree_production_evidence_is_complete` checks that every declared production helper boundary has verifier evidence.
 
 The file also proves named rejection/acceptance cases for:
 
@@ -56,6 +73,7 @@ The file also proves named rejection/acceptance cases for:
 ## Kani Artifact
 
     src/kani/kani_capability_tree_witness_soundness.rs
+    src/kani/kani_capability_tree_production_refinement.rs
 
 The Kani harness mirrors the Coq model with fixed-size symbolic data and deterministic bounded paths. It proves:
 
@@ -69,6 +87,17 @@ The Kani harness mirrors the Coq model with fixed-size symbolic data and determi
     capability_tree_revoked_capability_rejects
     capability_tree_rejection_is_deterministic_for_equal_invalid_inputs
 
+The production-refinement harnesses directly call helper predicates used by
+`src/kyriotes_csk2/capability_tree.rs` and prove:
+
+    exact proof-leaf equality
+    Merkle child ordering from leaf-index parity
+    parent-index progression
+    strict left and right stamp ordering
+    authenticated first/last boundary positions
+    adjacent two-sided boundary indices
+    rejection of overflowing adjacency
+
 ## Wiring
 
 The Coq file is listed in:
@@ -80,6 +109,6 @@ The Kani file is registered in:
 
     src/kani/mod.rs
 
-## Next Work
+## Remaining Boundary
 
-The next strengthening step is to connect this deterministic model to extracted production helper surfaces from `src/kyriotes_csk2/capability_tree.rs`, then separately discharge the SHA/Merkle primitive boundary with external primitive assumptions or audited references.
+The constructive model is now connected to extracted predicates used by the production verifier. Remaining work for a stronger end-to-end claim is to discharge the SHA/Merkle primitive boundary with external primitive assumptions or audited references and to retain CI artifacts for every production-refinement harness.

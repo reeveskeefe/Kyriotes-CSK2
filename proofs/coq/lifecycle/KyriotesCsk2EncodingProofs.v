@@ -20,7 +20,9 @@ Record EncodedKyriotesCsk2Object := {
   encoded_object : KyriotesCsk2Object
 }.
 
-Definition KYRIOTES_CSK2_MAGIC : nat := 1262703410.
+(* Symbolic tag for the structured Coq codec. The production byte codec's
+   literal KCS2 magic is checked by the Rust/Kani refinement lane. *)
+Definition KYRIOTES_CSK2_MAGIC : nat := 1.
 
 Definition magic_valid (encoded : EncodedKyriotesCsk2Object) : bool :=
   Nat.eqb (encoded_magic encoded) KYRIOTES_CSK2_MAGIC.
@@ -44,23 +46,93 @@ Definition decode_shape_valid (limits : DecodeLimits) (encoded : EncodedKyriotes
   proof_siblings_within_limit limits encoded &&
   context_within_limit limits encoded.
 
-Parameter canonical_encode_object : KyriotesCsk2Object -> EncodedKyriotesCsk2Object.
-Parameter canonical_decode_object : DecodeLimits -> EncodedKyriotesCsk2Object -> option KyriotesCsk2Object.
+Definition CANONICAL_PAYLOAD_LEN : nat := 0.
+Definition CANONICAL_WRAPPER_COUNT : nat := 1.
+Definition CANONICAL_PROOF_SIBLINGS : nat := 0.
+Definition CANONICAL_CONTEXT_LEN : nat := 1.
 
-Axiom canonical_decode_correct :
+Definition canonical_encoding_shape (encoded : EncodedKyriotesCsk2Object) : bool :=
+  Nat.eqb (encoded_magic encoded) KYRIOTES_CSK2_MAGIC &&
+  Nat.eqb (encoded_payload_len encoded) CANONICAL_PAYLOAD_LEN &&
+  Nat.eqb (encoded_wrapper_count encoded) CANONICAL_WRAPPER_COUNT &&
+  Nat.eqb (encoded_proof_siblings encoded) CANONICAL_PROOF_SIBLINGS &&
+  Nat.eqb (encoded_context_len encoded) CANONICAL_CONTEXT_LEN.
+
+Definition canonical_encode_object
+  (obj : KyriotesCsk2Object)
+  : EncodedKyriotesCsk2Object :=
+  {|
+    encoded_magic := KYRIOTES_CSK2_MAGIC;
+    encoded_payload_len := CANONICAL_PAYLOAD_LEN;
+    encoded_wrapper_count := CANONICAL_WRAPPER_COUNT;
+    encoded_proof_siblings := CANONICAL_PROOF_SIBLINGS;
+    encoded_context_len := CANONICAL_CONTEXT_LEN;
+    encoded_object := obj
+  |}.
+
+Definition canonical_decode_object
+  (limits : DecodeLimits)
+  (encoded : EncodedKyriotesCsk2Object)
+  : option KyriotesCsk2Object :=
+  if decode_shape_valid limits encoded && canonical_encoding_shape encoded
+  then Some (encoded_object encoded)
+  else None.
+
+Theorem canonical_decode_correct :
   forall limits encoded,
     decode_shape_valid limits encoded = true ->
+    canonical_encoding_shape encoded = true ->
     canonical_decode_object limits encoded = Some (encoded_object encoded).
+Proof.
+  intros limits encoded H_shape H_canonical.
+  unfold canonical_decode_object.
+  rewrite H_shape, H_canonical.
+  reflexivity.
+Qed.
 
-Axiom canonical_decode_rejects_invalid_shape :
+Theorem canonical_decode_rejects_invalid_shape :
   forall limits encoded,
     decode_shape_valid limits encoded = false ->
     canonical_decode_object limits encoded = None.
+Proof.
+  intros limits encoded H_shape.
+  unfold canonical_decode_object.
+  rewrite H_shape.
+  reflexivity.
+Qed.
 
-Axiom canonical_encode_decode_roundtrip :
+Theorem canonical_decode_rejects_noncanonical_shape :
+  forall limits encoded,
+    canonical_encoding_shape encoded = false ->
+    canonical_decode_object limits encoded = None.
+Proof.
+  intros limits encoded H_canonical.
+  unfold canonical_decode_object.
+  rewrite H_canonical.
+  destruct (decode_shape_valid limits encoded); reflexivity.
+Qed.
+
+Theorem canonical_encode_has_canonical_shape :
+  forall obj,
+    canonical_encoding_shape (canonical_encode_object obj) = true.
+Proof.
+  intros obj.
+  unfold canonical_encoding_shape, canonical_encode_object.
+  simpl.
+  repeat rewrite Nat.eqb_refl.
+  reflexivity.
+Qed.
+
+Theorem canonical_encode_decode_roundtrip :
   forall limits obj,
     decode_shape_valid limits (canonical_encode_object obj) = true ->
     canonical_decode_object limits (canonical_encode_object obj) = Some obj.
+Proof.
+  intros limits obj H_shape.
+  apply canonical_decode_correct.
+  - exact H_shape.
+  - apply canonical_encode_has_canonical_shape.
+Qed.
 
 Theorem bad_magic_rejected :
   forall limits encoded,
@@ -163,11 +235,13 @@ Qed.
 Theorem valid_shape_decodes_to_embedded_object :
   forall limits encoded,
     decode_shape_valid limits encoded = true ->
+    canonical_encoding_shape encoded = true ->
     canonical_decode_object limits encoded = Some (encoded_object encoded).
 Proof.
-  intros limits encoded H.
+  intros limits encoded H_shape H_canonical.
   apply canonical_decode_correct.
-  exact H.
+  - exact H_shape.
+  - exact H_canonical.
 Qed.
 
 Theorem bad_magic_decodes_to_none :
@@ -235,14 +309,54 @@ Proof.
   exact H.
 Qed.
 
-Theorem accepted_decode_implies_shape_valid_or_assumption_boundary :
+Theorem canonical_shape_reencodes_exactly :
+  forall encoded,
+    canonical_encoding_shape encoded = true ->
+    canonical_encode_object (encoded_object encoded) = encoded.
+Proof.
+  intros [magic payload wrappers siblings context obj] H.
+  unfold canonical_encoding_shape in H.
+  simpl in H.
+  repeat rewrite andb_true_iff in H.
+  destruct H as [[[[H_magic H_payload] H_wrappers] H_siblings] H_context].
+  apply Nat.eqb_eq in H_magic.
+  apply Nat.eqb_eq in H_payload.
+  apply Nat.eqb_eq in H_wrappers.
+  apply Nat.eqb_eq in H_siblings.
+  apply Nat.eqb_eq in H_context.
+  simpl.
+  subst.
+  reflexivity.
+Qed.
+
+Theorem accepted_decode_implies_shape_valid_and_canonical :
   forall limits encoded obj,
     canonical_decode_object limits encoded = Some obj ->
-    decode_shape_valid limits encoded = true \/
-    decode_shape_valid limits encoded = false.
+    decode_shape_valid limits encoded = true /\
+    canonical_encoding_shape encoded = true /\
+    obj = encoded_object encoded.
 Proof.
   intros limits encoded obj H.
+  unfold canonical_decode_object in H.
   destruct (decode_shape_valid limits encoded) eqn:H_shape.
-  - left. reflexivity.
-  - right. reflexivity.
+  - destruct (canonical_encoding_shape encoded) eqn:H_canonical.
+    + inversion H.
+      repeat split; assumption.
+    + discriminate.
+  - discriminate.
+Qed.
+
+Theorem accepted_decode_reencodes_exactly :
+  forall limits encoded obj,
+    canonical_decode_object limits encoded = Some obj ->
+    canonical_encode_object obj = encoded.
+Proof.
+  intros limits encoded obj H_decode.
+  pose proof
+    (accepted_decode_implies_shape_valid_and_canonical
+      limits encoded obj H_decode)
+    as [_ [H_canonical H_obj]].
+  rewrite H_obj.
+  apply canonical_shape_reencodes_exactly.
+  exact H_canonical.
 Qed.

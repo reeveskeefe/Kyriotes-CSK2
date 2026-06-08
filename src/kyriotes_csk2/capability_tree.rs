@@ -295,6 +295,47 @@ fn merkle_proof_for_index(leaves: &[[u8; 32]], index: usize) -> Vec<[u8; 32]> {
 // Shared Merkle path verification
 // ---------------------------------------------------------------------------
 
+pub(crate) fn capability_proof_leaf_matches(
+    proof_leaf: &[u8; 32],
+    expected_leaf: &[u8; 32],
+) -> bool {
+    proof_leaf == expected_leaf
+}
+
+pub(crate) fn merkle_sibling_is_right_child(leaf_index: u64) -> bool {
+    leaf_index & 1 == 0
+}
+
+pub(crate) fn next_merkle_index(leaf_index: u64) -> u64 {
+    leaf_index >> 1
+}
+
+pub(crate) fn non_revocation_left_order_valid(
+    left_stamp: &[u8; 32],
+    target_stamp: &[u8; 32],
+) -> bool {
+    left_stamp < target_stamp
+}
+
+pub(crate) fn non_revocation_right_order_valid(
+    target_stamp: &[u8; 32],
+    right_stamp: &[u8; 32],
+) -> bool {
+    target_stamp < right_stamp
+}
+
+pub(crate) fn non_revocation_left_is_last(left_index: u64, expected_revocation_count: u64) -> bool {
+    expected_revocation_count > 0 && left_index == expected_revocation_count - 1
+}
+
+pub(crate) fn non_revocation_right_is_first(right_index: u64) -> bool {
+    right_index == 0
+}
+
+pub(crate) fn non_revocation_boundaries_are_adjacent(left_index: u64, right_index: u64) -> bool {
+    left_index.checked_add(1) == Some(right_index)
+}
+
 /// Walk a Merkle proof path and return true iff the computed root matches.
 fn verify_merkle_path(
     leaf: &[u8; 32],
@@ -305,12 +346,12 @@ fn verify_merkle_path(
     let mut idx = leaf_index;
     let mut acc = *leaf;
     for sibling in sibling_hashes {
-        acc = if idx & 1 == 0 {
+        acc = if merkle_sibling_is_right_child(idx) {
             hash_transparency_node(acc, *sibling)
         } else {
             hash_transparency_node(*sibling, acc)
         };
-        idx >>= 1;
+        idx = next_merkle_index(idx);
     }
     &acc == root
 }
@@ -327,7 +368,7 @@ pub fn verify_capability_inclusion(
     authority_root: &[u8; 32],
 ) -> Result<(), KyriotesCsk2Error> {
     let expected_leaf = capability_leaf_hash(cap);
-    if proof.leaf_hash != expected_leaf {
+    if !capability_proof_leaf_matches(&proof.leaf_hash, &expected_leaf) {
         return Err(KyriotesCsk2Error::InvalidCapability(
             "inclusion proof leaf hash does not match capability",
         ));
@@ -392,12 +433,12 @@ pub fn verify_non_revocation(
 
     // Verify each boundary inclusion proof and check ordering.
     if let Some(left) = &witness.left {
-        if left.proof.leaf_hash != left.stamp {
+        if !capability_proof_leaf_matches(&left.proof.leaf_hash, &left.stamp) {
             return Err(KyriotesCsk2Error::InvalidCapability(
                 "non-revocation left bound: proof leaf hash does not match stamp",
             ));
         }
-        if left.stamp >= witness.stamp {
+        if !non_revocation_left_order_valid(&left.stamp, &witness.stamp) {
             return Err(KyriotesCsk2Error::InvalidCapability(
                 "non-revocation left bound is not strictly less than target stamp",
             ));
@@ -415,12 +456,12 @@ pub fn verify_non_revocation(
     }
 
     if let Some(right) = &witness.right {
-        if right.proof.leaf_hash != right.stamp {
+        if !capability_proof_leaf_matches(&right.proof.leaf_hash, &right.stamp) {
             return Err(KyriotesCsk2Error::InvalidCapability(
                 "non-revocation right bound: proof leaf hash does not match stamp",
             ));
         }
-        if right.stamp <= witness.stamp {
+        if !non_revocation_right_order_valid(&witness.stamp, &right.stamp) {
             return Err(KyriotesCsk2Error::InvalidCapability(
                 "non-revocation right bound is not strictly greater than target stamp",
             ));
@@ -448,7 +489,7 @@ pub fn verify_non_revocation(
             // stamp > all revoked: left must be the last leaf.
             // Use expected_revocation_count (authenticated from AuthorityState), not
             // witness.total_revoked, to prevent a prover from forging the tree boundary.
-            if left.proof.leaf_index != expected_revocation_count - 1 {
+            if !non_revocation_left_is_last(left.proof.leaf_index, expected_revocation_count) {
                 return Err(KyriotesCsk2Error::InvalidCapability(
                     "non-revocation left boundary is not the last leaf",
                 ));
@@ -456,7 +497,7 @@ pub fn verify_non_revocation(
         }
         (None, Some(right)) => {
             // stamp < all revoked: right must be the first leaf
-            if right.proof.leaf_index != 0 {
+            if !non_revocation_right_is_first(right.proof.leaf_index) {
                 return Err(KyriotesCsk2Error::InvalidCapability(
                     "non-revocation right boundary is not the first leaf",
                 ));
@@ -464,7 +505,10 @@ pub fn verify_non_revocation(
         }
         (Some(left), Some(right)) => {
             // stamp is between two adjacent leaves
-            if left.proof.leaf_index + 1 != right.proof.leaf_index {
+            if !non_revocation_boundaries_are_adjacent(
+                left.proof.leaf_index,
+                right.proof.leaf_index,
+            ) {
                 return Err(KyriotesCsk2Error::InvalidCapability(
                     "non-revocation boundaries are not adjacent leaves",
                 ));

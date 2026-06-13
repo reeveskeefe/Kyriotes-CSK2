@@ -86,6 +86,7 @@ proofs=(
   rust_refinement/KyriotesCsk2CapabilityTreeRustRefinement.v
   rust_refinement/KyriotesCsk2TransparencyRustRefinement.v
   rust_refinement/KyriotesCsk2FullMechanicalProofEquivalence.v
+  rust_refinement/KyriotesCsk2RustCoqFormalCorrespondence.v
 )
 
 for proof in "${proofs[@]}"; do

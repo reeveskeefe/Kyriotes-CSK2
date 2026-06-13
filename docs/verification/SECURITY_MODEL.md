@@ -143,7 +143,7 @@ Not acceptable until the corresponding reduction is complete:
 
 ## Next Formal Work
 
-1. Two-gate opening game shape and challenge restrictions: formalized in `KyriotesCsk2TwoGateOpeningGame.v`.
+1. (Complete) Two-gate opening game shape and challenge restrictions: formalized in `KyriotesCsk2TwoGateOpeningGame.v`; hybrid reduction game-hopping steps formalized in `KyriotesCsk2TwoGateHybridReduction.v`. Rust↔Coq mechanical correspondence established in `KyriotesCsk2RustCoqFormalCorrespondence.v` via model contracts, mechanically proven implications, and Kani-backed axioms.
 2. Define probabilistic hybrid KEM and AEAD advantage interfaces and instantiate the reduction obligation.
 3. Prove the Merkle binding reduction from an accepted false path to a node-hash collision or second preimage.
 4. Formalize capability/object/policy/epoch binding as a game.

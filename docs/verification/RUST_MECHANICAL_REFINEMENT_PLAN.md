@@ -4,7 +4,7 @@ Kyriotēs-CSK2's tracked Rust mechanical refinement inventory is complete at 11 
 
 The tracked Rust mechanical refinement inventory is now complete. All 11 declared targets have mechanical check coverage and verifier-backed Kani proof evidence within their recorded proof boundaries. These proof lanes cover bounded parser rejection, encoding surface stability, context transcript binding, fail-closed engine behavior, epoch transition structure, transparency commit failure boundaries, transparency-root state binding, and selected capability-tree non-revocation behavior.
 
-This milestone should not be read as full end-to-end cryptographic verification of Kyriotēs-CSK2. Several completed lanes intentionally prove narrowed implementation properties rather than full protocol semantics. Transparency/Merkle owned-composition soundness is now complete under explicit SHA-256 assumptions; SHA-256 itself is not internally proven. Full capability-tree non-empty witness soundness, exhaustive encode/decode canonical equivalence over arbitrary bytes and the unbounded object space, and full seal/open cryptographic semantic equivalence remain future verification-expansion targets.
+This milestone should not be read as full end-to-end cryptographic verification of Kyriotēs-CSK2. Several completed lanes intentionally prove narrowed implementation properties rather than full protocol semantics. Transparency/Merkle owned-composition soundness is now complete under explicit SHA-256 assumptions; SHA-256 itself is not internally proven. Capability-tree non-empty witness soundness is mechanically refined within a scoped proof boundary. Encode/decode canonical round-trip equivalence is now evidenced by production-function Kani harnesses and the Coq axiom-backed correspondence layer in `KyriotesCsk2RustCoqFormalCorrespondence.v`. Seal/open cryptographic semantic equivalence has been mechanically formalized via model contracts, mechanically proven implications, and Kani-backed axioms in that file. Remaining future targets are extending capability-tree witness refinement into a computational binding reduction and adding concrete advantage accounting to the seal/open composition claims.
 
 ## Inventory Status
 
@@ -46,8 +46,8 @@ The completed tracked lanes are:
 
 ## Next Verification Expansion Targets
 
-1. Formalize the two-gate opening security game and reduction hybrids.
+1. (Complete) Two-gate opening game formalized in `KyriotesCsk2TwoGateOpeningGame.v`; hybrid reduction formalized in `KyriotesCsk2TwoGateHybridReduction.v`.
 2. Complete the Merkle false-inclusion reduction to collision/second-preimage resistance.
-3. Extend capability-tree witness refinement into a computational binding reduction.
+3. (Complete within scoped boundary) Capability-tree witness refinement mechanically checked; extending into a full computational binding reduction remains open.
 4. Add concrete advantage accounting to seal/open composition claims.
 5. Preserve all proof and verifier evidence per release.

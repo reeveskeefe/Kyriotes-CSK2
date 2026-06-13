@@ -92,3 +92,118 @@ fn context_hash_distinguishes_policy_hash_inputs() {
 
     assert_ne!(first, second);
 }
+
+#[cfg(kani)]
+#[kani::proof]
+fn context_hash_distinguishes_epoch_inputs() {
+    let object_id = "kani-context-object";
+    let rights = Rights::READ;
+    let policy_hash = bytes32(11);
+    let authority_root = bytes32(29);
+    let cap_stamp = bytes32(47);
+    let temporal_policy = TemporalPolicy::Current;
+
+    let first = context_hash(
+        object_id,
+        rights,
+        policy_hash,
+        &authority_state(authority_root, 7),
+        cap_stamp,
+        &temporal_policy,
+    );
+
+    let second = context_hash(
+        object_id,
+        rights,
+        policy_hash,
+        &authority_state(authority_root, 8),
+        cap_stamp,
+        &temporal_policy,
+    );
+
+    assert_ne!(first, second);
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn context_hash_distinguishes_authority_root_inputs() {
+    let object_id = "kani-context-object";
+    let rights = Rights::READ;
+    let policy_hash = bytes32(11);
+    let cap_stamp = bytes32(47);
+    let temporal_policy = TemporalPolicy::Current;
+
+    let first = context_hash(
+        object_id,
+        rights,
+        policy_hash,
+        &authority_state(bytes32(29), 7),
+        cap_stamp,
+        &temporal_policy,
+    );
+
+    let second = context_hash(
+        object_id,
+        rights,
+        policy_hash,
+        &authority_state(bytes32(30), 7),
+        cap_stamp,
+        &temporal_policy,
+    );
+
+    assert_ne!(first, second);
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn context_hash_distinguishes_capability_stamp_inputs() {
+    let object_id = "kani-context-object";
+    let rights = Rights::READ;
+    let policy_hash = bytes32(11);
+    let authority_root = bytes32(29);
+    let state = authority_state(authority_root, 7);
+    let temporal_policy = TemporalPolicy::Current;
+
+    let first = context_hash(
+        object_id,
+        rights,
+        policy_hash,
+        &state,
+        bytes32(47),
+        &temporal_policy,
+    );
+
+    let second = context_hash(
+        object_id,
+        rights,
+        policy_hash,
+        &state,
+        bytes32(48),
+        &temporal_policy,
+    );
+
+    assert_ne!(first, second);
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn context_hash_output_is_always_32_bytes() {
+    let object_id = "kani-context-object";
+    let rights = Rights::READ;
+    let policy_hash = bytes32(11);
+    let authority_root = bytes32(29);
+    let state = authority_state(authority_root, 7);
+    let cap_stamp = bytes32(47);
+    let temporal_policy = TemporalPolicy::Current;
+
+    let hash = context_hash(
+        object_id,
+        rights,
+        policy_hash,
+        &state,
+        cap_stamp,
+        &temporal_policy,
+    );
+
+    assert_eq!(hash.len(), 32);
+}

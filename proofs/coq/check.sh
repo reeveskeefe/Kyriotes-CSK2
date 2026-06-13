@@ -60,6 +60,7 @@ proofs=(
   lifecycle/KyriotesCsk2PredicateRefinementProofs.v
   security/KyriotesCsk2AdversaryGame.v
   security/KyriotesCsk2TwoGateOpeningGame.v
+  security/KyriotesCsk2TwoGateHybridReduction.v
   rust_refinement/KyriotesCsk2RustRefinementObligations.v
   completeness/KyriotesCsk2AbstractInvariantCompleteness.v
   completeness/KyriotesCsk2DesignModelCompleteness.v

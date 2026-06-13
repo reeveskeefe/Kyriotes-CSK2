@@ -71,6 +71,99 @@ Definition aead_key_binding
   key_a <> key_b ->
   aead_decrypt key_b nonce (aead_encrypt key_a nonce plaintext aad) aad = None.
 
+Record KemAdvantageExperiment := {
+  kem_adv_public_key : PublicEncapsulationKey;
+  kem_adv_secret_key : SecretKey;
+  kem_adv_challenge_ciphertext : CiphertextKEM;
+  kem_adv_challenge_shared_secret : SharedSecret;
+  kem_adv_matching_keypair : bool
+}.
+
+Definition kem_advantage_game_holds
+  (experiment : KemAdvantageExperiment)
+  : Prop :=
+  if kem_adv_matching_keypair experiment
+  then kem_correct_for_keypair (kem_adv_public_key experiment) (kem_adv_secret_key experiment)
+  else ~ kem_correct_for_keypair (kem_adv_public_key experiment) (kem_adv_secret_key experiment).
+
+Record AeadAdvantageExperiment := {
+  aead_adv_key : DerivedKey;
+  aead_adv_nonce : Nonce;
+  aead_adv_plaintext : Plaintext;
+  aead_adv_aad : Hash;
+  aead_adv_altered_key : DerivedKey;
+  aead_adv_altered_aad : Hash
+}.
+
+Definition aead_advantage_game_holds
+  (experiment : AeadAdvantageExperiment)
+  : Prop :=
+  aead_correct_for_key
+    (aead_adv_key experiment)
+    (aead_adv_nonce experiment)
+    (aead_adv_plaintext experiment)
+    (aead_adv_aad experiment) /\
+  aead_aad_binding
+    (aead_adv_key experiment)
+    (aead_adv_nonce experiment)
+    (aead_adv_plaintext experiment)
+    (aead_adv_aad experiment)
+    (aead_adv_altered_aad experiment) /\
+  aead_key_binding
+    (aead_adv_key experiment)
+    (aead_adv_altered_key experiment)
+    (aead_adv_nonce experiment)
+    (aead_adv_plaintext experiment)
+    (aead_adv_aad experiment).
+
+Record HybridReductionAdvantage := {
+  hybrid_kem_advantage : nat;
+  hybrid_aead_advantage : nat;
+  hybrid_hkdf_advantage : nat;
+  hybrid_signature_advantage : nat;
+  hybrid_hash_advantage : nat
+}.
+
+Definition hybrid_reduction_total_advantage
+  (bounds : HybridReductionAdvantage)
+  : nat :=
+  hybrid_kem_advantage bounds +
+  hybrid_aead_advantage bounds +
+  hybrid_hkdf_advantage bounds +
+  hybrid_signature_advantage bounds +
+  hybrid_hash_advantage bounds.
+
+Definition hybrid_reduction_has_nonzero_advantage
+  (bounds : HybridReductionAdvantage)
+  : bool :=
+  negb (Nat.eqb (hybrid_reduction_total_advantage bounds) 0).
+
+Theorem hybrid_reduction_total_advantage_zero_iff_all_zero :
+  forall bounds,
+    hybrid_reduction_total_advantage bounds = 0 ->
+    hybrid_kem_advantage bounds = 0 /\
+    hybrid_aead_advantage bounds = 0 /\
+    hybrid_hkdf_advantage bounds = 0 /\
+    hybrid_signature_advantage bounds = 0 /\
+    hybrid_hash_advantage bounds = 0.
+Proof.
+  intros bounds H.
+  unfold hybrid_reduction_total_advantage in H.
+  repeat split; lia.
+Qed.
+
+Theorem hybrid_reduction_nonzero_advantage_implies_positive_total :
+  forall bounds,
+    hybrid_reduction_has_nonzero_advantage bounds = true ->
+    hybrid_reduction_total_advantage bounds > 0.
+Proof.
+  intros bounds H.
+  unfold hybrid_reduction_has_nonzero_advantage in H.
+  apply negb_true_iff in H.
+  apply Nat.eqb_neq in H.
+  lia.
+Qed.
+
 Record PrimitiveAssumptions := {
   assumes_no_aead_break : bool;
   assumes_no_kem_break : bool;

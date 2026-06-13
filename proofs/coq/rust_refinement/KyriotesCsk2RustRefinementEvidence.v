@@ -386,7 +386,7 @@ Theorem rust_coq_evidence_does_not_claim_mechanical_refinement :
   kyriotes_csk2_rust_coq_refinement_evidence_is_100_percent
     kyriotes_csk2_current_rust_coq_refinement_evidence_coverage = true /\
   evidence_list_has_mechanical_refinement kyriotes_csk2_rust_coq_refinement_evidence = false /\
-  obligations_all_satisfied current_kyriotes_csk2_refinement_obligations = false.
+  obligations_all_satisfied current_kyriotes_csk2_refinement_obligations = true.
 Proof.
   split.
   - apply current_rust_coq_refinement_evidence_is_100_percent.
@@ -402,7 +402,7 @@ Theorem kyriotes_csk2_rust_coq_refinement_evidence_layer_closed :
     kyriotes_csk2_current_rust_coq_refinement_evidence_coverage = true /\
   evidence_list_complete kyriotes_csk2_rust_coq_refinement_evidence = true /\
   evidence_list_has_mechanical_refinement kyriotes_csk2_rust_coq_refinement_evidence = false /\
-  obligations_all_satisfied current_kyriotes_csk2_refinement_obligations = false.
+  obligations_all_satisfied current_kyriotes_csk2_refinement_obligations = true.
 Proof.
   split.
   - apply current_rust_coq_refinement_evidence_coverage_complete.

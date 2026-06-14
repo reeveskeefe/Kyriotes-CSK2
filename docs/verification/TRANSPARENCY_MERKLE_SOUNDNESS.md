@@ -34,6 +34,9 @@ The computational false-inclusion and append-history forgery games are defined i
 Coq:
 
     proofs/coq/merkle_transparency/KyriotesCsk2FullTransparencyMerkleSoundness.v
+    proofs/coq/merkle_transparency/KyriotesCsk2MerkleFalseInclusionReduction.v
+
+The reduction file proves `fold_indexed_path_injective` (by induction on the sibling list under `hash_node_ordered_injective`), derives `verify_indexed_path_leaf_uniqueness` and `path_determines_root_uniquely`, defines the `MerkleCommitment` / `FalseInclusionAttempt` game, and proves `false_inclusion_same_path_implies_collision`: any same-path false-inclusion win yields `False` under collision resistance. Append-only binding is derived from `conflicting_same_identity_commit_rejects`. The remaining open obligation is the different-siblings case (a path-comparison lemma over structurally distinct proofs to the same index), recorded as `mfir_different_siblings_case_proved := false` in the completion status record.
 
 Production Rust:
 

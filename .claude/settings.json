@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(coqc -Q core KyriotesCsk2Proofs -Q merkle_transparency KyriotesCsk2Proofs -Q security KyriotesCsk2Proofs -Q lifecycle KyriotesCsk2Proofs -Q completeness KyriotesCsk2Proofs -Q rust_refinement KyriotesCsk2Proofs core/KyriotesCsk2Types.v)",
+      "Bash(coqc -Q core KyriotesCsk2Proofs -Q merkle_transparency KyriotesCsk2Proofs -Q security KyriotesCsk2Proofs -Q lifecycle KyriotesCsk2Proofs -Q completeness KyriotesCsk2Proofs -Q rust_refinement KyriotesCsk2Proofs merkle_transparency/KyriotesCsk2Merkle.v)",
+      "Bash(coqc -Q core KyriotesCsk2Proofs -Q merkle_transparency KyriotesCsk2Proofs -Q security KyriotesCsk2Proofs -Q lifecycle KyriotesCsk2Proofs -Q completeness KyriotesCsk2Proofs -Q rust_refinement KyriotesCsk2Proofs core/KyriotesCsk2Authority.v)",
+      "Bash(coqc -Q core KyriotesCsk2Proofs -Q merkle_transparency KyriotesCsk2Proofs -Q security KyriotesCsk2Proofs -Q lifecycle KyriotesCsk2Proofs -Q completeness KyriotesCsk2Proofs -Q rust_refinement KyriotesCsk2Proofs core/KyriotesCsk2Policy.v)",
+      "Bash(coqc -Q core KyriotesCsk2Proofs -Q merkle_transparency KyriotesCsk2Proofs -Q security KyriotesCsk2Proofs -Q lifecycle KyriotesCsk2Proofs -Q completeness KyriotesCsk2Proofs -Q rust_refinement KyriotesCsk2Proofs core/KyriotesCsk2Verify.v)",
+      "Bash(coqc -Q core KyriotesCsk2Proofs -Q merkle_transparency KyriotesCsk2Proofs -Q security KyriotesCsk2Proofs -Q lifecycle KyriotesCsk2Proofs -Q completeness KyriotesCsk2Proofs -Q rust_refinement KyriotesCsk2Proofs security/KyriotesCsk2SecurityGame.v)",
+      "Bash(coqc -Q core KyriotesCsk2Proofs -Q merkle_transparency KyriotesCsk2Proofs -Q security KyriotesCsk2Proofs -Q lifecycle KyriotesCsk2Proofs -Q completeness KyriotesCsk2Proofs -Q rust_refinement KyriotesCsk2Proofs security/KyriotesCsk2Theorems.v)",
+      "Bash(coqc -Q core KyriotesCsk2Proofs -Q merkle_transparency KyriotesCsk2Proofs -Q security KyriotesCsk2Proofs -Q lifecycle KyriotesCsk2Proofs -Q completeness KyriotesCsk2Proofs -Q rust_refinement KyriotesCsk2Proofs security/KyriotesCsk2CapabilityBindingReduction.v)",
+      "Bash(bash check.sh)"
+    ]
+  }
+}

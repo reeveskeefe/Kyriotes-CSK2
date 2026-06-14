@@ -33,6 +33,7 @@ proofs=(
   core/KyriotesCsk2Verify.v
   security/KyriotesCsk2SecurityGame.v
   security/KyriotesCsk2Theorems.v
+  security/KyriotesCsk2CapabilityBindingReduction.v
   security/KyriotesCsk2StressProofs.v
   security/KyriotesCsk2DelegationProofs.v
   security/KyriotesCsk2CryptoReduction.v
@@ -56,6 +57,7 @@ proofs=(
   merkle_transparency/KyriotesCsk2MerkleConcreteTree.v
   merkle_transparency/KyriotesCsk2TransparencyAppendOnly.v
   merkle_transparency/KyriotesCsk2FullTransparencyMerkleSoundness.v
+  merkle_transparency/KyriotesCsk2MerkleFalseInclusionReduction.v
   lifecycle/KyriotesCsk2LifecycleProofs.v
   lifecycle/KyriotesCsk2PredicateRefinementProofs.v
   security/KyriotesCsk2AdversaryGame.v

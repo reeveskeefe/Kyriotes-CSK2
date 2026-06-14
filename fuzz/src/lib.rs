@@ -5,6 +5,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 
 pub const MAX_FUZZ_CASES_PER_INPUT: usize = 64;
 pub const MAX_SLICE_LEN: usize = 524_288;
+pub const MAX_STATEFUL_STRESS_STEPS: usize = 12;
 
 #[derive(Debug, Clone, Arbitrary)]
 pub struct KyriotesCsk2FuzzHeader {
@@ -170,4 +171,14 @@ pub fn bytes_to_u32(data: &[u8]) -> u32 {
 
 pub fn bytes_to_bool(data: &[u8]) -> bool {
     data.first().copied().unwrap_or(0) & 1 == 1
+}
+
+pub fn deterministic_seed32(data: &[u8], domain: u8) -> [u8; 32] {
+    let mut out = [domain; 32];
+    let take = data.len().min(out.len());
+    out[..take].copy_from_slice(&data[..take]);
+    for (index, byte) in out.iter_mut().enumerate().skip(take) {
+        *byte = domain.wrapping_add(index as u8).rotate_left((index % 7) as u32);
+    }
+    out
 }

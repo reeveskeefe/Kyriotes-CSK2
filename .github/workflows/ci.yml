@@ -38,6 +38,49 @@ jobs:
       - name: Publish dry run
         run: cargo publish --dry-run --locked --allow-dirty
 
+      - name: Fuzz smoke (cross-system lifecycle stress)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo install --locked cargo-fuzz
+          cargo +nightly fuzz run fuzz_cross_system_lifecycle_stress -- -max_total_time=20 -runs=0 -seed=1337
+
+      - name: Fuzz smoke (TSIG cert-chain semantic)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo +nightly fuzz run fuzz_tsig_cert_chain_semantic -- -max_total_time=20 -runs=0 -seed=7331
+
+      - name: Fuzz smoke (delegation chain semantic)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo +nightly fuzz run fuzz_delegation_chain_semantic -- -max_total_time=20 -runs=0 -seed=991
+
+      - name: Fuzz smoke (compromise boundary semantic)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo +nightly fuzz run fuzz_compromise_boundary_semantic -- -max_total_time=20 -runs=0 -seed=4242
+
+      - name: Fuzz smoke (epoch rotation freshness semantic)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo +nightly fuzz run fuzz_epoch_rotation_freshness_semantic -- -max_total_time=20 -runs=0 -seed=9001
+
+      - name: Fuzz smoke (open and reseal and commit semantic)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo +nightly fuzz run fuzz_open_and_reseal_and_commit_semantic -- -max_total_time=20 -runs=0 -seed=1717
+
+      - name: Fuzz smoke (add epoch wrapper and commit semantic)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo +nightly fuzz run fuzz_add_epoch_wrapper_and_commit_semantic -- -max_total_time=20 -runs=0 -seed=31337
+
   coq-proofs:
     name: Coq proof check
     runs-on: ubuntu-latest

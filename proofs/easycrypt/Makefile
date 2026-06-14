@@ -17,6 +17,7 @@ EC_FILES = \
   security/KemIndCca2.ec \
   security/AeadAeSecurity.ec \
   security/Csk2TwoGateGame.ec \
+  security/KemReduction.ec \
   security/KemAeadComposition.ec
 
 .PHONY: check all clean

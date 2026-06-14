@@ -169,3 +169,52 @@ path = "fuzz_targets/fuzz_transparency_state_machine.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "fuzz_cross_system_lifecycle_stress"
+path = "fuzz_targets/fuzz_cross_system_lifecycle_stress.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_tsig_cert_chain_semantic"
+path = "fuzz_targets/fuzz_tsig_cert_chain_semantic.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_delegation_chain_semantic"
+path = "fuzz_targets/fuzz_delegation_chain_semantic.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_compromise_boundary_semantic"
+path = "fuzz_targets/fuzz_compromise_boundary_semantic.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_epoch_rotation_freshness_semantic"
+path = "fuzz_targets/fuzz_epoch_rotation_freshness_semantic.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_open_and_reseal_and_commit_semantic"
+path = "fuzz_targets/fuzz_open_and_reseal_and_commit_semantic.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_add_epoch_wrapper_and_commit_semantic"
+path = "fuzz_targets/fuzz_add_epoch_wrapper_and_commit_semantic.rs"
+test = false
+doc = false
+bench = false

@@ -182,17 +182,88 @@ Proof.
   exact H.
 Qed.
 
+(* ================================================================
+   Primitive security composition theorem
+
+   Proves that if no individual primitive is broken — KEM, HKDF, AEAD
+   (confidentiality and integrity), epoch signature, capability soundness,
+   and transparency binding — then no adversary wins the two-gate game.
+
+   This is the master security composition: it connects the per-primitive
+   security assumptions (stated in KyriotesCsk2KemAeadAssumptions and
+   KyriotesCsk2Authority) to the top-level two-gate opening game.
+
+   Proof is purely structural: it unfolds `breaks_any_two_gate_assumption`
+   and applies `no_primitive_break_blocks_two_gate_game_win`.
+   ================================================================ *)
+
+Theorem primitive_security_implies_two_gate_security :
+  forall attempt,
+    breaks_hybrid_kem            (attempt_breaks attempt) = false ->
+    breaks_hkdf_context_separation (attempt_breaks attempt) = false ->
+    breaks_aead_confidentiality  (attempt_breaks attempt) = false ->
+    breaks_aead_integrity        (attempt_breaks attempt) = false ->
+    breaks_signature_authenticity (attempt_breaks attempt) = false ->
+    breaks_capability_soundness  (attempt_breaks attempt) = false ->
+    breaks_transparency_binding  (attempt_breaks attempt) = false ->
+    two_gate_game_win attempt = false.
+Proof.
+  intros attempt Hkem Hhkdf Haead_c Haead_i Hsig Hcap Htrans.
+  apply no_primitive_break_blocks_two_gate_game_win.
+  unfold breaks_any_two_gate_assumption.
+  rewrite Hkem, Hhkdf, Haead_c, Haead_i, Hsig, Hcap, Htrans.
+  reflexivity.
+Qed.
+
+(*
+  Corollary: if a valid two-gate opening attempt succeeds, then at least
+  one of the seven primitive assumptions is broken. This is the contrapositive
+  form of the composition theorem — the standard way to state a security
+  reduction in a paper.
+*)
+Corollary two_gate_win_implies_some_primitive_break :
+  forall attempt,
+    two_gate_game_win attempt = true ->
+    breaks_hybrid_kem             (attempt_breaks attempt) = true \/
+    breaks_hkdf_context_separation (attempt_breaks attempt) = true \/
+    breaks_aead_confidentiality   (attempt_breaks attempt) = true \/
+    breaks_aead_integrity         (attempt_breaks attempt) = true \/
+    breaks_signature_authenticity  (attempt_breaks attempt) = true \/
+    breaks_capability_soundness   (attempt_breaks attempt) = true \/
+    breaks_transparency_binding   (attempt_breaks attempt) = true.
+Proof.
+  intros attempt H_win.
+  pose proof (two_gate_game_win_implies_primitive_break attempt H_win) as H_any.
+  unfold breaks_any_two_gate_assumption in H_any.
+  destruct (breaks_hybrid_kem (attempt_breaks attempt)) eqn:H1;
+    [ left; reflexivity | simpl in H_any ].
+  destruct (breaks_hkdf_context_separation (attempt_breaks attempt)) eqn:H2;
+    [ right; left; reflexivity | simpl in H_any ].
+  destruct (breaks_aead_confidentiality (attempt_breaks attempt)) eqn:H3;
+    [ right; right; left; reflexivity | simpl in H_any ].
+  destruct (breaks_aead_integrity (attempt_breaks attempt)) eqn:H4;
+    [ right; right; right; left; reflexivity | simpl in H_any ].
+  destruct (breaks_signature_authenticity (attempt_breaks attempt)) eqn:H5;
+    [ right; right; right; right; left; reflexivity | simpl in H_any ].
+  destruct (breaks_capability_soundness (attempt_breaks attempt)) eqn:H6;
+    [ right; right; right; right; right; left; reflexivity | simpl in H_any ].
+  destruct (breaks_transparency_binding (attempt_breaks attempt)) eqn:H7;
+    [ right; right; right; right; right; right; reflexivity | discriminate ].
+Qed.
+
 (*
   Completeness record: tracks that the two-gate → hybrid bridge is formalized.
 *)
 Record TwoGateHybridReductionStatus := {
-  tghr_advantage_map_defined : bool;
-  tghr_total_equals_term_count : bool;
-  tghr_break_implies_nonzero_advantage : bool;
+  tghr_advantage_map_defined              : bool;
+  tghr_total_equals_term_count            : bool;
+  tghr_break_implies_nonzero_advantage    : bool;
   tghr_game_win_implies_nonzero_advantage : bool;
-  tghr_per_class_reductions : bool;
-  tghr_assumption_blocking_theorem : bool;
-  tghr_converse_direction : bool
+  tghr_per_class_reductions              : bool;
+  tghr_assumption_blocking_theorem        : bool;
+  tghr_converse_direction                : bool;
+  tghr_primitive_composition_proved       : bool;
+  tghr_disjunctive_break_corollary_proved : bool
 }.
 
 Definition two_gate_hybrid_reduction_complete
@@ -204,18 +275,22 @@ Definition two_gate_hybrid_reduction_complete
   tghr_game_win_implies_nonzero_advantage status &&
   tghr_per_class_reductions status &&
   tghr_assumption_blocking_theorem status &&
-  tghr_converse_direction status.
+  tghr_converse_direction status &&
+  tghr_primitive_composition_proved status &&
+  tghr_disjunctive_break_corollary_proved status.
 
 Definition kyriotes_csk2_current_two_gate_hybrid_reduction_status
   : TwoGateHybridReductionStatus :=
   {|
-    tghr_advantage_map_defined := true;
-    tghr_total_equals_term_count := true;
-    tghr_break_implies_nonzero_advantage := true;
+    tghr_advantage_map_defined              := true;
+    tghr_total_equals_term_count            := true;
+    tghr_break_implies_nonzero_advantage    := true;
     tghr_game_win_implies_nonzero_advantage := true;
-    tghr_per_class_reductions := true;
-    tghr_assumption_blocking_theorem := true;
-    tghr_converse_direction := true
+    tghr_per_class_reductions              := true;
+    tghr_assumption_blocking_theorem        := true;
+    tghr_converse_direction                := true;
+    tghr_primitive_composition_proved       := true;
+    tghr_disjunctive_break_corollary_proved := true
   |}.
 
 Theorem current_two_gate_hybrid_reduction_complete :

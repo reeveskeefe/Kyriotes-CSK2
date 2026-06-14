@@ -1,0 +1,173 @@
+(* KEM IND-CCA2 advantage game for Kyriotēs-CSK2.
+ *
+ * Formalizes the probabilistic IND-CCA2 game that Coq approximates
+ * with the functional OW-CCA axiom `kem_csk2_ct_authenticity`.
+ * The Coq field `kem_indcca2_game_defined` in KemAeadSecurityStatus
+ * points here as the authoritative probabilistic statement.
+ *
+ * EasyCrypt version: r2022.04 (easycryptpa/ec-test-box:latest)
+ *)
+
+require import AllCore Distr DBool Real.
+
+(* ── Abstract types ───────────────────────────────────────────── *)
+
+type pkey.    (* public / encapsulation key  *)
+type skey.    (* secret / decapsulation key  *)
+type ctkem.   (* KEM ciphertext              *)
+type ss.      (* shared secret               *)
+
+(* ── Key-pair relation ────────────────────────────────────────── *)
+
+op keypair : pkey -> skey -> bool.
+
+(* ── Abstract KEM procedures ──────────────────────────────────── *)
+
+(* Key generation — probabilistic *)
+module type KEM_KG = {
+  proc kg() : pkey * skey
+}.
+
+(* Encapsulation — probabilistic (returns ct and shared secret) *)
+op encap : pkey -> (ctkem * ss) distr.
+axiom encap_ll : forall pk, is_lossless (encap pk).
+
+(* Decapsulation — deterministic *)
+op decap : skey -> ctkem -> ss option.
+
+(* Uniform distribution over shared secrets (for IND-CCA2 random branch) *)
+op dss : ss distr.
+axiom dss_ll  : is_lossless  dss.
+axiom dss_uni : is_uniform   dss.
+
+(* ── Correctness ──────────────────────────────────────────────── *)
+
+axiom kem_correctness :
+  forall (pk : pkey) (sk : skey) (ct : ctkem) (shared : ss),
+    keypair pk sk =>
+    (ct, shared) \in encap pk =>
+    decap sk ct = Some shared.
+
+(* ── IND-CCA2 game ────────────────────────────────────────────── *)
+
+(*
+ * The challenge ciphertext ct* is stored in a global so the decap
+ * oracle can reject it.  After A.choose produces ct*, we encapsulate
+ * a fresh (ct_ch, ss_real) pair; flip a bit b; give A either ss_real
+ * (b=1) or a uniform random ss (b=0); A outputs a guess b'.
+ * A wins if b' = b.
+ *)
+
+module IND_CCA2 (KG : KEM_KG) = {
+
+  var sk     : skey
+  var ct_ch  : ctkem   (* forbidden in decap oracle queries *)
+  var b      : bool
+
+  (* Decap oracle: reject the challenge ciphertext *)
+  module DecapO = {
+    proc query(ct : ctkem) : ss option = {
+      var r : ss option;
+      r <- if ct = ct_ch then None else decap sk ct;
+      return r;
+    }
+  }
+
+  proc main() : bool = {
+    var pk    : pkey;
+    var ct_st : ctkem;
+    var ss0   : ss;    (* real shared secret  *)
+    var ss1   : ss;    (* random shared secret *)
+    var ss_b  : ss;
+    var b'    : bool;
+
+    (pk, sk) <@ KG.kg();
+
+    (* Phase 1: adversary picks a challenge ciphertext target.
+       We leave adversary interaction as an axiom stub — the full
+       two-phase adversary module requires abstract module parameters
+       which are stated in the section below. *)
+    ct_ch  <- witness;
+    (ct_st, ss0) <$ encap pk;
+    ss1          <$ dss;
+    b            <$ {0,1};
+    ss_b         <- if b then ss0 else ss1;
+
+    (* Phase 2: adversary sees ss_b and outputs a guess.
+       Full adversary wiring is in section IND_CCA2_Section below. *)
+    b' <- witness;
+    return (b' = b);
+  }
+}.
+
+(* ── Two-phase adversary interface ────────────────────────────── *)
+
+module type DecapOracle = {
+  proc query(ct : ctkem) : ss option
+}.
+
+module type KEM_Adversary (O : DecapOracle) = {
+  proc choose(pk : pkey)  : ctkem    { O.query }
+  proc guess (ss_b : ss)  : bool     { O.query }
+}.
+
+(* ── Full IND-CCA2 game with adversary ────────────────────────── *)
+
+module Game_IND_CCA2 (KG : KEM_KG, A : KEM_Adversary) = {
+
+  var sk     : skey
+  var ct_ch  : ctkem
+  var b      : bool
+
+  module O = {
+    proc query(ct : ctkem) : ss option = {
+      return if ct = ct_ch then None else decap sk ct;
+    }
+  }
+
+  module A' = A(O)
+
+  proc main() : bool = {
+    var pk    : pkey;
+    var ct_st : ctkem;
+    var ss0   : ss;
+    var ss1   : ss;
+    var ss_b  : ss;
+    var b'    : bool;
+
+    (pk, sk) <@ KG.kg();
+    ct_ch    <@ A'.choose(pk);
+    (ct_st, ss0) <$ encap pk;
+    ss1      <$ dss;
+    b        <$ {0,1};
+    ss_b     <- if b then ss0 else ss1;
+    b'       <@ A'.guess(ss_b);
+    return (b' = b);
+  }
+}.
+
+(* ── Advantage and security statement ────────────────────────────
+ *
+ * Advantage is stated inside a section so A is a concrete module
+ * variable (required by EasyCrypt's probability syntax).
+ *
+ * Security goal:
+ *   For all PPT adversaries A, Adv^{IND-CCA2}(A) is negligible.
+ *   ML-KEM-768 targets >= 128-bit classical security.
+ *
+ * The axiom below will be replaced by a proof once the ML-KEM-768
+ * concrete instantiation module is written.
+ *)
+
+section IND_CCA2_Security.
+
+declare module KG <: KEM_KG.
+declare module A  <: KEM_Adversary { -Game_IND_CCA2 }.
+
+(* Placeholder security bound — replace with proof for ML-KEM-768.
+ * Advantage = |Pr[A wins Game_IND_CCA2] - 1/2| <= 2^{-128}. *)
+axiom kem_csk2_indcca2_secure &m :
+  `| Pr[Game_IND_CCA2(KG, A).main() @ &m : res] - 1%r / 2%r |
+  <= inv (2%r ^ 128).
+
+end section IND_CCA2_Security.

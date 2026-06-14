@@ -56,7 +56,7 @@ jobs:
             -v "$PWD:/work" \
             -w /work \
             coqorg/coq:8.20 \
-            bash -lc 'eval "$(opam env --switch=default --set-switch)" && ./proofs/coq/check.sh' \
+            bash -lc './proofs/coq/check.sh' \
             2>&1 | tee target/verification-evidence/coq-check.log
 
       - name: Record Coq evidence summary

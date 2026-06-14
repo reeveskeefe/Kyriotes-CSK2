@@ -2,8 +2,8 @@
 #![allow(dead_code)]
 
 use crate::{
-    KyriotesCsk2Object, Rights, TemporalPolicy,
-    decode_kyriotes_csk2_object, encode_kyriotes_csk2_object,
+    KyriotesCsk2Object, Rights, TemporalPolicy, decode_kyriotes_csk2_object,
+    encode_kyriotes_csk2_object,
 };
 
 fn bytes32(seed: u8) -> [u8; 32] {
@@ -117,7 +117,10 @@ fn encode_decode_roundtrip_preserves_semantic_fields() {
     assert_eq!(decoded_obj.authority_root, object.authority_root);
     assert_eq!(decoded_obj.revocation_root, object.revocation_root);
     assert_eq!(decoded_obj.payload_nonce, object.payload_nonce);
-    assert_eq!(decoded_obj.required_rights.bits(), object.required_rights.bits());
+    assert_eq!(
+        decoded_obj.required_rights.bits(),
+        object.required_rights.bits()
+    );
     assert_eq!(decoded_obj.payload_ciphertext, object.payload_ciphertext);
     assert!(decoded_obj.wrappers.is_empty());
 }
@@ -139,7 +142,10 @@ fn encode_decode_roundtrip_binds_rights() {
     let encoded = encode_kyriotes_csk2_object(&object);
     let decoded = decode_kyriotes_csk2_object(&encoded).unwrap();
 
-    assert_eq!(decoded.required_rights.bits(), object.required_rights.bits());
+    assert_eq!(
+        decoded.required_rights.bits(),
+        object.required_rights.bits()
+    );
 }
 
 #[kani::proof]

@@ -18,6 +18,8 @@ EC_FILES = \
   security/AeadAeSecurity.ec \
   security/Csk2TwoGateGame.ec \
   security/KemReduction.ec \
+  security/AeadCpaReduction.ec \
+  security/AeadCtxtReduction.ec \
   security/KemAeadComposition.ec
 
 .PHONY: check all clean

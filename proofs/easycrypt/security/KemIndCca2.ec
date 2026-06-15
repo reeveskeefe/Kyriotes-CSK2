@@ -5,40 +5,30 @@
  * The Coq field `kem_indcca2_game_defined` in KemAeadSecurityStatus
  * points here as the authoritative probabilistic statement.
  *
+ * Types (pkey, skey, ctkem, ss) and primitive operators (encap, decap,
+ * dss, dkeypair) are declared in Csk2BaseTypes.ec.  This file adds
+ * only the game-specific constructs:
+ *   - keypair predicate (correctness relation for key generation)
+ *   - dss_uni (uniformity of random shared secrets — security requirement)
+ *   - kem_correctness axiom
+ *   - IND-CCA2 game modules and adversary interface
+ *
  * EasyCrypt version: r2022.04 (easycryptpa/ec-test-box:latest)
  *)
 
 require import AllCore Distr DBool Real.
-
-(* ── Abstract types ───────────────────────────────────────────── *)
-
-type pkey.    (* public / encapsulation key  *)
-type skey.    (* secret / decapsulation key  *)
-type ctkem.   (* KEM ciphertext              *)
-type ss.      (* shared secret               *)
+require import Csk2BaseTypes.
 
 (* ── Key-pair relation ────────────────────────────────────────── *)
 
+(* Correctness predicate: (pk, sk) is a valid key pair. *)
 op keypair : pkey -> skey -> bool.
 
-(* ── Abstract KEM procedures ──────────────────────────────────── *)
+(* ── Additional KEM axioms ────────────────────────────────────── *)
 
-(* Key generation — probabilistic *)
-module type KEM_KG = {
-  proc kg() : pkey * skey
-}.
-
-(* Encapsulation — probabilistic (returns ct and shared secret) *)
-op encap : pkey -> (ctkem * ss) distr.
-axiom encap_ll : forall pk, is_lossless (encap pk).
-
-(* Decapsulation — deterministic *)
-op decap : skey -> ctkem -> ss option.
-
-(* Uniform distribution over shared secrets (for IND-CCA2 random branch) *)
-op dss : ss distr.
-axiom dss_ll  : is_lossless  dss.
-axiom dss_uni : is_uniform   dss.
+(* Shared secrets are uniform — needed to argue that ss1 <$ dss is
+   indistinguishable from ss0 in the IND-CCA2 game. *)
+axiom dss_uni : is_uniform dss.
 
 (* ── Correctness ──────────────────────────────────────────────── *)
 
@@ -47,6 +37,14 @@ axiom kem_correctness :
     keypair pk sk =>
     (ct, shared) \in encap pk =>
     decap sk ct = Some shared.
+
+(* ── Abstract KEM key-generation module ──────────────────────── *)
+
+(* Key generation — probabilistic.  Concrete instantiation would use
+   dkeypair from Csk2BaseTypes; KEM_KG abstracts this for the game. *)
+module type KEM_KG = {
+  proc kg() : pkey * skey
+}.
 
 (* ── IND-CCA2 game ────────────────────────────────────────────── *)
 

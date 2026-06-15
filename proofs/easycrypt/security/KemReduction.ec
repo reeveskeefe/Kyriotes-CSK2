@@ -19,6 +19,7 @@
  *)
 
 require import AllCore Distr Real.
+require import Csk2BaseTypes.
 require import Csk2TwoGateGame.
 
 (* ── Local KEM real-or-random adversary type ────────────────── *)

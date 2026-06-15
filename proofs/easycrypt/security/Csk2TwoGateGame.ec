@@ -12,55 +12,14 @@
  * Distinguishing adjacent games gives an adversary against a primitive.
  * In Game2 no adversary can win → Pr[win] bounded by INT-CTXT advantage.
  *
+ * Types, primitive operators, and correctness axioms live in
+ * Csk2BaseTypes.ec; this file only contains the game definitions.
+ *
  * EasyCrypt version: r2022.04
  *)
 
 require import AllCore Distr DBool FSet Real.
-
-(* ── Types ────────────────────────────────────────────────────── *)
-
-type pkey.    (* ML-KEM-768 encapsulation key  *)
-type skey.    (* ML-KEM-768 decapsulation key  *)
-type ctkem.   (* ML-KEM-768 ciphertext         *)
-type ss.      (* 32-byte shared secret         *)
-type key.     (* 32-byte AEAD key (from HKDF)  *)
-type aad.     (* additional authenticated data *)
-type msg.     (* sealed payload                *)
-type ctaead.  (* ChaCha20-Poly1305 ciphertext  *)
-
-(* ── KEM operators ────────────────────────────────────────────── *)
-
-op dkeypair : (pkey * skey) distr.
-axiom dkeypair_ll : is_lossless dkeypair.
-
-op encap : pkey -> (ctkem * ss) distr.
-axiom encap_ll : forall pk, is_lossless (encap pk).
-
-op decap : skey -> ctkem -> ss option.
-
-(* Uniform distribution over shared secrets *)
-op dss : ss distr.
-axiom dss_ll : is_lossless dss.
-
-(* Distribution over messages — models the sealed payload space.
-   Sampling m <$ dmsg gives the adversary a hidden target to recover. *)
-op dmsg : msg distr.
-axiom dmsg_ll : is_lossless dmsg.
-
-(* ── HKDF (abstracted as a deterministic function) ───────────── *)
-
-op hkdf : ss -> key.
-
-(* ── AEAD operators ───────────────────────────────────────────── *)
-
-op aenc : key -> aad -> msg -> ctaead distr.
-axiom aenc_ll : forall k a m, is_lossless (aenc k a m).
-
-op adec : key -> aad -> ctaead -> msg option.
-
-axiom aead_correct :
-  forall (k : key) (a : aad) (m : msg) (c : ctaead),
-    c \in aenc k a m => adec k a c = Some m.
+require import Csk2BaseTypes.
 
 (* ── Adversary ────────────────────────────────────────────────── *)
 

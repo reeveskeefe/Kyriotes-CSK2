@@ -14,6 +14,7 @@ EC_FLAGS  ?=
 
 # Files in dependency order
 EC_FILES = \
+  security/Csk2BaseTypes.ec \
   security/KemIndCca2.ec \
   security/AeadAeSecurity.ec \
   security/Csk2TwoGateGame.ec \

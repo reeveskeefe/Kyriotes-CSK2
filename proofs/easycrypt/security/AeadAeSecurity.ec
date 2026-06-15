@@ -7,78 +7,56 @@
  *
  * EasyCrypt version: r2022.04 (easycryptpa/ec-test-box:latest)
  *
- * We follow the AEAD.ec stdlib convention: enc is probabilistic (a
- * Cph distr) so the nonce is modelled as internal randomness.  The
+ * We follow the AEAD.ec stdlib convention: aenc is probabilistic (a
+ * ctaead distr) so the nonce is modelled as internal randomness.  The
  * CSK2 instantiation uses a 12-byte explicit nonce passed by the
  * caller, but that is an instantiation detail — the game here is
  * stated at the abstract level.
+ *
+ * Types (key, aad, msg, ctaead) and correctness axioms (aead_correct,
+ * aead_unique_ciphertext) live in Csk2BaseTypes.ec.  This file adds
+ * only the game-specific constructs: the key distribution dkey and
+ * the INT-CTXT / IND-CPA game modules.
  *)
 
 require import AllCore Distr DBool FSet Real.
+require import Csk2BaseTypes.
 
-(* ── Abstract types ───────────────────────────────────────────── *)
+(* ── Game key distribution ────────────────────────────────────── *)
 
-type key.        (* AEAD symmetric key (derived via HKDF in CSK2) *)
-type plaintext.
-type ciphertext.
-type aad.        (* additional authenticated data = policy_hash in CSK2 *)
-
-(* ── Abstract AEAD operators ──────────────────────────────────── *)
-
-(* Key generation *)
+(* AEAD key sampled for the security game.  In the CSK2 instantiation
+   the key is derived as hkdf(ss_rand); dkey abstracts that here. *)
 op dkey : key distr.
 axiom dkey_ll : is_lossless dkey.
-
-(* Encryption — probabilistic (nonce is internal randomness) *)
-op enc : key -> aad -> plaintext -> ciphertext distr.
-axiom enc_ll : forall k a m, is_lossless (enc k a m).
-
-(* Decryption — deterministic *)
-op dec : key -> aad -> ciphertext -> plaintext option.
-
-(* ── Correctness ──────────────────────────────────────────────── *)
-
-axiom aead_correctness :
-  forall (k : key) (a : aad) (m : plaintext) (c : ciphertext),
-    c \in enc k a m =>
-    dec k a c = Some m.
-
-(* Ciphertext uniqueness (deterministic INT-CTXT):
-   any c that authenticates under (k, a) must equal the honest encryption.
-   This is the probabilistic lift of the Coq `aead_csk2_int_ctxt` axiom. *)
-axiom aead_unique_ciphertext :
-  forall (k : key) (a : aad) (c : ciphertext) (m : plaintext),
-    dec k a c = Some m =>
-    c \in enc k a m.
 
 (* ── Encryption oracle ────────────────────────────────────────── *)
 
 module type EncOracle = {
-  proc encrypt(a : aad, m : plaintext) : ciphertext
+  proc encrypt(a : aad, m : msg) : ctaead
 }.
 
 (* ── INT-CTXT game ────────────────────────────────────────────── *)
 
 (*
  * The adversary gets an encryption oracle.  It wins if it produces a
- * (ciphertext, aad) pair that (a) authenticates under the secret key
+ * (ctaead, aad) pair that (a) authenticates under the secret key
  * and (b) was not a direct output of the encryption oracle.
- * Tracking is by (aad, ciphertext) pairs.
+ * Tracking is by (aad, ctaead) pairs.
  *)
 
 module type IntCtxtAdversary (O : EncOracle) = {
-  proc forge() : (aad * ciphertext) { O.encrypt }
+  proc forge() : (aad * ctaead) { O.encrypt }
 }.
 
 module Game_INT_CTXT (A : IntCtxtAdversary) = {
 
   var k       : key
-  var queried : (aad * ciphertext) fset
+  var queried : (aad * ctaead) fset
 
   module O = {
-    proc encrypt(a : aad, m : plaintext) : ciphertext = {
-      var c : ciphertext;
-      c <$ enc k a m;
+    proc encrypt(a : aad, m : msg) : ctaead = {
+      var c : ctaead;
+      c <$ aenc k a m;
       queried <- queried `|` fset1 (a, c);
       return c;
     }
@@ -88,13 +66,13 @@ module Game_INT_CTXT (A : IntCtxtAdversary) = {
 
   proc main() : bool = {
     var a  : aad;
-    var c  : ciphertext;
-    var pt : plaintext option;
+    var c  : ctaead;
+    var pt : msg option;
 
     k       <$ dkey;
     queried <- fset0;
     (a, c)  <@ A'.forge();
-    pt      <- dec k a c;
+    pt      <- adec k a c;
     return (pt <> None /\ ! (a, c) \in queried);
   }
 }.
@@ -107,8 +85,8 @@ module Game_INT_CTXT (A : IntCtxtAdversary) = {
  *)
 
 module type IndCpaAdversary (O : EncOracle) = {
-  proc choose()                     : plaintext * plaintext { O.encrypt }
-  proc distinguish(c : ciphertext)  : bool                  { O.encrypt }
+  proc choose()               : msg * msg  { O.encrypt }
+  proc distinguish(c : ctaead) : bool      { O.encrypt }
 }.
 
 module Game_IND_CPA (A : IndCpaAdversary) = {
@@ -117,9 +95,9 @@ module Game_IND_CPA (A : IndCpaAdversary) = {
   var b : bool
 
   module O = {
-    proc encrypt(a : aad, m : plaintext) : ciphertext = {
-      var c : ciphertext;
-      c <$ enc k a m;
+    proc encrypt(a : aad, m : msg) : ctaead = {
+      var c : ctaead;
+      c <$ aenc k a m;
       return c;
     }
   }
@@ -127,17 +105,17 @@ module Game_IND_CPA (A : IndCpaAdversary) = {
   module A' = A(O)
 
   proc main() : bool = {
-    var m0  : plaintext;
-    var m1  : plaintext;
-    var c   : ciphertext;
-    var b'  : bool;
+    var m0   : msg;
+    var m1   : msg;
+    var c    : ctaead;
+    var b'   : bool;
     var a_ch : aad;
 
     k  <$ dkey;
     b  <$ {0,1};
     a_ch <- witness;
     (m0, m1) <@ A'.choose();
-    c        <$ enc k a_ch (if b then m0 else m1);
+    c        <$ aenc k a_ch (if b then m0 else m1);
     b'       <@ A'.distinguish(c);
     return (b' = b);
   }

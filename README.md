@@ -14,10 +14,13 @@ Kyriotēs-CSK2 is an encryption scheme where opening ciphertext requires these t
 **a)** correct key material  
 **b)** valid, non-revoked authority capability proof
 
+
+Kyriotēs-CSK2 seals bytes to an authority state (root, policy, rights, object, epoch, revocation), so decryption succeeds only when key possession and current authority are both cryptographically true.
+
+
 >This is currently an experiment. It still requires some public audit and verification. It is becomming something ready to be showcased and audited for the future. The issue is it needs to be proven before it can be sent off and battletested and reviewed. Until then, I do not reccomend using it in production environments. 
 
 
-Kyriotēs-CSK2 seals bytes to an authority state (root, policy, rights, object, epoch, revocation), so decryption succeeds only when key possession and current authority are both cryptographically true.
 
 ## Core property
 

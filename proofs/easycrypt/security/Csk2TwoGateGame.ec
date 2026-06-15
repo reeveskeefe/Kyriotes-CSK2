@@ -42,6 +42,11 @@ op decap : skey -> ctkem -> ss option.
 op dss : ss distr.
 axiom dss_ll : is_lossless dss.
 
+(* Distribution over messages — models the sealed payload space.
+   Sampling m <$ dmsg gives the adversary a hidden target to recover. *)
+op dmsg : msg distr.
+axiom dmsg_ll : is_lossless dmsg.
+
 (* ── HKDF (abstracted as a deterministic function) ───────────── *)
 
 op hkdf : ss -> key.
@@ -81,7 +86,7 @@ module Game0 (A : Csk2Adv) = {
     var guess : msg option;
 
     (pk, sk)       <$ dkeypair;
-    m              <- witness;
+    m              <$ dmsg;
     a              <- witness;
     (ct_k, shared) <$ encap pk;
     k              <- hkdf shared;
@@ -115,7 +120,7 @@ module Game1 (A : Csk2Adv) = {
     var guess   : msg option;
 
     (pk, sk)       <$ dkeypair;
-    m              <- witness;
+    m              <$ dmsg;
     a              <- witness;
     (ct_k, shared) <$ encap pk;
     ss_rand        <$ dss;
@@ -147,12 +152,12 @@ module Game2 (A : Csk2Adv) = {
     var guess   : msg option;
 
     (pk, sk)       <$ dkeypair;
-    m              <- witness;
+    m              <$ dmsg;
     a              <- witness;
     (ct_k, shared) <$ encap pk;
     ss_rand        <$ dss;
     k              <- hkdf ss_rand;
-    ct_a           <$ aenc k a witness;  (* dummy plaintext *)
+    ct_a           <$ aenc k a witness;  (* dummy plaintext; m is the hidden target *)
     guess          <@ A.attack(pk, ct_k, ct_a, a);
     return (guess = Some m);
   }

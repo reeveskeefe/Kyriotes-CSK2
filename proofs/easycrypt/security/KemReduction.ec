@@ -78,7 +78,7 @@ module B_KEM (A : Csk2Adv) : KEM_Adv = {
     var a     : aad;
     var ct_a  : ctaead;
     var guess : msg option;
-    m     <- witness;
+    m     <$ dmsg;
     a     <- witness;
     k     <- hkdf ss_b;
     ct_a  <$ aenc k a m;
@@ -110,49 +110,50 @@ axiom kem_ror &m :
 (*
  * Game0(A) ≡ KEM_Real(B_KEM(A)).
  *
- * Game0 samples (m <- witness; a <- witness) before encap.
- * B_KEM.run samples them after receiving ss_b (i.e., after encap).
- * swap {1} [2..3] 2 moves the two pure witness assignments past the
- * encap sampling in the LHS, aligning the programs structurally.
+ * swap {1} [2..3] 1 aligns both programs:
+ *   LHS: [dk, enc, m, a, hkdf, aenc, A, result]
+ *   RHS: [dk, enc, m, a, hkdf, aenc, A, b', result]  (after inline)
  *
- * After wp absorbs the trailing return assignments, call handles
- * A.attack in both programs (EC's call finds the last module call,
- * ignoring any trailing deterministic b'<-... from the inline).
- * sim closes the A.attack self-equivalence for the abstract module.
- * rnd; wp; rnd; rnd couples aenc, hkdf/witness assignments, encap,
- * and dkeypair in order, leaving a trivially-closed skip goal.
+ * wp absorbs the trailing result/b'.  The abstract-module step is
+ * discharged by establishing Hatt (equiv[A.attack ~ A.attack]) via sim,
+ * then calling it to reduce to the concrete coupling subgoal
+ * [dk, enc, m, a, hkdf, aenc].  auto => /# closes the coupling:
+ * it drives wp (absorbs hkdf/a), rnd for aenc/m/enc/dk, and smt for the
+ * deferred distribution-equality obligations.
  *)
 lemma game0_eq_kem_real &m :
   Pr[Game0(A).main() @ &m : res] =
   Pr[KEM_Real(B_KEM(A)).main() @ &m : res].
 proof.
   byequiv => //; proc; inline B_KEM(A).run.
-  swap {1} [2..3] 2.
+  swap {1} [2..3] 1.
   wp.
-  call (: ={glob A, arg} ==> ={glob A, res}).
-  - by sim.
-  - rnd; wp; rnd; rnd; skip; smt().
+  have Hatt : equiv[A.attack ~ A.attack : ={glob A, arg} ==> ={glob A, res}] by sim.
+  call Hatt.
+  auto => /#.
 qed.
 
 (*
  * Game1(A) ≡ KEM_Rand(B_KEM(A)).
  *
- * Same structure as above but both programs also sample ss_rand <$ dss.
- * In Game1 the real KEM ss (shared) is sampled but discarded.
- * In KEM_Rand the discarded component is ss_ign — same distribution.
- * swap {1} [2..3] 3 moves (m,a) past both encap and the dss sampling.
- * One extra rnd handles the dss sampling step compared to game0.
+ * swap {1} [2..3] 2 aligns both programs:
+ *   LHS: [dk, enc, dss, m, a, hkdf, aenc, A, result]
+ *   RHS: [dk, enc, dss, m, a, hkdf, aenc, A, b', result]  (after inline)
+ *
+ * Same structural argument as game0_eq_kem_real.  wp absorbs the
+ * trailing result/b'; Hatt (sim) closes the abstract-module step;
+ * auto => /# closes the concrete coupling [dk, enc, dss, m, a, hkdf, aenc].
  *)
 lemma game1_eq_kem_rand &m :
   Pr[Game1(A).main() @ &m : res] =
   Pr[KEM_Rand(B_KEM(A)).main() @ &m : res].
 proof.
   byequiv => //; proc; inline B_KEM(A).run.
-  swap {1} [2..3] 3.
+  swap {1} [2..3] 2.
   wp.
-  call (: ={glob A, arg} ==> ={glob A, res}).
-  - by sim.
-  - rnd; wp; rnd; rnd; rnd; skip; smt().
+  have Hatt : equiv[A.attack ~ A.attack : ={glob A, arg} ==> ={glob A, res}] by sim.
+  call Hatt.
+  auto => /#.
 qed.
 
 (*

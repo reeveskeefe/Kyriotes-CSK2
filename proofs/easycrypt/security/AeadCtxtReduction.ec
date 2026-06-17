@@ -2,54 +2,36 @@
  *
  * Discharges the game2_win_bound axiom stub from Csk2TwoGateGame.ec.
  *
- * ── Why Game2 is hard with the corrected game design ─────────────
+ * ── Why Game2 is hard ─────────────────────────────────────────────
  *
- * With m <$ dmsg, Game2 is:
- *
- *   m    <$ dmsg;                        (* hidden target *)
- *   ct_a <$ aenc k a witness;            (* dummy ciphertext *)
+ * Game2:
+ *   m    <$ dmsg;                        (* hidden target     *)
+ *   ct_a <$ aenc k a witness;            (* dummy ciphertext  *)
  *   guess <@ A.attack(pk, ct_k, ct_a, a);
  *   return (guess = Some m);
  *
- * A's view (pk, ct_k, ct_a, a) is INDEPENDENT of m:
- *   - pk and ct_k come from dkeypair / encap, not m
+ * A's view (pk, ct_k, ct_a, a) is independent of m:
  *   - ct_a = aenc k a witness does not encode m
+ *   - pk, ct_k come from dkeypair / encap, not m
  *   - a = witness is fixed
  *
- * To output Some m, A must guess m from dmsg without seeing it.
- * The probability is at most 1/|support(dmsg)| <= inv(2^128) if
- * dmsg is uniform over a 128-bit message space.
+ * So A's guess is fixed before m is sampled.  The win probability
+ * equals mu1 dmsg (oget guess), bounded by inv(2^128) via dmsg_bound.
  *
- * ── What aead_ow represents ───────────────────────────────────────
+ * ── Proof structure ────────────────────────────────────────────────
  *
- * aead_ow captures the combined bound:
- *   (1) AEAD key is uniform (k = hkdf(ss_rand), ss_rand <$ dss).
- *   (2) ct_a = aenc k a witness hides m by IND-CPA (no info about m
- *       leaks through the ciphertext).
- *   (3) m is uniform over dmsg (message-space guessing bound).
- *
- * The overall win probability is therefore bounded by 1/|dmsg|.
- *
- * A direct EC proof would require:
- *   axiom dmsg_uniform : is_uniform dmsg.
- *   axiom dmsg_full    : is_full dmsg.
- *   axiom dmsg_card    : (size (to_seq (support dmsg)))%r = 2%r ^ 128.
- * and a probabilistic independence argument (swap m to be sampled last).
- * For now, aead_ow axiomatises the bound, mirroring kem_ror and
- * aead_cpa_adv in the other reduction files.
- *
- * ── What a direct INT-CTXT reduction would look like ─────────────
- *
- * With the current Csk2Adv interface (A outputs msg option), a CTXT
- * reduction is still impossible: INT-CTXT needs a ciphertext forgery,
- * not a plaintext guess.  The correct adversary for a CTXT reduction
- * would need A to output (aad * ctaead).  The OW bound is the right
- * primitive here.
+ * 1. Game2swap: identical to Game2 but m <$ dmsg comes AFTER A.attack.
+ * 2. game2_swap_eq: byequiv, swap {1} 2 6; sim.
+ * 3. mu_guess: mu dmsg (fun m0 => g = Some m0) <= inv(2^128) for any g.
+ * 4. game2swap_bound: byphoare; proc; seq 7 (split after A.attack);
+ *    prefix is lossless (call A_ll + wp/rnd), suffix is m <$ dmsg
+ *    bounded by mu_guess applied to guess{hr}.
  *
  * EasyCrypt version: r2022.04
  *)
 
-require import AllCore Distr DBool FSet Real.
+require import AllCore Distr DBool FSet Real Number.
+require import Csk2BaseTypes.
 require import Csk2TwoGateGame.
 
 section AeadCtxt.
@@ -58,31 +40,99 @@ declare module A <: Csk2Adv { -Game2 }.
 
 axiom A_ll : islossless A.attack.
 
-(*
- * AEAD one-way security axiom.
- *
- * Pr[Game2(A).main() @ &m : res] measures the probability that A
- * outputs Some m where m is a hidden uniform sample from dmsg and
- * ct_a encrypts only the dummy witness (not m).
- *
- * This bound follows from AEAD IND-CPA (ct_a hides witness, so A
- * learns nothing about m from ct_a) plus the message-space size
- * (guessing m from dmsg has probability <= inv(2^128)).
- *
- * Replace with a proved lemma once dmsg_uniform, dmsg_full, and
- * dmsg_card axioms are added and a probabilistic independence
- * argument is mechanised.
- *)
-axiom aead_ow &m :
-  Pr[Game2(A).main() @ &m : res] <= inv (2%r ^ 128).
+(* ── Game2swap: m sampled after A.attack ─────────────────────────── *)
 
+local module Game2swap = {
+  proc main() : bool = {
+    var pk      : pkey;
+    var sk      : skey;
+    var ct_k    : ctkem;
+    var shared  : ss;
+    var ss_rand : ss;
+    var k       : key;
+    var m       : msg;
+    var ct_a    : ctaead;
+    var a       : aad;
+    var guess   : msg option;
+
+    (pk, sk)       <$ dkeypair;
+    a              <- witness;
+    (ct_k, shared) <$ encap pk;
+    ss_rand        <$ dss;
+    k              <- hkdf ss_rand;
+    ct_a           <$ aenc k a witness;
+    guess          <@ A.attack(pk, ct_k, ct_a, a);
+    m              <$ dmsg;
+    return (guess = Some m);
+  }
+}.
+
+(* ── Equivalence: Game2 ≡ Game2swap ─────────────────────────────── *)
+
+local lemma game2_swap_eq &m :
+  Pr[Game2(A).main() @ &m : res] =
+  Pr[Game2swap.main() @ &m : res].
+proof.
+  byequiv => //; proc.
+  swap {1} 2 6.
+  sim.
+qed.
+
+(* ── Helper: mu bound for any option guess ──────────────────────── *)
 (*
- * game2_win_bound: Pr[Game2] <= inv(2^128).
- *
- * Follows directly from aead_ow.
+ * None  → predicate is always false (pred0), mu = 0 <= inv(2^128).
+ * Some m → predicate is pred1 m, mu = mu1 dmsg m <= inv(2^128).
  *)
+local lemma mu_guess (g : msg option) :
+  mu dmsg (fun m0 => g = Some m0) <= inv (2%r ^ 128).
+proof.
+  have inv_bound_ge0 : 0%r <= inv (2%r ^ 128).
+  + have hle := dmsg_bound witness.
+    have hge : 0%r <= mu1 dmsg witness by smt(mu_bounded).
+    smt().
+  case g.
+  + (* None: predicate equals pred0, so mu = 0 <= inv(2^128) *)
+    have h : mu dmsg (fun m0 => None = Some m0) = mu dmsg pred0.
+    * congr; apply fun_ext => m0; by rewrite /pred0 /=.
+    by rewrite h mu0.
+  + (* Some m: predicate equals pred1 m, so mu = mu1 dmsg m *)
+    move => m.
+    have h : mu dmsg (fun m0 => Some m = Some m0) = mu1 dmsg m.
+    * rewrite /mu1; congr; apply fun_ext => m0; by rewrite /pred1 /=; smt().
+    by rewrite h; exact (dmsg_bound m).
+qed.
+
+(* ── Bound on Game2swap ────────────────────────────────────────────── *)
+(*
+ * Split the program right after A.attack (instruction 7).  The prefix
+ * (instructions 1-7) trivially establishes `true` with probability 1
+ * (call A_ll + lossless KEM/AEAD/key-derivation steps).  At that split
+ * point `guess` is a normal local program variable, addressable as
+ * `guess{hr}` once the memory is introduced by `skip`.  The suffix is
+ * just `m <$ dmsg; return (guess = Some m)`, bounded directly by
+ * mu_guess applied to `guess{hr}`.
+ *)
+
+local lemma game2swap_bound &m :
+  Pr[Game2swap.main() @ &m : res] <= inv (2%r ^ 128).
+proof.
+  byphoare (: true ==> _) => //; proc.
+  rnd (fun m0 => guess = Some m0).
+  call (: true ==> true); first by proc true.
+  rnd; wp; rnd; rnd; wp; rnd.
+  skip; move => &mem _.
+  move => [pk sk] _ [ct_k shared] _ ss_rand _ ct_a _.
+  move => result; split.
+  + exact (mu_guess result).
+  + by move => v Hv Hres.
+qed.
+
+(* ── Main result ─────────────────────────────────────────────────── *)
+
 lemma game2_win_bound &m :
   Pr[Game2(A).main() @ &m : res] <= inv (2%r ^ 128).
-proof. exact (aead_ow &m). qed.
+proof.
+  rewrite (game2_swap_eq &m); exact (game2swap_bound &m).
+qed.
 
 end section AeadCtxt.

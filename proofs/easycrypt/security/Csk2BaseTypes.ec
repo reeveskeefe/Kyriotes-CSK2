@@ -72,4 +72,62 @@ axiom aead_unique_ciphertext :
 (* Uniform distribution over sealed payloads.  The adversary must
    guess m drawn from dmsg without seeing it in Game2. *)
 op dmsg : msg distr.
-axiom dmsg_ll : is_lossless dmsg.
+axiom dmsg_ll   : is_lossless dmsg.
+
+(* dmsg is the uniform distribution over a 2^128-element message space. *)
+axiom dmsg_uni   : is_uniform dmsg.
+axiom dmsg_full  : is_full dmsg.
+
+(* Any single message occurs with probability at most 2^{-128}.
+   This is the key bound used by the Game2 one-way argument. *)
+axiom dmsg_bound (m : msg) : mu1 dmsg m <= inv (2%r ^ 128).
+
+(* ── Merkle / capability types ─────────────────────────────────── *)
+(*
+ * These types support the capability binding and Merkle transparency
+ * games (Csk2MerkleBinding.ec, Csk2CapabilityGame.ec).
+ *
+ * In the CSK2 construction:
+ *   hash   = SHA-256 output (Merkle leaf or node hash)
+ *   root   = Merkle root (a hash conceptually; typed distinctly for clarity)
+ *   cap    = capability token (signed by the authority)
+ *   stamp  = per-capability revocation stamp (unique identifier)
+ *
+ * Mirrors KyriotesCsk2Types.v (Hash, Capability, cap_stamp) and
+ * KyriotesCsk2Merkle.v (hash_capability, included_in_merkle_root,
+ * not_in_revocation_root).
+ *)
+
+type hash.    (* SHA-256 output / Merkle leaf *)
+type root.    (* Merkle root                  *)
+type cap.     (* CSK2 capability token        *)
+type stamp.   (* Capability revocation stamp  *)
+
+(* Extract the revocation stamp from a capability *)
+op cap_stamp : cap -> stamp.
+
+(* Hash a capability for Merkle tree inclusion (the authority tree leaf) *)
+op hash_cap : cap -> hash.
+
+(* Hash a revocation stamp for the revocation Merkle tree *)
+op hash_stamp : stamp -> hash.
+
+(* Merkle inclusion predicate: leaf h is included in root r *)
+op merkle_include : hash -> root -> bool.
+
+(* Non-revocation proof: a witness that stamp s is absent from root r.
+   Corresponds to `not_in_revocation_root` in KyriotesCsk2Merkle.v. *)
+op non_revoc_proof : stamp -> root -> bool.
+
+(*
+ * Revocation soundness: a valid non-revocation proof guarantees that
+ * the stamp's hash is absent from the Merkle root.
+ *
+ * Mirrors `revocation_soundness` from KyriotesCsk2Merkle.v:
+ *   Axiom revocation_soundness : forall stamp root,
+ *     not_in_revocation_root stamp root = true ->
+ *     included_in_merkle_root (hash_revocation_stamp stamp) root = false.
+ *)
+axiom revocation_soundness (s : stamp) (r : root) :
+  non_revoc_proof s r = true =>
+  merkle_include (hash_stamp s) r = false.

@@ -17,6 +17,8 @@ EC_FILES = \
   security/Csk2BaseTypes.ec \
   security/KemIndCca2.ec \
   security/AeadAeSecurity.ec \
+  security/Csk2MerkleBinding.ec \
+  security/Csk2CapabilityGame.ec \
   security/Csk2TwoGateGame.ec \
   security/KemReduction.ec \
   security/AeadCpaReduction.ec \

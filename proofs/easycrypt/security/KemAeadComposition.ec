@@ -1,8 +1,9 @@
 (* KEM+AEAD composition for Kyriotēs-CSK2.
  *
  * Assembles the three hybrid-step lemmas into the final concrete
- * KEM+AEAD bound.  Two primitive-security leaves remain axiomatized:
- * kem_ror and aead_cpa_adv.
+ * KEM+AEAD bound.  Two primitive-security leaves remain axiomatized
+ * in the primitive game files:
+ * kem_csk2_ror_secure and aead_csk2_ind_cpa_lr_secure.
  *
  *   kem_hybrid_step  (KemReduction.ec)     : |Pr[G0] - Pr[G1]| <= 2^{-128}
  *   game1_game2_cpa  (AeadCpaReduction.ec) : |Pr[G1] - Pr[G2]| <= 2^{-128}
@@ -11,8 +12,8 @@
  * Combining with the triangle inequality gives Pr[Game0(A)] <= 3 * 2^{-128}.
  *
  * Remaining primitive-security leaves (axioms in their files):
- *   kem_ror      — direct KEM real-or-random hybrid bound
- *   aead_cpa_adv — direct AEAD left/right hybrid bound
+ *   kem_csk2_ror_secure         — direct KEM real-or-random hybrid bound
+ *   aead_csk2_ind_cpa_lr_secure — direct AEAD left/right hybrid bound
  *
  * game2_win_bound is now proved in AeadCtxtReduction.ec from dmsg_bound.
  *
@@ -21,13 +22,17 @@
 
 require import AllCore Real.
 require import Csk2TwoGateGame.
+require import AeadAeSecurity.
 require import KemReduction.
 require import AeadCpaReduction.
 require import AeadCtxtReduction.
 
 section Composition.
 
-declare module A <: Csk2Adv { -Game0, -Game1, -Game2 }.
+declare module A <: Csk2Adv {
+  -Game0, -Game1, -Game2,
+  -B_CPA, -Game_CPA_Left, -Game_CPA_Right
+}.
 
 (*
  * csk2_concrete_bound

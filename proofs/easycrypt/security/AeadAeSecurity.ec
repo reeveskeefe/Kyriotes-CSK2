@@ -121,6 +121,57 @@ module Game_IND_CPA (A : IndCpaAdversary) = {
   }
 }.
 
+(* ── Direct left/right game for hybrid reductions ─────────────── *)
+
+module type LrIndCpaAdversary = {
+  proc choose() : msg * msg
+  proc distinguish(c : ctaead) : bool
+}.
+
+module Game_CPA_Left (A : LrIndCpaAdversary) = {
+
+  var k : key
+
+  proc main() : bool = {
+    var ss_rand : ss;
+    var m0   : msg;
+    var m1   : msg;
+    var c    : ctaead;
+    var b'   : bool;
+    var a_ch : aad;
+
+    (m0, m1) <@ A.choose();
+    ss_rand  <$ dss;
+    k        <- hkdf ss_rand;
+    a_ch     <- witness;
+    c        <$ aenc k a_ch m0;
+    b'       <@ A.distinguish(c);
+    return b';
+  }
+}.
+
+module Game_CPA_Right (A : LrIndCpaAdversary) = {
+
+  var k : key
+
+  proc main() : bool = {
+    var ss_rand : ss;
+    var m0   : msg;
+    var m1   : msg;
+    var c    : ctaead;
+    var b'   : bool;
+    var a_ch : aad;
+
+    (m0, m1) <@ A.choose();
+    ss_rand  <$ dss;
+    k        <- hkdf ss_rand;
+    a_ch     <- witness;
+    c        <$ aenc k a_ch m1;
+    b'       <@ A.distinguish(c);
+    return b';
+  }
+}.
+
 (* ── Advantage and security statements ───────────────────────────
  *
  * Both games are stated with concrete module parameters inside
@@ -149,3 +200,14 @@ axiom aead_csk2_ind_cpa_secure &m :
   <= inv (2%r ^ 128).
 
 end section IND_CPA_Security.
+
+section IND_CPA_LR_Security.
+
+declare module A <: LrIndCpaAdversary { -Game_CPA_Left, -Game_CPA_Right }.
+
+axiom aead_csk2_ind_cpa_lr_secure &m :
+  `| Pr[Game_CPA_Left(A).main() @ &m : res] -
+     Pr[Game_CPA_Right(A).main() @ &m : res] |
+  <= inv (2%r ^ 128).
+
+end section IND_CPA_LR_Security.

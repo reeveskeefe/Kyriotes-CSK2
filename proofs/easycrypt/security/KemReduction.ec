@@ -8,12 +8,10 @@
  *   kem_hybrid_step
  *     ← game0_eq_kem_real  (byequiv: swap pure assignments, sim)
  *     ← game1_eq_kem_rand  (byequiv: swap pure assignments, sim)
- *     ← kem_ror            (KEM primitive security axiom)
+ *     ← kem_csk2_ror_secure (KEM primitive RoR security axiom)
  *
- * KemIndCca2.ec now shares Csk2BaseTypes, so there is no longer a
- * type-namespace conflict.  kem_ror remains as the direct real-or-random
- * KEM bound needed by this hybrid until the bit-guessing IND-CCA2 game is
- * connected with explicit factor/accounting or a matching RoR game.
+ * KemIndCca2.ec exposes the direct real-or-random worlds used by this
+ * hybrid, so this file no longer carries a local KEM RoR axiom.
  *
  * EasyCrypt version: r2022.04
  *)
@@ -21,46 +19,7 @@
 require import AllCore Distr Real.
 require import Csk2BaseTypes.
 require import Csk2TwoGateGame.
-
-(* ── Local KEM real-or-random adversary type ────────────────── *)
-
-module type KEM_Adv = {
-  proc run(pk : pkey, ct_k : ctkem, ss_b : ss) : bool
-}.
-
-(* ── KEM real world ─────────────────────────────────────────── *)
-
-module KEM_Real (A : KEM_Adv) = {
-  proc main() : bool = {
-    var pk      : pkey;
-    var sk      : skey;
-    var ct_k    : ctkem;
-    var ss_real : ss;
-    var b'      : bool;
-    (pk, sk)        <$ dkeypair;
-    (ct_k, ss_real) <$ encap pk;
-    b'              <@ A.run(pk, ct_k, ss_real);
-    return b';
-  }
-}.
-
-(* ── KEM random world ───────────────────────────────────────── *)
-
-module KEM_Rand (A : KEM_Adv) = {
-  proc main() : bool = {
-    var pk      : pkey;
-    var sk      : skey;
-    var ct_k    : ctkem;
-    var ss_ign  : ss;
-    var ss_rand : ss;
-    var b'      : bool;
-    (pk, sk)       <$ dkeypair;
-    (ct_k, ss_ign) <$ encap pk;
-    ss_rand        <$ dss;
-    b'             <@ A.run(pk, ct_k, ss_rand);
-    return b';
-  }
-}.
+require import KemIndCca2.
 
 (* ── B_KEM: CSK2 adversary → KEM adversary ──────────────────── *)
 (*
@@ -72,7 +31,7 @@ module KEM_Rand (A : KEM_Adv) = {
  *   ss_b = ss_real  →  k from real KEM ss  →  identical to Game0
  *   ss_b = ss_rand  →  k from uniform ss   →  identical to Game1
  *)
-module B_KEM (A : Csk2Adv) : KEM_Adv = {
+module B_KEM (A : Csk2Adv) : KEM_RoR_Adversary = {
   proc run(pk : pkey, ct_k : ctkem, ss_b : ss) : bool = {
     var k     : key;
     var m     : msg;
@@ -98,19 +57,7 @@ declare module A <: Csk2Adv { -Game0, -Game1, -Game2 }.
 axiom A_ll : islossless A.attack.
 
 (*
- * KEM real-or-random security.
- * This is no longer blocked by duplicate type declarations; it remains as
- * the direct RoR bound for the CSK2 hybrid until KemIndCca2.ec exposes a
- * matching RoR game or the bit-guessing IND-CCA2 game is bridged with
- * explicit factor accounting.
- *)
-axiom kem_ror &m :
-  `| Pr[KEM_Real(B_KEM(A)).main() @ &m : res] -
-     Pr[KEM_Rand(B_KEM(A)).main() @ &m : res] |
-  <= inv (2%r ^ 128).
-
-(*
- * Game0(A) ≡ KEM_Real(B_KEM(A)).
+ * Game0(A) ≡ Game_KEM_RoR_Real(B_KEM(A)).
  *
  * swap {1} [2..3] 1 aligns both programs:
  *   LHS: [dk, enc, m, a, hkdf, aenc, A, result]
@@ -125,7 +72,7 @@ axiom kem_ror &m :
  *)
 lemma game0_eq_kem_real &m :
   Pr[Game0(A).main() @ &m : res] =
-  Pr[KEM_Real(B_KEM(A)).main() @ &m : res].
+  Pr[Game_KEM_RoR_Real(B_KEM(A)).main() @ &m : res].
 proof.
   byequiv => //; proc; inline B_KEM(A).run.
   swap {1} [2..3] 1.
@@ -136,7 +83,7 @@ proof.
 qed.
 
 (*
- * Game1(A) ≡ KEM_Rand(B_KEM(A)).
+ * Game1(A) ≡ Game_KEM_RoR_Rand(B_KEM(A)).
  *
  * swap {1} [2..3] 2 aligns both programs:
  *   LHS: [dk, enc, dss, m, a, hkdf, aenc, A, result]
@@ -148,7 +95,7 @@ qed.
  *)
 lemma game1_eq_kem_rand &m :
   Pr[Game1(A).main() @ &m : res] =
-  Pr[KEM_Rand(B_KEM(A)).main() @ &m : res].
+  Pr[Game_KEM_RoR_Rand(B_KEM(A)).main() @ &m : res].
 proof.
   byequiv => //; proc; inline B_KEM(A).run.
   swap {1} [2..3] 2.
@@ -161,7 +108,8 @@ qed.
 (*
  * Hybrid step: |Pr[Game0] - Pr[Game1]| <= inv(2^128).
  *
- * Substitute the two game-equivalence lemmas then apply kem_ror.
+ * Substitute the two game-equivalence lemmas then apply the imported
+ * KEM RoR security axiom.
  * This discharges the game0_game1_kem axiom stub in
  * Csk2TwoGateGame.ec.
  *)
@@ -170,7 +118,7 @@ lemma kem_hybrid_step &m :
   <= inv (2%r ^ 128).
 proof.
   rewrite (game0_eq_kem_real &m) (game1_eq_kem_rand &m).
-  apply kem_ror.
+  exact (kem_csk2_ror_secure (B_KEM(A)) &m).
 qed.
 
 end section KemHybrid.

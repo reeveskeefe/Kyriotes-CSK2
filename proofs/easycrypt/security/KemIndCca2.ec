@@ -144,6 +144,44 @@ module Game_IND_CCA2 (KG : KEM_KG, A : KEM_Adversary) = {
   }
 }.
 
+(* ── Direct real-or-random KEM worlds for hybrid reductions ───── *)
+
+module type KEM_RoR_Adversary = {
+  proc run(pk : pkey, ct_k : ctkem, ss_b : ss) : bool
+}.
+
+module Game_KEM_RoR_Real (A : KEM_RoR_Adversary) = {
+  proc main() : bool = {
+    var pk      : pkey;
+    var sk      : skey;
+    var ct_k    : ctkem;
+    var ss_real : ss;
+    var b'      : bool;
+
+    (pk, sk)        <$ dkeypair;
+    (ct_k, ss_real) <$ encap pk;
+    b'              <@ A.run(pk, ct_k, ss_real);
+    return b';
+  }
+}.
+
+module Game_KEM_RoR_Rand (A : KEM_RoR_Adversary) = {
+  proc main() : bool = {
+    var pk      : pkey;
+    var sk      : skey;
+    var ct_k    : ctkem;
+    var ss_ign  : ss;
+    var ss_rand : ss;
+    var b'      : bool;
+
+    (pk, sk)       <$ dkeypair;
+    (ct_k, ss_ign) <$ encap pk;
+    ss_rand        <$ dss;
+    b'             <@ A.run(pk, ct_k, ss_rand);
+    return b';
+  }
+}.
+
 (* ── Advantage and security statement ────────────────────────────
  *
  * Advantage is stated inside a section so A is a concrete module
@@ -169,3 +207,14 @@ axiom kem_csk2_indcca2_secure &m :
   <= inv (2%r ^ 128).
 
 end section IND_CCA2_Security.
+
+section KEM_RoR_Security.
+
+declare module A <: KEM_RoR_Adversary { -Game_KEM_RoR_Real, -Game_KEM_RoR_Rand }.
+
+axiom kem_csk2_ror_secure &m :
+  `| Pr[Game_KEM_RoR_Real(A).main() @ &m : res] -
+     Pr[Game_KEM_RoR_Rand(A).main() @ &m : res] |
+  <= inv (2%r ^ 128).
+
+end section KEM_RoR_Security.

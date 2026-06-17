@@ -1,16 +1,15 @@
 (* CSK2 two-gate game — concrete hybrid sequence.
  *
- * Defines the three hybrid games (Game0 → Game1 → Game2) and proves
- * the final composition bound from the three hybrid-step axioms.
- * Each axiom stub becomes the proof obligation for one reduction
- * adversary (B_KEM, B_CPA, B_CTXT).
+ * Defines the three hybrid games (Game0 → Game1 → Game2).  The final
+ * concrete KEM+AEAD composition bound is proved in KemAeadComposition.ec.
  *
  * Game0: real CSK2 seal/open game
  * Game1: KEM shared secret replaced by uniform random
  * Game2: Game1 + AEAD encrypts a dummy plaintext
  *
  * Distinguishing adjacent games gives an adversary against a primitive.
- * In Game2 no adversary can win → Pr[win] bounded by INT-CTXT advantage.
+ * In Game2 the challenge message is independent of A's view; the final
+ * bound is proved in AeadCtxtReduction.ec from dmsg_bound.
  *
  * Types, primitive operators, and correctness axioms live in
  * Csk2BaseTypes.ec; this file only contains the game definitions.
@@ -121,4 +120,3 @@ module Game2 (A : Csk2Adv) = {
     return (guess = Some m);
   }
 }.
-

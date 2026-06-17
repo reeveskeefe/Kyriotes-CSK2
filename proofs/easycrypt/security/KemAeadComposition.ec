@@ -1,7 +1,8 @@
 (* KEM+AEAD composition for Kyriotēs-CSK2.
  *
- * Assembles the three proved hybrid-step lemmas into the final
- * concrete security bound — no axiom stubs.
+ * Assembles the three hybrid-step lemmas into the final concrete
+ * KEM+AEAD bound.  Two primitive-security leaves remain axiomatized:
+ * kem_ror and aead_cpa_adv.
  *
  *   kem_hybrid_step  (KemReduction.ec)     : |Pr[G0] - Pr[G1]| <= 2^{-128}
  *   game1_game2_cpa  (AeadCpaReduction.ec) : |Pr[G1] - Pr[G2]| <= 2^{-128}
@@ -36,7 +37,7 @@ declare module A <: Csk2Adv { -Game0, -Game1, -Game2 }.
  *
  *   Pr[G0] - Pr[G1]  bounded by kem_hybrid_step    (KEM IND-CCA2)
  *   Pr[G1] - Pr[G2]  bounded by game1_game2_cpa    (AEAD IND-CPA)
- *   Pr[G2]           bounded by game2_win_bound     (AEAD one-way)
+ *   Pr[G2]           bounded by game2_win_bound     (message-space guessing)
  *)
 lemma csk2_concrete_bound &m :
   Pr[Game0(A).main() @ &m : res] <= 3%r * inv (2%r ^ 128).

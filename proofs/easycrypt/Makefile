@@ -23,7 +23,8 @@ EC_FILES = \
   security/KemReduction.ec \
   security/AeadCpaReduction.ec \
   security/AeadCtxtReduction.ec \
-  security/KemAeadComposition.ec
+  security/KemAeadComposition.ec \
+  security/Csk2FullSecurityComposition.ec
 
 .PHONY: check all clean
 

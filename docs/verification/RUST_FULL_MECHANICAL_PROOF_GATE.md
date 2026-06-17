@@ -42,4 +42,4 @@ The current completed gate is backed by repeatable Kani proof lanes and recorded
 2. Capability-tree non-empty witness and Merkle-path soundness.
 3. Seal/open encode/decode round-trip preservation for recorded seal-produced objects: complete within the scoped expansion lane.
 4. Exhaustive encode/decode canonical equivalence over arbitrary bytes and the unbounded object space.
-5. Active expansion lane: seal/open crypto semantic contracts over explicit AEAD/KEM/HKDF/SHA assumptions.
+5. (Complete — formalized) Seal/open crypto semantic contracts over explicit AEAD/KEM/HKDF/SHA assumptions are formalized in `KyriotesCsk2RustCoqFormalCorrespondence.v` and `KyriotesCsk2SealOpenCryptoSemanticContracts.v`; two-gate hybrid reduction in `KyriotesCsk2TwoGateHybridReduction.v`. Concrete advantage accounting and full production end-to-end proof remain open.

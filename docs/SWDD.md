@@ -290,23 +290,16 @@ Core responsibilities:
 
 ## Formal Proof Subsystem
 
-This subsystem provides Coq proof files for security-relevant design properties.
+This subsystem provides Coq proof files for security-relevant design properties, organized across six subdirectories under `proofs/coq/`.
 
-Current proof files include:
+- `core/`: Core abstract types, authority-state model, policy model, and verified-open gate model.
+- `merkle_transparency/`: Abstract and concrete Merkle tree proofs, transparency append-only and consistency proofs, false-inclusion reduction, and soundness completeness.
+- `security/`: Security game definitions, authorization theorems, delegation proofs, KEM/AEAD assumption interfaces, two-gate opening game, hybrid reduction, adversary game, and crypto reduction completeness.
+- `lifecycle/`: Temporal proofs, transcript binding proofs, revocation and compromise proofs, encoding proofs, wrapper proofs, state transition proofs, protocol state machine proofs, end-to-end theorems, and predicate refinement proofs.
+- `completeness/`: Master invariant proofs, abstract invariant completeness, design model completeness, and state machine completeness.
+- `rust_refinement/`: Rust-to-Coq mechanical correspondence, Kani-backed axioms, seal/open crypto semantic contracts, encode/decode round-trip refinement, capability tree witness soundness, epoch wrapper and rotation refinement, and the formal correspondence layer.
 
-- `KyriotesCsk2Types.v`
-- `KyriotesCsk2Merkle.v`
-- `KyriotesCsk2Authority.v`
-- `KyriotesCsk2Policy.v`
-- `KyriotesCsk2Verify.v`
-- `KyriotesCsk2SecurityGame.v`
-- `KyriotesCsk2Theorems.v`
-- `KyriotesCsk2StressProofs.v`
-- `KyriotesCsk2DelegationProofs.v`
-- `KyriotesCsk2CryptoReduction.v`
-- `KyriotesCsk2TemporalProofs.v`
-- `KyriotesCsk2TranscriptProofs.v`
-- `KyriotesCsk2RevocationCompromiseProofs.v`
+The `check.sh` script at the root of `proofs/coq/` compiles all proof files in dependency order and reports success or failure.
 
 ## 3.3 Design Rationale
 
@@ -372,8 +365,10 @@ The Coq proof model abstracts these structures into natural-number-based records
 - `revocation_root`: Merkle root for revoked capability stamps.
 - `transparency_root`: Root commitment for transparency state.
 - `epoch`: Current authority epoch.
-- `epoch_public_key`: Public key for the epoch.
-- `root_public_key`: Public key for the authority root.
+- `authority_id`: Identifier for the authority.
+- `root_pk`: Public key for the authority root (offline trust anchor).
+- `revocation_count`: Authenticated count of entries in the revocation tree, bound into the authority digest so non-revocation witnesses cannot lie about tree size.
+- `prev_epoch_hash`: Transparency log chain hash `Log_{e-1}` used as `prev_epoch_hash` when signing the epoch root signature.
 
 ## Capability
 
@@ -388,9 +383,10 @@ The Coq proof model abstracts these structures into natural-number-based records
 
 ## CompromiseNotice
 
-- `notice_epoch`: Epoch affected by compromise.
-- `notice_epoch_public_key`: Epoch public key affected by compromise.
-- `notice_recovery_root`: Recovery or replacement authority root.
+- `compromised_epoch`: Epoch at which the key compromise occurred.
+- `compromised_epoch_pk`: Epoch public key that must no longer be trusted at or after `compromised_epoch`.
+- `recovery_authority_root`: Recovery authority root anchoring the declared recovery boundary.
+- `signature`: Offline root signature over the notice fields (domain-separated).
 
 ## KyriotesCsk2Transcript
 
@@ -556,21 +552,12 @@ procedure VERIFY(sealed_object, capability, authority_state):
 
 ```text
 procedure CHECK_COQ_PROOFS():
-    compile KyriotesCsk2Types.v
-    compile KyriotesCsk2Merkle.v
-    compile KyriotesCsk2Authority.v
-    compile KyriotesCsk2Policy.v
-    compile KyriotesCsk2Verify.v
-    compile KyriotesCsk2SecurityGame.v
-    compile KyriotesCsk2Theorems.v
-    compile KyriotesCsk2StressProofs.v
-    compile KyriotesCsk2DelegationProofs.v
-    compile KyriotesCsk2CryptoReduction.v
-    compile KyriotesCsk2TemporalProofs.v
-    compile KyriotesCsk2TranscriptProofs.v
-    compile KyriotesCsk2RevocationCompromiseProofs.v
-    report success only if all files compile
+    invoke proofs/coq/check.sh
+    script compiles all proof files across six subdirectories in dependency order
+    report success only if all files compile without error
 ```
+
+The proof files are organized into `core`, `merkle_transparency`, `security`, `lifecycle`, `completeness`, and `rust_refinement` subdirectories. The `check.sh` script handles the `-Q` namespace flags and compilation ordering required across all subdirectories.
 
 ---
 
@@ -662,21 +649,68 @@ Errors should clearly explain whether failure came from decoding, missing rights
 
 ## Appendix A: Current Coq Proof Layers
 
-Kyriotēs-CSK2 currently includes the following proof layers:
+Kyriotēs-CSK2 proof files are organized into six subdirectories under `proofs/coq/`. All files are compiled by `proofs/coq/check.sh`.
 
-- `KyriotesCsk2Types.v`: Core abstract types and basic helper lemmas.
-- `KyriotesCsk2Merkle.v`: Abstract Merkle inclusion and non-revocation model.
+**core/** — Foundation types and gate models.
+- `KyriotesCsk2Types.v`: Core abstract types and helper lemmas.
 - `KyriotesCsk2Authority.v`: Abstract authority-state validity model.
 - `KyriotesCsk2Policy.v`: Object, rights, and epoch policy model.
 - `KyriotesCsk2Verify.v`: Verified-open gate model.
+
+**merkle_transparency/** — Merkle and transparency log proofs.
+- `KyriotesCsk2Merkle.v`: Abstract Merkle inclusion and non-revocation model.
+- `KyriotesCsk2MerkleConcreteTree.v`: Concrete Merkle tree construction.
+- `KyriotesCsk2ConcreteMerkleProofs.v`: Concrete Merkle path proofs.
+- `KyriotesCsk2TransparencyProofs.v`: Transparency log proofs.
+- `KyriotesCsk2TransparencyAppendOnly.v`: Append-only log monotonicity proof.
+- `KyriotesCsk2TransparencyConsistencyProofs.v`: Log consistency proofs.
+- `KyriotesCsk2FullTransparencyMerkleSoundness.v`: Full transparency/Merkle soundness under SHA-256 assumptions.
+- `KyriotesCsk2MerkleFalseInclusionReduction.v`: False-inclusion to hash-collision reduction.
+- `KyriotesCsk2MerkleTransparencyCompleteness.v`: Merkle/transparency completeness.
+
+**security/** — Security games, reductions, and theorems.
 - `KyriotesCsk2SecurityGame.v`: Unauthorized open game model.
 - `KyriotesCsk2Theorems.v`: Main authorization safety theorems.
 - `KyriotesCsk2StressProofs.v`: Mutation rejection and gate stress proofs.
 - `KyriotesCsk2DelegationProofs.v`: Delegation rights, epoch, parent-stamp, and depth proofs.
 - `KyriotesCsk2CryptoReduction.v`: Abstract reduction-shape proof skeleton.
+- `KyriotesCsk2KemAeadAssumptions.v`: KEM and AEAD assumption interfaces.
+- `KyriotesCsk2CapabilityBindingReduction.v`: Capability binding reduction.
+- `KyriotesCsk2AdversaryGame.v`: Adversary game model.
+- `KyriotesCsk2TwoGateOpeningGame.v`: Two-gate opening game.
+- `KyriotesCsk2TwoGateHybridReduction.v`: Two-gate hybrid reduction game-hopping proof.
+- `KyriotesCsk2TightSecurityGameProofs.v`: Tight security game proofs.
+- `KyriotesCsk2AssumptionReductionProofs.v`: Assumption reduction proofs.
+- `KyriotesCsk2CryptoReductionCompleteness.v`: Crypto reduction completeness.
+
+**lifecycle/** — Protocol lifecycle, temporal, transcript, and encoding proofs.
 - `KyriotesCsk2TemporalProofs.v`: Temporal and rewrap safety proofs.
 - `KyriotesCsk2TranscriptProofs.v`: Transcript and context binding proofs.
 - `KyriotesCsk2RevocationCompromiseProofs.v`: Revocation monotonicity and compromise notice proofs.
+- `KyriotesCsk2EncodingProofs.v`: Encoding correctness proofs.
+- `KyriotesCsk2WrapperProofs.v`: Authority wrapper proofs.
+- `KyriotesCsk2StateTransitionProofs.v`: State transition proofs.
+- `KyriotesCsk2ProtocolStateMachineProofs.v`: Protocol state machine proofs.
+- `KyriotesCsk2InvalidTransitionProofs.v`: Invalid transition rejection proofs.
+- `KyriotesCsk2LifecycleProofs.v`: Full lifecycle proofs.
+- `KyriotesCsk2PredicateRefinementProofs.v`: Predicate refinement proofs.
+- `KyriotesCsk2EndToEndTheorems.v`: End-to-end protocol theorems.
+
+**completeness/** — Invariant and model completeness proofs.
+- `KyriotesCsk2MasterInvariantProofs.v`: Master invariant closure proofs.
+- `KyriotesCsk2AbstractInvariantCompleteness.v`: Abstract invariant completeness.
+- `KyriotesCsk2DesignModelCompleteness.v`: Design model completeness.
+- `KyriotesCsk2StateMachineCompleteness.v`: State machine completeness.
+
+**rust_refinement/** — Rust-to-Coq mechanical correspondence and Kani-backed axioms.
+- `KyriotesCsk2RustCoqFormalCorrespondence.v`: Formal correspondence layer between Rust and Coq, with model contracts and Kani-backed axioms.
+- `KyriotesCsk2SealOpenCryptoSemanticContracts.v`: Seal/open crypto semantic contracts under AEAD/KEM/HKDF/SHA assumptions.
+- `KyriotesCsk2SealOpenModelCryptoEquivalence.v`: Seal/open model/crypto equivalence.
+- `KyriotesCsk2EncodeDecodeRoundTripRustRefinement.v`: Encode/decode canonical round-trip refinement.
+- `KyriotesCsk2CapabilityTreeWitnessSoundness.v`: Capability tree witness soundness.
+- `KyriotesCsk2FullMechanicalProofEquivalence.v`: Full mechanical proof equivalence gate.
+- `KyriotesCsk2RustFullMechanicalProofGate.v`: Rust mechanical proof gate record.
+- Plus individual function refinement files for `context_hash`, `decode`, `encode`, `verify`, `seal`, `open`, `add_epoch_wrapper`, `rotate_epoch`, `rotate_epoch_full`, `capability_tree`, `transparency`.
 
 ## Appendix B: Current Security Claims Supported by the Design
 
@@ -699,13 +733,16 @@ The current design supports the following internal safety claims:
 
 ## Appendix C: Future Work
 
-Future design and proof work should include:
+Completed items are noted inline. Remaining future design and proof work includes:
 
-- Deeper transparency log consistency proofs.
-- More detailed Merkle proof modeling.
-- Concrete wire-format proof alignment with Rust encoding code.
+- (Complete) Transparency log consistency proofs: `KyriotesCsk2TransparencyConsistencyProofs.v` and `KyriotesCsk2FullTransparencyMerkleSoundness.v`.
+- (Complete) More detailed Merkle proof modeling: concrete Merkle proofs and false-inclusion reduction are in `merkle_transparency/`.
+- (Complete) Concrete wire-format proof alignment with Rust encoding code: full `rust_refinement/` directory with individual function refinement files and formal correspondence layer.
+- (Complete) Two-gate cryptographic game-hopping model: `KyriotesCsk2TwoGateOpeningGame.v` and `KyriotesCsk2TwoGateHybridReduction.v`.
+- Exhaustive encode/decode canonical equivalence over arbitrary bytes and the unbounded object space.
+- Concrete advantage accounting for seal/open composition claims.
+- Extending capability-tree witness refinement into a full Merkle-path computational binding reduction.
 - Property-based testing connected to formal invariants.
-- More complete cryptographic game-hopping model.
 - External cryptographic review.
 - Performance profiling of revocation and proof verification.
 - Hardened CLI design for real user workflows.

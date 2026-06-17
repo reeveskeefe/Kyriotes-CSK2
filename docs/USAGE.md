@@ -130,12 +130,15 @@ fn example() -> Result<Vec<u8>, KyriotesCsk2Error> {
 
     // Stage 2: Capability and tree.
     let cap = Capability {
+        version: 1,
         subject: "keefe".to_string(),
         object_id: "research-notes.pdf".to_string(),
         rights: Rights::READ.union(Rights::DECRYPT),
         policy_hash,
         epoch_start: 40,
         epoch_end: 60,
+        delegation_depth: 0,
+        parent_stamp: [0u8; 32],
         // Generate randomly per capability in production.
         nonce: [7u8; 16],
     };
@@ -150,10 +153,9 @@ fn example() -> Result<Vec<u8>, KyriotesCsk2Error> {
         transparency_root: [0u8; 32],             // set by commit_state() on your log
         epoch,
         authority_id: "auth-main".to_string(),
-        epoch_signature_valid: true,
-        epoch_key_cert_valid: true,
-        transparency_inclusion_valid: true,
         root_pk: root_kp.verifying_key_bytes(),   // trust anchor for issuance verification
+        revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],               // [0u8; 32] for genesis epoch
     };
 
     // Stage 4: Build the capability proof (inclusion + non-revocation + issuance).
@@ -253,12 +255,15 @@ fn rewrap_example() -> Result<Vec<u8>, KyriotesCsk2Error> {
     let epoch_cert = root_kp.issue_epoch_cert(&epoch_kp.verifying_key_bytes(), epoch42, 10);
 
     let cap = Capability {
+        version: 1,
         subject: "keefe".to_string(),
         object_id: "research-notes.pdf".to_string(),
         rights: Rights::READ.union(Rights::DECRYPT),
         policy_hash,
         epoch_start: 40,
         epoch_end: 60,
+        delegation_depth: 0,
+        parent_stamp: [0u8; 32],
         // Generate randomly per capability in production.
         nonce: [1u8; 16],
     };
@@ -277,10 +282,9 @@ fn rewrap_example() -> Result<Vec<u8>, KyriotesCsk2Error> {
         transparency_root: [0u8; 32],
         epoch: epoch42,
         authority_id: "auth-main".to_string(),
-        epoch_signature_valid: true,
-        epoch_key_cert_valid: true,
-        transparency_inclusion_valid: true,
         root_pk,
+        revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
     })?;
     let state42 = commit42.state;
     let tp42    = commit42.proof;
@@ -293,10 +297,9 @@ fn rewrap_example() -> Result<Vec<u8>, KyriotesCsk2Error> {
         transparency_root: [0u8; 32],
         epoch: 50,
         authority_id: "auth-main".to_string(),
-        epoch_signature_valid: true,
-        epoch_key_cert_valid: true,
-        transparency_inclusion_valid: true,
         root_pk,
+        revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
     })?;
     let state50 = commit50.state;
     let tp50    = commit50.proof;
@@ -593,7 +596,7 @@ no changes to engine, verifier, or wire-format code needed.
 - `state` — a copy of the input state with `transparency_root` updated to the log's current Merkle root after the commit. Use this returned state (not the original) when calling `seal` or passing state to a verifier.
 - `proof` — the Merkle inclusion proof for this state in the log. Pass this as the `transparency_proof` argument to `seal`.
 
-Set `transparency_inclusion_valid: true` on any state before committing it. The `CryptoAuthorityVerifier` uses that flag as a pre-flight check, then independently recomputes and verifies the Merkle proof from `proof.sibling_hashes` — so the boolean and the cryptographic proof must both be consistent.
+The `CryptoAuthorityVerifier` independently recomputes and verifies the Merkle proof from `proof.sibling_hashes` against the transparency root in the committed state.
 
 ### Object safety
 
@@ -630,12 +633,15 @@ fn build_authority_state(epoch: u64, root_pk: [u8; 32]) -> (AuthorityCapabilityT
     let policy_hash = hash_policy("read-only-research");
 
     let cap = Capability {
+        version: 1,
         subject: "keefe".to_string(),
         object_id: "research-notes.pdf".to_string(),
         rights: Rights::READ,
         policy_hash,
         epoch_start: 40,
         epoch_end: 60,
+        delegation_depth: 0,
+        parent_stamp: [0u8; 32],
         nonce: [7u8; 16],
     };
 
@@ -651,10 +657,9 @@ fn build_authority_state(epoch: u64, root_pk: [u8; 32]) -> (AuthorityCapabilityT
         transparency_root: [0u8; 32], // populated by transparency log commit
         epoch,
         authority_id: "auth-main".to_string(),
-        epoch_signature_valid: true,
-        epoch_key_cert_valid: true,
-        transparency_inclusion_valid: true,
         root_pk, // pass root_kp.verifying_key_bytes() from your offline key
+        revocation_count: tree.revocation_count(),
+        prev_epoch_hash: [0u8; 32],
     };
 
     (tree, state)

@@ -103,8 +103,38 @@ type root.    (* Merkle root                  *)
 type cap.     (* CSK2 capability token        *)
 type stamp.   (* Capability revocation stamp  *)
 
+type object_id.    (* Object namespace identifier          *)
+type rights.       (* Capability rights / operation mask    *)
+type policy_hash.  (* Hash of the governing access policy   *)
+type epoch.        (* Authority-state or policy epoch       *)
+type subject.      (* Principal authorized by a capability  *)
+type recipient.    (* Recipient/opening principal           *)
+type rev_status.   (* Revocation status carried by context  *)
+type capctx.       (* Capability verification context       *)
+
 (* Extract the revocation stamp from a capability *)
 op cap_stamp : cap -> stamp.
+
+(* Capability payload fields bound by the authority context. *)
+op cap_object_id   : cap -> object_id.
+op cap_rights      : cap -> rights.
+op cap_policy_hash : cap -> policy_hash.
+op cap_epoch       : cap -> epoch.
+op cap_subject     : cap -> subject.
+op cap_recipient   : cap -> recipient.
+
+(* Verification-context fields supplied at open time. *)
+op ctx_object_id   : capctx -> object_id.
+op ctx_rights      : capctx -> rights.
+op ctx_policy_hash : capctx -> policy_hash.
+op ctx_epoch       : capctx -> epoch.
+op ctx_subject     : capctx -> subject.
+op ctx_recipient   : capctx -> recipient.
+op ctx_rev_status  : capctx -> rev_status.
+
+(* Revocation status binds a non-revocation witness to a concrete root. *)
+op rev_stamp : rev_status -> stamp.
+op rev_root  : rev_status -> root.
 
 (* Hash a capability for Merkle tree inclusion (the authority tree leaf) *)
 op hash_cap : cap -> hash.
@@ -119,6 +149,11 @@ op merkle_include : hash -> root -> bool.
    Corresponds to `not_in_revocation_root` in KyriotesCsk2Merkle.v. *)
 op non_revoc_proof : stamp -> root -> bool.
 
+(* Active means the context proves this capability stamp is absent from
+   the concrete revocation Merkle root carried by the status. *)
+op rev_active (s : stamp) (st : rev_status) : bool =
+  (s = rev_stamp st) && non_revoc_proof s (rev_root st).
+
 (*
  * Revocation soundness: a valid non-revocation proof guarantees that
  * the stamp's hash is absent from the Merkle root.
@@ -131,3 +166,10 @@ op non_revoc_proof : stamp -> root -> bool.
 axiom revocation_soundness (s : stamp) (r : root) :
   non_revoc_proof s r = true =>
   merkle_include (hash_stamp s) r = false.
+
+lemma rev_active_excludes_revocation_leaf (s : stamp) (st : rev_status) :
+  rev_active s st = true =>
+  merkle_include (hash_stamp s) (rev_root st) = false.
+proof.
+  smt(revocation_soundness).
+qed.

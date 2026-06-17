@@ -76,6 +76,32 @@ op cap_in_root : cap -> root -> bool.
 axiom cap_in_root_def (c : cap) (r : root) :
   cap_in_root c r = merkle_include (hash_cap c) r.
 
+(* ── Full capability context predicate ─────────────────────────── *)
+(*
+ * cap_context_accept c x r records the field binding checks that are
+ * performed in addition to authority-root inclusion.  The fields are
+ * kept abstract here; concrete serialization/signature details remain
+ * below Csk2BaseTypes and the Coq capability model.
+ *)
+
+op cap_context_accept (c : cap) (x : capctx) (r : root) : bool =
+  cap_in_root c r
+  && (cap_object_id c = ctx_object_id x)
+  && (cap_rights c = ctx_rights x)
+  && (cap_policy_hash c = ctx_policy_hash x)
+  && (cap_epoch c = ctx_epoch x)
+  && (cap_subject c = ctx_subject x)
+  && (cap_recipient c = ctx_recipient x)
+  && rev_active (cap_stamp c) (ctx_rev_status x).
+
+lemma cap_context_accept_excludes_revocation_leaf
+  (c : cap) (x : capctx) (r : root) :
+  cap_context_accept c x r = true =>
+  merkle_include (hash_stamp (cap_stamp c)) (rev_root (ctx_rev_status x)) = false.
+proof.
+  smt(rev_active_excludes_revocation_leaf).
+qed.
+
 (* ── Capability binding game ────────────────────────────────────── *)
 
 module type CapBindAdversary = {
@@ -114,6 +140,124 @@ module B_Merkle (A : CapBindAdversary) : MerkleAdversary = {
     var r2 : root;
     (c, r1, r2) <@ A.forge();
     return (hash_cap c, r1, r2);
+  }
+}.
+
+(* ── Field-aware capability binding games ──────────────────────── *)
+
+module type CapFieldAdversary = {
+  proc forge() : cap * capctx * capctx * root * root
+}.
+
+module B_CapField (A : CapFieldAdversary) : CapBindAdversary = {
+  proc forge() : cap * root * root = {
+    var c  : cap;
+    var x1 : capctx;
+    var x2 : capctx;
+    var r1 : root;
+    var r2 : root;
+    (c, x1, x2, r1, r2) <@ A.forge();
+    return (c, r1, r2);
+  }
+}.
+
+module WrongObjectGame (A : CapFieldAdversary) = {
+  proc main() : bool = {
+    var c  : cap;
+    var x1 : capctx;
+    var x2 : capctx;
+    var r1 : root;
+    var r2 : root;
+    (c, x1, x2, r1, r2) <@ A.forge();
+    return (cap_context_accept c x1 r1
+            && cap_context_accept c x2 r2
+            && (ctx_object_id x1 <> ctx_object_id x2));
+  }
+}.
+
+module WrongRightsGame (A : CapFieldAdversary) = {
+  proc main() : bool = {
+    var c  : cap;
+    var x1 : capctx;
+    var x2 : capctx;
+    var r1 : root;
+    var r2 : root;
+    (c, x1, x2, r1, r2) <@ A.forge();
+    return (cap_context_accept c x1 r1
+            && cap_context_accept c x2 r2
+            && (ctx_rights x1 <> ctx_rights x2));
+  }
+}.
+
+module WrongPolicyGame (A : CapFieldAdversary) = {
+  proc main() : bool = {
+    var c  : cap;
+    var x1 : capctx;
+    var x2 : capctx;
+    var r1 : root;
+    var r2 : root;
+    (c, x1, x2, r1, r2) <@ A.forge();
+    return (cap_context_accept c x1 r1
+            && cap_context_accept c x2 r2
+            && (ctx_policy_hash x1 <> ctx_policy_hash x2));
+  }
+}.
+
+module WrongEpochGame (A : CapFieldAdversary) = {
+  proc main() : bool = {
+    var c  : cap;
+    var x1 : capctx;
+    var x2 : capctx;
+    var r1 : root;
+    var r2 : root;
+    (c, x1, x2, r1, r2) <@ A.forge();
+    return (cap_context_accept c x1 r1
+            && cap_context_accept c x2 r2
+            && (ctx_epoch x1 <> ctx_epoch x2));
+  }
+}.
+
+module WrongSubjectGame (A : CapFieldAdversary) = {
+  proc main() : bool = {
+    var c  : cap;
+    var x1 : capctx;
+    var x2 : capctx;
+    var r1 : root;
+    var r2 : root;
+    (c, x1, x2, r1, r2) <@ A.forge();
+    return (cap_context_accept c x1 r1
+            && cap_context_accept c x2 r2
+            && (ctx_subject x1 <> ctx_subject x2));
+  }
+}.
+
+module WrongRecipientGame (A : CapFieldAdversary) = {
+  proc main() : bool = {
+    var c  : cap;
+    var x1 : capctx;
+    var x2 : capctx;
+    var r1 : root;
+    var r2 : root;
+    (c, x1, x2, r1, r2) <@ A.forge();
+    return (cap_context_accept c x1 r1
+            && cap_context_accept c x2 r2
+            && (ctx_recipient x1 <> ctx_recipient x2));
+  }
+}.
+
+module WrongRevocationGame (A : CapFieldAdversary) = {
+  proc main() : bool = {
+    var c  : cap;
+    var x1 : capctx;
+    var x2 : capctx;
+    var r1 : root;
+    var r2 : root;
+    (c, x1, x2, r1, r2) <@ A.forge();
+    return (cap_in_root c r1
+            && cap_in_root c r2
+            && rev_active (cap_stamp c) (ctx_rev_status x1)
+            && ! rev_active (cap_stamp c) (ctx_rev_status x2)
+            && (r1 <> r2));
   }
 }.
 
@@ -159,3 +303,135 @@ proof.
 qed.
 
 end section CapBinding.
+
+section CapFieldBinding.
+
+declare module A <: CapFieldAdversary.
+
+lemma wrong_object_reduces_to_context_hash_break &m :
+  Pr[WrongObjectGame(A).main() @ &m : res] <=
+  Pr[CapBindingGame(B_CapField(A)).main() @ &m : res].
+proof.
+  byequiv (_ : ={glob A} ==> (res{1} => res{2})) => //.
+  proc; inline B_CapField(A).forge; wp.
+  call (: ={glob A} ==> ={glob A, res}); first by sim.
+  by skip => />; smt().
+qed.
+
+lemma wrong_rights_reduces_to_capability_binding_break &m :
+  Pr[WrongRightsGame(A).main() @ &m : res] <=
+  Pr[CapBindingGame(B_CapField(A)).main() @ &m : res].
+proof.
+  byequiv (_ : ={glob A} ==> (res{1} => res{2})) => //.
+  proc; inline B_CapField(A).forge; wp.
+  call (: ={glob A} ==> ={glob A, res}); first by sim.
+  by skip => />; smt().
+qed.
+
+lemma wrong_policy_reduces_to_context_hash_break &m :
+  Pr[WrongPolicyGame(A).main() @ &m : res] <=
+  Pr[CapBindingGame(B_CapField(A)).main() @ &m : res].
+proof.
+  byequiv (_ : ={glob A} ==> (res{1} => res{2})) => //.
+  proc; inline B_CapField(A).forge; wp.
+  call (: ={glob A} ==> ={glob A, res}); first by sim.
+  by skip => />; smt().
+qed.
+
+lemma wrong_epoch_reduces_to_epoch_binding_break &m :
+  Pr[WrongEpochGame(A).main() @ &m : res] <=
+  Pr[CapBindingGame(B_CapField(A)).main() @ &m : res].
+proof.
+  byequiv (_ : ={glob A} ==> (res{1} => res{2})) => //.
+  proc; inline B_CapField(A).forge; wp.
+  call (: ={glob A} ==> ={glob A, res}); first by sim.
+  by skip => />; smt().
+qed.
+
+lemma wrong_subject_reduces_to_subject_binding_break &m :
+  Pr[WrongSubjectGame(A).main() @ &m : res] <=
+  Pr[CapBindingGame(B_CapField(A)).main() @ &m : res].
+proof.
+  byequiv (_ : ={glob A} ==> (res{1} => res{2})) => //.
+  proc; inline B_CapField(A).forge; wp.
+  call (: ={glob A} ==> ={glob A, res}); first by sim.
+  by skip => />; smt().
+qed.
+
+lemma wrong_recipient_reduces_to_recipient_binding_break &m :
+  Pr[WrongRecipientGame(A).main() @ &m : res] <=
+  Pr[CapBindingGame(B_CapField(A)).main() @ &m : res].
+proof.
+  byequiv (_ : ={glob A} ==> (res{1} => res{2})) => //.
+  proc; inline B_CapField(A).forge; wp.
+  call (: ={glob A} ==> ={glob A, res}); first by sim.
+  by skip => />; smt().
+qed.
+
+lemma wrong_revocation_reduces_to_merkle_binding &m :
+  Pr[WrongRevocationGame(A).main() @ &m : res] <=
+  Pr[CapBindingGame(B_CapField(A)).main() @ &m : res].
+proof.
+  byequiv (_ : ={glob A} ==> (res{1} => res{2})) => //.
+  proc; inline B_CapField(A).forge; wp.
+  call (: ={glob A} ==> ={glob A, res}); first by sim.
+  by skip => />; smt().
+qed.
+
+lemma wrong_object_bound &m :
+  Pr[WrongObjectGame(A).main() @ &m : res] <= inv (2%r ^ 128).
+proof.
+  have h1 := wrong_object_reduces_to_context_hash_break &m.
+  have h2 := cap_binding_security (B_CapField(A)) &m.
+  smt().
+qed.
+
+lemma wrong_rights_bound &m :
+  Pr[WrongRightsGame(A).main() @ &m : res] <= inv (2%r ^ 128).
+proof.
+  have h1 := wrong_rights_reduces_to_capability_binding_break &m.
+  have h2 := cap_binding_security (B_CapField(A)) &m.
+  smt().
+qed.
+
+lemma wrong_policy_bound &m :
+  Pr[WrongPolicyGame(A).main() @ &m : res] <= inv (2%r ^ 128).
+proof.
+  have h1 := wrong_policy_reduces_to_context_hash_break &m.
+  have h2 := cap_binding_security (B_CapField(A)) &m.
+  smt().
+qed.
+
+lemma wrong_epoch_bound &m :
+  Pr[WrongEpochGame(A).main() @ &m : res] <= inv (2%r ^ 128).
+proof.
+  have h1 := wrong_epoch_reduces_to_epoch_binding_break &m.
+  have h2 := cap_binding_security (B_CapField(A)) &m.
+  smt().
+qed.
+
+lemma wrong_subject_bound &m :
+  Pr[WrongSubjectGame(A).main() @ &m : res] <= inv (2%r ^ 128).
+proof.
+  have h1 := wrong_subject_reduces_to_subject_binding_break &m.
+  have h2 := cap_binding_security (B_CapField(A)) &m.
+  smt().
+qed.
+
+lemma wrong_recipient_bound &m :
+  Pr[WrongRecipientGame(A).main() @ &m : res] <= inv (2%r ^ 128).
+proof.
+  have h1 := wrong_recipient_reduces_to_recipient_binding_break &m.
+  have h2 := cap_binding_security (B_CapField(A)) &m.
+  smt().
+qed.
+
+lemma wrong_revocation_bound &m :
+  Pr[WrongRevocationGame(A).main() @ &m : res] <= inv (2%r ^ 128).
+proof.
+  have h1 := wrong_revocation_reduces_to_merkle_binding &m.
+  have h2 := cap_binding_security (B_CapField(A)) &m.
+  smt().
+qed.
+
+end section CapFieldBinding.

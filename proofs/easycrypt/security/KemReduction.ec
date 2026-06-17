@@ -10,10 +10,10 @@
  *     ← game1_eq_kem_rand  (byequiv: swap pure assignments, sim)
  *     ← kem_ror            (KEM primitive security axiom)
  *
- * kem_ror is axiomatised here because KemIndCca2.ec redeclares the
- * same abstract types; importing both causes conflicts.  Once types
- * are factored into a shared header, kem_ror becomes a lemma proved
- * by embedding B_KEM into Game_IND_CCA2 from KemIndCca2.ec.
+ * KemIndCca2.ec now shares Csk2BaseTypes, so there is no longer a
+ * type-namespace conflict.  kem_ror remains as the direct real-or-random
+ * KEM bound needed by this hybrid until the bit-guessing IND-CCA2 game is
+ * connected with explicit factor/accounting or a matching RoR game.
  *
  * EasyCrypt version: r2022.04
  *)
@@ -99,9 +99,10 @@ axiom A_ll : islossless A.attack.
 
 (*
  * KEM real-or-random security.
- * Corresponds to |Pr[IND_CCA2 wins] - 1/2| <= inv(2^128) from
- * KemIndCca2.ec, translated to the RoR form.  With unified types
- * this becomes a lemma proved by plugging B_KEM into Game_IND_CCA2.
+ * This is no longer blocked by duplicate type declarations; it remains as
+ * the direct RoR bound for the CSK2 hybrid until KemIndCca2.ec exposes a
+ * matching RoR game or the bit-guessing IND-CCA2 game is bridged with
+ * explicit factor accounting.
  *)
 axiom kem_ror &m :
   `| Pr[KEM_Real(B_KEM(A)).main() @ &m : res] -

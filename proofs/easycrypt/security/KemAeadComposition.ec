@@ -10,9 +10,10 @@
  * Combining with the triangle inequality gives Pr[Game0(A)] <= 3 * 2^{-128}.
  *
  * Remaining primitive-security leaves (axioms in their files):
- *   kem_ror      — KEM IND-CCA2 real-or-random (ML-KEM-768)
- *   aead_cpa_adv — AEAD IND-CPA (ChaCha20-Poly1305)
- *   aead_ow      — one-way / message-hiding bound on dmsg
+ *   kem_ror      — direct KEM real-or-random hybrid bound
+ *   aead_cpa_adv — direct AEAD left/right hybrid bound
+ *
+ * game2_win_bound is now proved in AeadCtxtReduction.ec from dmsg_bound.
  *
  * EasyCrypt version: r2022.04
  *)

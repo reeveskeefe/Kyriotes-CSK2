@@ -21,6 +21,7 @@
  *)
 
 require import AllCore Real.
+require import Csk2BaseTypes.
 require import Csk2TwoGateGame.
 require import AeadAeSecurity.
 require import KemReduction.
@@ -33,6 +34,8 @@ declare module A <: Csk2Adv {
   -Game0, -Game1, -Game2,
   -B_CPA, -Game_CPA_Left, -Game_CPA_Right
 }.
+
+axiom A_attack_ll : islossless A.attack.
 
 (*
  * csk2_concrete_bound
@@ -50,6 +53,19 @@ proof.
   have h01 := kem_hybrid_step A &m.
   have h12 := game1_game2_cpa A &m.
   have h2  := game2_win_bound A &m.
+  smt().
+qed.
+
+lemma csk2_concrete_bound_phoare :
+  phoare [Game0(A).main : true ==> !res] >= (1%r - 3%r * inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  have h := csk2_concrete_bound &m.
+  have hll : Pr[Game0(A).main() @ &m : true] = 1%r.
+  + byphoare (_ : true ==> true) => //; proc.
+    call A_attack_ll.
+    auto; smt(dkeypair_ll dmsg_ll encap_ll aenc_ll).
+  rewrite Pr[mu_not] hll.
   smt().
 qed.
 

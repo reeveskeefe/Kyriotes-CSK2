@@ -77,4 +77,7 @@ declare module A <: MerkleAdversary.
 axiom merkle_binding_security &m :
   Pr[MerkleBindingGame(A).main() @ &m : res] <= inv (2%r ^ 128).
 
+axiom merkle_binding_security_phoare :
+  phoare [MerkleBindingGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
+
 end section MerkleBinding.

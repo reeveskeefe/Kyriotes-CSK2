@@ -267,6 +267,8 @@ section CapBinding.
 
 declare module A <: CapBindAdversary.
 
+axiom A_ll : islossless A.forge.
+
 (*
  * cap_bind_eq_merkle
  *
@@ -302,11 +304,25 @@ proof.
   exact (merkle_binding_security (B_Merkle(A)) &m).
 qed.
 
+lemma cap_binding_security_phoare :
+  phoare [CapBindingGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  have h := cap_binding_security &m.
+  have hll : Pr[CapBindingGame(A).main() @ &m : true] = 1%r.
+  + byphoare (_ : true ==> true) => //; proc; call A_ll.
+    by skip.
+  rewrite Pr[mu_not] hll.
+  smt().
+qed.
+
 end section CapBinding.
 
 section CapFieldBinding.
 
 declare module A <: CapFieldAdversary.
+
+axiom A_field_ll : islossless A.forge.
 
 lemma wrong_object_reduces_to_context_hash_break &m :
   Pr[WrongObjectGame(A).main() @ &m : res] <=
@@ -386,11 +402,35 @@ proof.
   smt().
 qed.
 
+lemma wrong_object_bound_phoare :
+  phoare [WrongObjectGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  have h := wrong_object_bound &m.
+  have hll : Pr[WrongObjectGame(A).main() @ &m : true] = 1%r.
+  + byphoare (_ : true ==> true) => //; proc; call A_field_ll.
+    by skip.
+  rewrite Pr[mu_not] hll.
+  smt().
+qed.
+
 lemma wrong_rights_bound &m :
   Pr[WrongRightsGame(A).main() @ &m : res] <= inv (2%r ^ 128).
 proof.
   have h1 := wrong_rights_reduces_to_capability_binding_break &m.
   have h2 := cap_binding_security (B_CapField(A)) &m.
+  smt().
+qed.
+
+lemma wrong_rights_bound_phoare :
+  phoare [WrongRightsGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  have h := wrong_rights_bound &m.
+  have hll : Pr[WrongRightsGame(A).main() @ &m : true] = 1%r.
+  + byphoare (_ : true ==> true) => //; proc; call A_field_ll.
+    by skip.
+  rewrite Pr[mu_not] hll.
   smt().
 qed.
 
@@ -402,11 +442,35 @@ proof.
   smt().
 qed.
 
+lemma wrong_policy_bound_phoare :
+  phoare [WrongPolicyGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  have h := wrong_policy_bound &m.
+  have hll : Pr[WrongPolicyGame(A).main() @ &m : true] = 1%r.
+  + byphoare (_ : true ==> true) => //; proc; call A_field_ll.
+    by skip.
+  rewrite Pr[mu_not] hll.
+  smt().
+qed.
+
 lemma wrong_epoch_bound &m :
   Pr[WrongEpochGame(A).main() @ &m : res] <= inv (2%r ^ 128).
 proof.
   have h1 := wrong_epoch_reduces_to_epoch_binding_break &m.
   have h2 := cap_binding_security (B_CapField(A)) &m.
+  smt().
+qed.
+
+lemma wrong_epoch_bound_phoare :
+  phoare [WrongEpochGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  have h := wrong_epoch_bound &m.
+  have hll : Pr[WrongEpochGame(A).main() @ &m : true] = 1%r.
+  + byphoare (_ : true ==> true) => //; proc; call A_field_ll.
+    by skip.
+  rewrite Pr[mu_not] hll.
   smt().
 qed.
 
@@ -418,6 +482,18 @@ proof.
   smt().
 qed.
 
+lemma wrong_subject_bound_phoare :
+  phoare [WrongSubjectGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  have h := wrong_subject_bound &m.
+  have hll : Pr[WrongSubjectGame(A).main() @ &m : true] = 1%r.
+  + byphoare (_ : true ==> true) => //; proc; call A_field_ll.
+    by skip.
+  rewrite Pr[mu_not] hll.
+  smt().
+qed.
+
 lemma wrong_recipient_bound &m :
   Pr[WrongRecipientGame(A).main() @ &m : res] <= inv (2%r ^ 128).
 proof.
@@ -426,11 +502,35 @@ proof.
   smt().
 qed.
 
+lemma wrong_recipient_bound_phoare :
+  phoare [WrongRecipientGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  have h := wrong_recipient_bound &m.
+  have hll : Pr[WrongRecipientGame(A).main() @ &m : true] = 1%r.
+  + byphoare (_ : true ==> true) => //; proc; call A_field_ll.
+    by skip.
+  rewrite Pr[mu_not] hll.
+  smt().
+qed.
+
 lemma wrong_revocation_bound &m :
   Pr[WrongRevocationGame(A).main() @ &m : res] <= inv (2%r ^ 128).
 proof.
   have h1 := wrong_revocation_reduces_to_merkle_binding &m.
   have h2 := cap_binding_security (B_CapField(A)) &m.
+  smt().
+qed.
+
+lemma wrong_revocation_bound_phoare :
+  phoare [WrongRevocationGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  have h := wrong_revocation_bound &m.
+  have hll : Pr[WrongRevocationGame(A).main() @ &m : true] = 1%r.
+  + byphoare (_ : true ==> true) => //; proc; call A_field_ll.
+    by skip.
+  rewrite Pr[mu_not] hll.
   smt().
 qed.
 

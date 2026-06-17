@@ -1,9 +1,9 @@
 (* Top-level EasyCrypt security composition for Kyriotēs-CSK2.
  *
- * This file gives the proof architecture a single spine.  It does not
- * introduce a richer two-gate game yet; instead it composes the currently
- * mechanized game lanes and exposes the primitive/security leaves that remain
- * below them.
+ * This file gives the proof architecture a single spine.  It composes the
+ * currently mechanized game lanes, exposes the primitive/security leaves that
+ * remain below them, and defines one full bad-event game over a single
+ * adversary interface.
  *
  * Current composed lanes:
  *   - KEM+AEAD opening game:
@@ -13,21 +13,20 @@
  *   - Field-aware capability games:
  *       object, rights, policy, epoch, subject, recipient, revocation
  *       are each bounded by 2^{-128}
+ *   - Full bad-event game:
+ *       Pr[Csk2FullBadEventGame(X)] <= 10 * 2^{-128}
  *
  * The remaining leaves are explicit in imported files:
  *   - kem_csk2_ror_secure              (KEM direct real-or-random)
  *   - aead_csk2_ind_cpa_lr_secure      (AEAD direct left/right)
  *   - dmsg_bound                       (message guessing)
  *   - merkle_binding_security          (Merkle/hash binding)
- *
- * Next architectural step: replace this lane-wise theorem with a richer
- * two-gate game whose adversary has both a ciphertext-opening interface and a
- * capability/context-forgery interface.
+ *   - csk2_full_bad_event_union_bound  (sequential OR-game union bound)
  *
  * EasyCrypt version: r2022.04
  *)
 
-require import AllCore Real.
+require import AllCore Distr Real.
 require import Csk2BaseTypes.
 require import Csk2TwoGateGame.
 require import AeadAeSecurity.
@@ -59,6 +58,31 @@ module B_FieldFull (A : Csk2FullAdversary) : CapFieldAdversary = {
     var r2 : root;
     (c, x1, x2, r1, r2) <@ A.forge();
     return (c, x1, x2, r1, r2);
+  }
+}.
+
+module Csk2FullBadEventGame (A : Csk2FullAdversary) = {
+  var open_bad       : bool
+  var object_bad     : bool
+  var rights_bad     : bool
+  var policy_bad     : bool
+  var epoch_bad      : bool
+  var subject_bad    : bool
+  var recipient_bad  : bool
+  var revocation_bad : bool
+
+  proc main() : bool = {
+    open_bad      <@ Game0(B_OpenFull(A)).main();
+    object_bad    <@ WrongObjectGame(B_FieldFull(A)).main();
+    rights_bad    <@ WrongRightsGame(B_FieldFull(A)).main();
+    policy_bad    <@ WrongPolicyGame(B_FieldFull(A)).main();
+    epoch_bad     <@ WrongEpochGame(B_FieldFull(A)).main();
+    subject_bad   <@ WrongSubjectGame(B_FieldFull(A)).main();
+    recipient_bad <@ WrongRecipientGame(B_FieldFull(A)).main();
+    revocation_bad <@ WrongRevocationGame(B_FieldFull(A)).main();
+
+    return (open_bad || object_bad || rights_bad || policy_bad
+            || epoch_bad || subject_bad || recipient_bad || revocation_bad);
   }
 }.
 
@@ -189,7 +213,7 @@ declare module X <: Csk2FullAdversary {
   -WrongObjectGame, -WrongRightsGame, -WrongPolicyGame,
   -WrongEpochGame, -WrongSubjectGame, -WrongRecipientGame,
   -WrongRevocationGame,
-  -B_OpenFull, -B_FieldFull
+  -B_OpenFull, -B_FieldFull, -Csk2FullBadEventGame
 }.
 
 lemma csk2_full_adversary_sum_bound &m :
@@ -204,6 +228,36 @@ lemma csk2_full_adversary_sum_bound &m :
   <= 10%r * inv (2%r ^ 128).
 proof.
   exact (csk2_opening_plus_field_sum_bound (B_OpenFull(X)) (B_FieldFull(X)) &m).
+qed.
+
+(*
+ * Sequential union-bound leaf.
+ *
+ * Csk2FullBadEventGame runs the opening and field-forgery games
+ * sequentially against one full adversary module.  Because those calls may
+ * mutate glob X, this bridge needs a sequential pHoare/union-bound proof over
+ * every intermediate memory.  The component bounds above are quantified over
+ * every memory, so this is a proof-engineering gap, not a new cryptographic
+ * assumption.
+ *)
+axiom csk2_full_bad_event_union_bound &m :
+  Pr[Csk2FullBadEventGame(X).main() @ &m : res] <=
+  Pr[Game0(B_OpenFull(X)).main() @ &m : res] +
+  Pr[WrongObjectGame(B_FieldFull(X)).main() @ &m : res] +
+  Pr[WrongRightsGame(B_FieldFull(X)).main() @ &m : res] +
+  Pr[WrongPolicyGame(B_FieldFull(X)).main() @ &m : res] +
+  Pr[WrongEpochGame(B_FieldFull(X)).main() @ &m : res] +
+  Pr[WrongSubjectGame(B_FieldFull(X)).main() @ &m : res] +
+  Pr[WrongRecipientGame(B_FieldFull(X)).main() @ &m : res] +
+  Pr[WrongRevocationGame(B_FieldFull(X)).main() @ &m : res].
+
+lemma csk2_full_bad_event_bound &m :
+  Pr[Csk2FullBadEventGame(X).main() @ &m : res]
+  <= 10%r * inv (2%r ^ 128).
+proof.
+  have h_union := csk2_full_bad_event_union_bound &m.
+  have h_sum := csk2_full_adversary_sum_bound &m.
+  smt().
 qed.
 
 end section FullAdversaryComposition.

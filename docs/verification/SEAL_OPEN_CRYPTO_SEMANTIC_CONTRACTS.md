@@ -98,9 +98,7 @@ The open path now has explicit helper boundaries for wrapper selection and open-
 
 ## Remaining Work
 
-Next proof-expansion work should replace portions of the contract assumptions with deeper evidence:
-
-1. Mechanize the two-gate opening game and reduction hybrids defined in [SECURITY_MODEL.md](SECURITY_MODEL.md).
+1. (Complete) Two-gate opening game and reduction hybrids: formalized in `KyriotesCsk2TwoGateOpeningGame.v` and `KyriotesCsk2TwoGateHybridReduction.v`.
 2. Add explicit advantage bounds for AEAD, KEM, KDF, signature, and hash failure events.
 3. Retain or attach CI and game-proof evidence artifacts to releases.
 4. Review [PRIMITIVE_BOUNDARY.md](PRIMITIVE_BOUNDARY.md) whenever primitive crates or standards references change.

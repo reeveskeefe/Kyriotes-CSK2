@@ -2,10 +2,10 @@
 
 ## Status
 
-    Verification expansion lane: added
-    Coq artifact: added and wired
-    Rust production helper bridge: added
-    Kani helper evidence: added and wired
+    Verification expansion lane: complete for recorded scope
+    Coq artifact: complete and wired
+    Rust production helper bridge: complete
+    Kani helper evidence: complete and wired
     Tracked Rust mechanical inventory impact: none
 
 Kyriotēs-CSK2's tracked Rust mechanical refinement inventory remains complete at 11 / 11 verifier-backed proof lanes. This is a deeper expansion lane for transparency append behavior and Merkle-path soundness.

@@ -82,7 +82,7 @@ Use crates.io for normal integration and a local path dependency when you need t
 ```toml
 # Cargo.toml
 [dependencies]
-kyriotes-csk2 = "0.1.1"
+kyriotes-csk2 = "0.1.2"
 ```
 
 ### Option B: local workspace dependency (for unreleased work)
@@ -1075,6 +1075,20 @@ Integration tests to inspect for examples:
 - `tests/kyriotes_csk2_revocation.rs` — synchronous capability revocation and commit
 - `tests/kyriotes_csk2_async_revocation.rs` — async capability revocation via `AsyncTransparencyLog` and boxed dyn
 - `tests/kyriotes_csk2_compromise_notice.rs` — `CompromiseNotice` issue/verify roundtrips and `check_epoch_not_compromised` enforcement
+- `tests/kyriotes_csk2_compromise_open.rs` — open rejection under active compromise notice
+- `tests/kyriotes_csk2_delegation.rs` — capability delegation, rights narrowing, epoch-window narrowing, and depth enforcement
+- `tests/kyriotes_csk2_epoch_rotation.rs` — epoch rotation, cert chain, and state transition coverage
+- `tests/kyriotes_csk2_issue.rs` — capability issuance signature and cert chain flows
+- `tests/kyriotes_csk2_log_chain.rs` — transparency log chain hash and append-only behavior
+- `tests/kyriotes_csk2_multi_wrapper.rs` — multi-wrapper objects and wire roundtrip after rewrap
+- `tests/kyriotes_csk2_pq_kem.rs` — post-quantum KEM encapsulation/decapsulation and hybrid behavior
+- `tests/kyriotes_csk2_reseal.rs` — reseal to a new recipient
+- `tests/kyriotes_csk2_reseal_required_e2e.rs` — `ResealRequired` temporal policy end-to-end
+- `tests/kyriotes_csk2_rights.rs` — rights set enforcement and insufficient-rights rejection
+- `tests/kyriotes_csk2_seal_open_crypto_semantic.rs` — seal/open round-trip and defined tamper-rejection coverage
+- `tests/kyriotes_csk2_temporal.rs` — `Historical`, `Current`, and `Window` temporal policy shapes
+- `tests/kyriotes_csk2_tsig.rs` — threshold signature issue, combine, and verify flows
+- `tests/kyriotes_csk2_verify.rs` — standalone verify operation coverage
 
 Suggested daily loop for contributors:
 

@@ -119,6 +119,19 @@ Rust tests and fuzzing provide integration, tamper, parser, and state-machine ev
 
 Game-based proofs establish that winning a Kyriotēs-CSK2 security game yields an adversary against an assumed primitive. EasyCrypt is the preferred candidate for mechanized game hopping and advantage accounting; Coq remains suitable when the reduction infrastructure is developed there.
 
+EasyCrypt work is underway in `proofs/easycrypt/security/`. Current artifacts include:
+
+- `Csk2BaseTypes.ec`: Base types, primitive operators, and correctness axioms.
+- `Csk2TwoGateGame.ec`: Three-hybrid game sequence (Game0 → Game1 → Game2) for the KEM+AEAD opening gate.
+- `KemIndCca2.ec`, `KemReduction.ec`: KEM IND-CCA2 definition and hybrid step; |Pr[G0] - Pr[G1]| ≤ 2^{-128}.
+- `AeadCpaReduction.ec`, `AeadCtxtReduction.ec`, `AeadAeSecurity.ec`: AEAD hybrid and context-reduction steps; |Pr[G1] - Pr[G2]| ≤ 2^{-128} and Pr[G2] ≤ 2^{-128}.
+- `KemAeadComposition.ec`: Assembled KEM+AEAD bound: Pr[Game0(A)] ≤ 3 · 2^{-128}.
+- `Csk2MerkleBinding.ec`: Merkle inclusion binding game; a win implies hash collision or second preimage.
+- `Csk2CapabilityGame.ec`: Capability authority-root binding game (Gate 2) and field-aware binding games.
+- `Csk2FullSecurityComposition.ec`: Top-level composition with concrete 2^{-128} bounds for the KEM+AEAD lane and the capability binding lanes. Remaining primitive leaves are explicit axioms (`kem_csk2_ror_secure`, `aead_csk2_ind_cpa_lr_secure`, `dmsg_bound`, `merkle_binding_security`).
+
+Remaining EasyCrypt work: replace the lane-wise composition with a richer unified two-gate game whose adversary holds both a ciphertext-opening interface and a capability/context-forgery interface.
+
 ### External Assurance Layer
 
 Primitive standards, dependency audits, cryptographic review, side-channel analysis, randomness review, and release evidence retention remain external assurance inputs.
@@ -143,9 +156,9 @@ Not acceptable until the corresponding reduction is complete:
 
 ## Next Formal Work
 
-1. (Complete) Two-gate opening game shape and challenge restrictions: formalized in `KyriotesCsk2TwoGateOpeningGame.v`; hybrid reduction game-hopping steps formalized in `KyriotesCsk2TwoGateHybridReduction.v`. Rust↔Coq mechanical correspondence established in `KyriotesCsk2RustCoqFormalCorrespondence.v` via model contracts, mechanically proven implications, and Kani-backed axioms.
-2. Define probabilistic hybrid KEM and AEAD advantage interfaces and instantiate the reduction obligation.
-3. Prove the Merkle binding reduction from an accepted false path to a node-hash collision or second preimage.
-4. Formalize capability/object/policy/epoch binding as a game.
-5. Add concrete advantage accounting and reduction status to each security claim.
-6. Preserve Coq, Kani, test, and future game-proof artifacts per release.
+1. (Complete) Two-gate opening game shape and challenge restrictions: formalized in `KyriotesCsk2TwoGateOpeningGame.v` (Coq) and `Csk2TwoGateGame.ec` (EasyCrypt); hybrid reduction game-hopping steps formalized in `KyriotesCsk2TwoGateHybridReduction.v` and `KemAeadComposition.ec`. Rust↔Coq mechanical correspondence established in `KyriotesCsk2RustCoqFormalCorrespondence.v`.
+2. (Complete for KEM+AEAD lane) Probabilistic hybrid KEM and AEAD advantage interfaces defined and composed in `KemIndCca2.ec`, `KemReduction.ec`, `AeadCpaReduction.ec`, `AeadCtxtReduction.ec`, and `KemAeadComposition.ec`; concrete bound Pr[Game0(A)] ≤ 3 · 2^{-128} proved. Remaining primitive leaves (`kem_csk2_ror_secure`, `aead_csk2_ind_cpa_lr_secure`) are axioms pending external standard-model instantiation.
+3. (Partially complete) Merkle binding reduction: same-path case proved in `KyriotesCsk2MerkleFalseInclusionReduction.v` (Coq) and probabilistic game stated in `Csk2MerkleBinding.ec` (EasyCrypt). Different-siblings case remains open.
+4. (Complete) Capability/object/policy/epoch binding formalized as games in `Csk2CapabilityGame.ec` with concrete 2^{-128} bounds for authority-root binding and each field-aware game. Composition recorded in `Csk2FullSecurityComposition.ec`.
+5. (Complete for current scope) Concrete advantage accounting and reduction status recorded in `Csk2FullSecurityComposition.ec` for the KEM+AEAD and capability binding lanes. Remaining: unified two-gate game with a single adversary holding both the ciphertext-opening and capability-forgery interfaces.
+6. Preserve Coq, EasyCrypt, Kani, test, and game-proof artifacts per release.

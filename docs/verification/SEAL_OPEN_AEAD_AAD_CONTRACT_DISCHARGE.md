@@ -54,11 +54,13 @@ The key theorem is:
 
 This does not prove ChaCha20Poly1305 itself. It discharges Kyriotēs-CSK2's concrete use of the AEAD API and AAD construction for the bounded contract cases above. The primitive's cryptographic security remains inherited from the primitive and its implementation, not proven in this repository.
 
-## Remaining Seal/Open Contract Work
+## Seal/Open Contract Work Status
 
-The remaining undischarged expansion targets are:
+All four post-AEAD expansion targets have been discharged in the lane recorded by [SEAL_OPEN_CRYPTO_CONTRACT_DISCHARGE.md](SEAL_OPEN_CRYPTO_CONTRACT_DISCHARGE.md):
 
-1. Concrete KEM encapsulation/decapsulation agreement evidence.
-2. Concrete HKDF determinism and context separation evidence.
-3. SHA/context-hash field-inclusion expansion beyond the existing transcript model.
-4. Production-level composed seal/open harnesses covering real valid inputs and defined tampering cases.
+1. (Complete) Concrete KEM encapsulation/decapsulation agreement evidence: X25519 and hybrid PQ KEM agreement, wrong-secret and ciphertext-tamper rejection.
+2. (Complete) Concrete HKDF determinism and context separation evidence: determinism, separation by context hash, authority digest, and policy hash.
+3. (Complete) SHA/context-hash field-inclusion expansion: context_hash binding for object id, rights, policy hash, epoch, authority root, revocation root, transparency root, capability stamp, authority id, and temporal policy.
+4. (Complete) Production-level composed seal/open harnesses: seal/open round-trip, payload/wrapper/policy/context/KEM tamper rejection, swapped proof/state/wrapper rejection, temporal-policy alteration rejection.
+
+Remaining work across the full seal/open story is recorded in [SEAL_OPEN_CRYPTO_CONTRACT_DISCHARGE.md](SEAL_OPEN_CRYPTO_CONTRACT_DISCHARGE.md) and [SEAL_OPEN_CRYPTO_SEMANTIC_CONTRACTS.md](SEAL_OPEN_CRYPTO_SEMANTIC_CONTRACTS.md).

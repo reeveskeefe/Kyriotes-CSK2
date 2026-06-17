@@ -14,6 +14,6 @@ All tracked Rust mechanical refinement targets are verifier-backed proven within
 
 ## Completed Proof Boundary
 
-rotate_epoch has verifier-backed Kani proof evidence for the extracted pure authority-state transition helper: requested epoch setting, authority-root and root-key preservation, authority identity and revocation-count preservation, transparency-root reset, validity-flag setting, previous-epoch hash binding, and determinism for equal inputs.
+rotate_epoch has verifier-backed Kani proof evidence for the extracted pure authority-state transition helper: requested epoch setting, authority-root and root-key preservation, authority identity and revocation-count preservation, transparency-root reset, previous-epoch hash binding, and determinism for equal inputs.
 
 This lane proves selected state-transition structure. Fresh epoch key generation, certificate cryptographic correctness, epoch signature correctness, and full log-chain correctness remain outside this narrow proof claim.

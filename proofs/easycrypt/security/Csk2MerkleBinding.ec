@@ -52,15 +52,24 @@ type merkle_sibling = {
   sibling_hash      : hash
 }.
 
-type merkle_path.
+(* A Merkle path is a concrete list of siblings — enables list induction. *)
+type merkle_path = merkle_sibling list.
 
 op hash_leaf_concrete : hash -> hash.
 op hash_node_concrete : hash -> hash -> hash.
 op root_hash : root -> hash.
-op empty_merkle_path : merkle_path.
+
+op empty_merkle_path : merkle_path = [].
+
 op apply_merkle_sibling : hash -> merkle_sibling -> hash.
-op verify_merkle_path_from : hash -> merkle_path -> hash.
-op verify_merkle_path : hash -> root -> merkle_path -> bool.
+
+(* Path traversal is a left-fold over the sibling list. *)
+op verify_merkle_path_from (h : hash) (p : merkle_path) : hash =
+  foldl apply_merkle_sibling h p.
+
+(* Path verification: fold from the leaf hash and compare to the root hash. *)
+op verify_merkle_path (leaf : hash) (r : root) (p : merkle_path) : bool =
+  verify_merkle_path_from (hash_leaf_concrete leaf) p = root_hash r.
 
 axiom apply_merkle_sibling_left (h s : hash) :
   apply_merkle_sibling h
@@ -72,13 +81,31 @@ axiom apply_merkle_sibling_right (h s : hash) :
     {| sibling_direction = MerkleRight; sibling_hash = s |}
   = hash_node_concrete h s.
 
-axiom verify_merkle_path_def (leaf : hash) (r : root) (p : merkle_path) :
-  verify_merkle_path leaf r p =
-  (verify_merkle_path_from (hash_leaf_concrete leaf) p = root_hash r).
+(* ── Provable path algebra ──────────────────────────────────────── *)
 
-axiom empty_path_verifies_exact_leaf_root (leaf : hash) (r : root) :
+lemma empty_path_verifies_exact_leaf_root (leaf : hash) (r : root) :
   root_hash r = hash_leaf_concrete leaf =>
   verify_merkle_path leaf r empty_merkle_path = true.
+proof.
+  move=> h.
+  by rewrite /verify_merkle_path /verify_merkle_path_from /empty_merkle_path /= h.
+qed.
+
+(* Stepping through a sibling unfolds as expected. *)
+lemma verify_merkle_path_from_cons (h : hash) (s : merkle_sibling) (p : merkle_path) :
+  verify_merkle_path_from h (s :: p) =
+  verify_merkle_path_from (apply_merkle_sibling h s) p.
+proof.
+  by rewrite /verify_merkle_path_from foldl_cons.
+qed.
+
+(* Concatenation of path segments. *)
+lemma verify_merkle_path_from_cat (h : hash) (p1 p2 : merkle_path) :
+  verify_merkle_path_from h (p1 ++ p2) =
+  verify_merkle_path_from (verify_merkle_path_from h p1) p2.
+proof.
+  by rewrite /verify_merkle_path_from foldl_cat.
+qed.
 
 (* Deterministic witness extraction for the existing inclusion API. *)
 op merkle_include_path : hash -> root -> merkle_path.

@@ -81,6 +81,10 @@ axiom apply_merkle_sibling_right (h s : hash) :
     {| sibling_direction = MerkleRight; sibling_hash = s |}
   = hash_node_concrete h s.
 
+(* Distinct roots have distinct root hashes — roots are content-addressed. *)
+axiom root_hash_injective (r1 r2 : root) :
+  root_hash r1 = root_hash r2 => r1 = r2.
+
 (* ── Provable path algebra ──────────────────────────────────────── *)
 
 lemma empty_path_verifies_exact_leaf_root (leaf : hash) (r : root) :
@@ -113,6 +117,89 @@ op merkle_include_path : hash -> root -> merkle_path.
 axiom merkle_include_sound (leaf : hash) (r : root) :
   merkle_include leaf r = true =>
   verify_merkle_path leaf r (merkle_include_path leaf r) = true.
+
+(* ── Hash node collision resistance ─────────────────────────────── *)
+
+(*
+ * The primitive cryptographic leaf underlying Merkle binding security.
+ *
+ * sha256_merkle_collision_security (below) captures the difficulty of
+ * exhibiting a leaf simultaneously verified in two distinct Merkle roots.
+ * The supporting mathematical fact is that any such collision at the
+ * TREE level must involve a collision at the HASH NODE level.
+ *
+ * The two games are DISTINCT hardness assumptions:
+ *
+ *   hash_node_collision_security ──► second-preimage resistance
+ *     (no adversary finds two paths from the same leaf to the SAME root)
+ *
+ *   sha256_merkle_collision_security ──► binding / inclusion uniqueness
+ *     (no adversary exhibits a leaf verified against TWO DISTINCT roots
+ *      with explicit path witnesses, where the root values are obtained
+ *      from the protocol environment)
+ *
+ * A leaf-in-two-roots win requires the adversary to supply actual `root`
+ * values (an opaque protocol type) with matching root hashes, which
+ * ultimately requires either inverting root_hash or finding a compression-
+ * function path collision.  The games model different facets of SHA-256
+ * security; both are required as primitive leaves.
+ *)
+
+op hash_node_collision (a b c d : hash) : bool =
+  hash_node_concrete a b = hash_node_concrete c d /\ (a <> c \/ b <> d).
+
+module type HashNodeCollisionAdversary = {
+  proc find() : hash * hash * hash * hash
+}.
+
+module HashNodeCollisionGame (A : HashNodeCollisionAdversary) = {
+  proc main() : bool = {
+    var a, b, c, d : hash;
+    (a, b, c, d) <@ A.find();
+    return hash_node_collision a b c d;
+  }
+}.
+
+section HashNodeCollisionSecurity.
+
+declare module A <: HashNodeCollisionAdversary.
+
+(*
+ * SHA-256 hash node collision resistance: no PPT adversary can find
+ * (a, b) ≠ (c, d) with hash_node_concrete a b = hash_node_concrete c d.
+ * This is the primitive behind second-preimage resistance and uniqueness
+ * of honest Merkle paths.
+ *)
+axiom hash_node_collision_security &m :
+  Pr[HashNodeCollisionGame(A).main() @ &m : res] <= inv (2%r ^ 128).
+
+end section HashNodeCollisionSecurity.
+
+(*
+ * Note on path uniqueness.
+ *
+ * hash_node_collision_security is the primitive behind second-preimage
+ * resistance of the Merkle path traversal.  Specifically, if two paths of
+ * the SAME LENGTH from the same starting hash h reach the same endpoint,
+ * and hash_node_concrete is injective (no collisions), then the paths are
+ * identical element-wise — because each apply_merkle_sibling step expands
+ * to a call to hash_node_concrete and injectivity propagates backwards.
+ *
+ * The same-LENGTH restriction is essential: a left-direction sibling with
+ * sibling_hash = h and a right-direction sibling with sibling_hash = h
+ * both map h to hash_node_concrete h h — same intermediate hash, different
+ * merkle_sibling values, no collision.  This shows path representation is
+ * NOT unique even under collision resistance; uniqueness only holds for
+ * paths of equal length.
+ *
+ * sha256_merkle_collision_security (below) is a DISTINCT hardness assumption:
+ * it bounds the probability of exhibiting a leaf simultaneously verifiable
+ * against two distinct roots WITH EXPLICIT PATH WITNESSES.  Because the
+ * adversary must supply actual opaque `root` values from the protocol
+ * environment, forging such witnesses requires either preimage attacks on
+ * root_hash or second-preimage attacks on the path chain.  This is captured
+ * independently of hash_node_collision_security above.
+ *)
 
 (* ── SHA-256 collision-resistance game ──────────────────────────── *)
 

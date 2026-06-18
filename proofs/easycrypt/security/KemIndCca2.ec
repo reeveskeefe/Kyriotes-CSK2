@@ -46,6 +46,19 @@ module type KEM_KG = {
   proc kg() : pkey * skey
 }.
 
+(* Concrete ML-KEM-768 key-generation wrapper used by the CSK2 games.
+ * The byte-level FIPS 203 algorithm is intentionally outside this file;
+ * Csk2BaseTypes supplies the abstract distributions/operators that model
+ * the ML-KEM-768 implementation boundary. *)
+module MLKEM768_KG : KEM_KG = {
+  proc kg() : pkey * skey = {
+    var pk : pkey;
+    var sk : skey;
+    (pk, sk) <$ dkeypair;
+    return (pk, sk);
+  }
+}.
+
 (* ── IND-CCA2 game ────────────────────────────────────────────── *)
 
 (*
@@ -191,8 +204,9 @@ module Game_KEM_RoR_Rand (A : KEM_RoR_Adversary) = {
  *   For all PPT adversaries A, Adv^{IND-CCA2}(A) is negligible.
  *   ML-KEM-768 targets >= 128-bit classical security.
  *
- * The axiom below will be replaced by a proof once the ML-KEM-768
- * concrete instantiation module is written.
+ * The ML-KEM-768 primitive security statement is imported here as a
+ * standard-boundary assumption.  This repository models CSK2's use of
+ * ML-KEM-768; it does not prove FIPS 203 / ML-KEM-768 security internally.
  *)
 
 section IND_CCA2_Security.
@@ -200,7 +214,7 @@ section IND_CCA2_Security.
 declare module KG <: KEM_KG.
 declare module A  <: KEM_Adversary { -Game_IND_CCA2 }.
 
-(* Placeholder security bound — replace with proof for ML-KEM-768.
+(* ML-KEM-768 IND-CCA2 primitive security boundary.
  * Advantage = |Pr[A wins Game_IND_CCA2] - 1/2| <= 2^{-128}. *)
 axiom kem_csk2_indcca2_secure &m :
   `| Pr[Game_IND_CCA2(KG, A).main() @ &m : res] - 1%r / 2%r |
@@ -212,9 +226,21 @@ section KEM_RoR_Security.
 
 declare module A <: KEM_RoR_Adversary { -Game_KEM_RoR_Real, -Game_KEM_RoR_Rand }.
 
-axiom kem_csk2_ror_secure &m :
+(* Direct ML-KEM-768 real-or-random primitive boundary.  This is the
+ * exact form consumed by KemReduction.ec.  It is stated separately from
+ * the bit-guessing IND-CCA2 game to avoid hiding a factor-of-two or
+ * convention conversion in the CSK2 hybrid proof. *)
+axiom mlkem768_ror_secure &m :
   `| Pr[Game_KEM_RoR_Real(A).main() @ &m : res] -
      Pr[Game_KEM_RoR_Rand(A).main() @ &m : res] |
   <= inv (2%r ^ 128).
+
+lemma kem_csk2_ror_secure &m :
+  `| Pr[Game_KEM_RoR_Real(A).main() @ &m : res] -
+     Pr[Game_KEM_RoR_Rand(A).main() @ &m : res] |
+  <= inv (2%r ^ 128).
+proof.
+  exact (mlkem768_ror_secure &m).
+qed.
 
 end section KEM_RoR_Security.

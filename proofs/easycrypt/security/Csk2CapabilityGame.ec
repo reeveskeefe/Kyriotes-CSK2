@@ -287,6 +287,15 @@ proof.
   by skip => />; smt(cap_in_root_def).
 qed.
 
+lemma cap_bind_good_eq_merkle_good &m :
+  Pr[CapBindingGame(A).main() @ &m : !res] =
+  Pr[MerkleBindingGame(B_Merkle(A)).main() @ &m : !res].
+proof.
+  byequiv => //; proc; inline B_Merkle(A).find; wp.
+  call (: ={glob A} ==> ={glob A, res}); first by sim.
+  by skip => />; smt(cap_in_root_def).
+qed.
+
 (*
  * cap_binding_security
  *
@@ -308,12 +317,8 @@ lemma cap_binding_security_phoare :
   phoare [CapBindingGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
 proof.
   bypr => &m _.
-  have h := cap_binding_security &m.
-  have hll : Pr[CapBindingGame(A).main() @ &m : true] = 1%r.
-  + byphoare (_ : true ==> true) => //; proc; call A_ll.
-    by skip.
-  rewrite Pr[mu_not] hll.
-  smt().
+  rewrite (cap_bind_good_eq_merkle_good &m).
+  by byphoare (merkle_binding_security_phoare (B_Merkle(A))).
 qed.
 
 end section CapBinding.

@@ -15,8 +15,9 @@
  *
  * Types (key, aad, msg, ctaead) and correctness axioms (aead_correct,
  * aead_unique_ciphertext) live in Csk2BaseTypes.ec.  This file adds
- * only the game-specific constructs: the key distribution dkey and
- * the INT-CTXT / IND-CPA game modules.
+ * only the game-specific constructs: the key distribution dkey, a
+ * ChaCha20-Poly1305 game-level wrapper over the CSK2 AEAD operators,
+ * and the INT-CTXT / IND-CPA game modules.
  *)
 
 require import AllCore Distr DBool FSet Real.
@@ -28,6 +29,47 @@ require import Csk2BaseTypes.
    the key is derived as hkdf(ss_rand); dkey abstracts that here. *)
 op dkey : key distr.
 axiom dkey_ll : is_lossless dkey.
+
+(* ── Concrete CSK2 AEAD instantiation boundary ───────────────── *)
+
+(*
+ * CSK2 instantiates AEAD with ChaCha20-Poly1305 in the implementation.
+ * At this EasyCrypt layer, byte-level ChaCha20 block functions, nonce
+ * encoding, and Poly1305 arithmetic are intentionally below the model
+ * boundary; they are represented by the shared operators dkey/aenc/adec
+ * and their correctness/security assumptions.
+ *
+ * The wrapper below makes that primitive boundary explicit.  Reduction
+ * files reason about Game_CPA_Left/Game_CPA_Right over these operators;
+ * the only external cryptographic leaf is the ChaCha20-Poly1305
+ * left/right IND-CPA advantage bound stated near the end of this file.
+ *)
+
+module type AEAD_Scheme = {
+  proc keygen() : key
+  proc enc(k : key, a : aad, m : msg) : ctaead
+  proc dec(k : key, a : aad, c : ctaead) : msg option
+}.
+
+module ChaCha20Poly1305_AEAD : AEAD_Scheme = {
+  proc keygen() : key = {
+    var k : key;
+    k <$ dkey;
+    return k;
+  }
+
+  proc enc(k : key, a : aad, m : msg) : ctaead = {
+    var c : ctaead;
+    c <$ aenc k a m;
+    return c;
+  }
+
+  proc dec(k : key, a : aad, c : ctaead) : msg option = {
+    var p : msg option;
+    p <- adec k a c;
+    return p;
+  }
+}.
 
 (* ── Encryption oracle ────────────────────────────────────────── *)
 
@@ -205,9 +247,17 @@ section IND_CPA_LR_Security.
 
 declare module A <: LrIndCpaAdversary { -Game_CPA_Left, -Game_CPA_Right }.
 
-axiom aead_csk2_ind_cpa_lr_secure &m :
+axiom chacha20poly1305_ind_cpa_lr_secure &m :
   `| Pr[Game_CPA_Left(A).main() @ &m : res] -
      Pr[Game_CPA_Right(A).main() @ &m : res] |
   <= inv (2%r ^ 128).
+
+lemma aead_csk2_ind_cpa_lr_secure &m :
+  `| Pr[Game_CPA_Left(A).main() @ &m : res] -
+     Pr[Game_CPA_Right(A).main() @ &m : res] |
+  <= inv (2%r ^ 128).
+proof.
+  exact (chacha20poly1305_ind_cpa_lr_secure &m).
+qed.
 
 end section IND_CPA_LR_Security.

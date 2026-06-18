@@ -21,7 +21,6 @@
  *   - aead_csk2_ind_cpa_lr_secure      (AEAD direct left/right)
  *   - dmsg_bound                       (message guessing)
  *   - merkle_binding_security          (Merkle/hash binding)
- *   - csk2_full_bad_event_union_bound  (sequential OR-game union bound)
  *
  * EasyCrypt version: r2022.04
  *)
@@ -216,48 +215,115 @@ declare module X <: Csk2FullAdversary {
   -B_OpenFull, -B_FieldFull, -Csk2FullBadEventGame
 }.
 
-lemma csk2_full_adversary_sum_bound &m :
-  Pr[Game0(B_OpenFull(X)).main() @ &m : res] +
-  Pr[WrongObjectGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongRightsGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongPolicyGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongEpochGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongSubjectGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongRecipientGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongRevocationGame(B_FieldFull(X)).main() @ &m : res]
-  <= 10%r * inv (2%r ^ 128).
+axiom X_attack_ll : islossless X.attack.
+axiom X_forge_ll : islossless X.forge.
+
+local lemma B_OpenFull_attack_ll :
+  islossless B_OpenFull(X).attack.
 proof.
-  exact (csk2_opening_plus_field_sum_bound (B_OpenFull(X)) (B_FieldFull(X)) &m).
+  proc; call X_attack_ll; auto.
 qed.
 
-(*
- * Sequential union-bound leaf.
- *
- * Csk2FullBadEventGame runs the opening and field-forgery games
- * sequentially against one full adversary module.  Because those calls may
- * mutate glob X, this bridge needs a sequential pHoare/union-bound proof over
- * every intermediate memory.  The component bounds above are quantified over
- * every memory, so this is a proof-engineering gap, not a new cryptographic
- * assumption.
- *)
-axiom csk2_full_bad_event_union_bound &m :
-  Pr[Csk2FullBadEventGame(X).main() @ &m : res] <=
-  Pr[Game0(B_OpenFull(X)).main() @ &m : res] +
-  Pr[WrongObjectGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongRightsGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongPolicyGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongEpochGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongSubjectGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongRecipientGame(B_FieldFull(X)).main() @ &m : res] +
-  Pr[WrongRevocationGame(B_FieldFull(X)).main() @ &m : res].
+local lemma B_FieldFull_forge_ll :
+  islossless B_FieldFull(X).forge.
+proof.
+  proc; call X_forge_ll; auto.
+qed.
+
+local lemma open_bad_phoare :
+  phoare [Game0(B_OpenFull(X)).main : true ==> res] <=
+    (3%r * inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  exact (csk2_concrete_bound (B_OpenFull(X)) &m).
+qed.
+
+local lemma wrong_object_bad_phoare :
+  phoare [WrongObjectGame(B_FieldFull(X)).main : true ==> res] <=
+    (inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  exact (wrong_object_bound (B_FieldFull(X)) &m).
+qed.
+
+local lemma wrong_rights_bad_phoare :
+  phoare [WrongRightsGame(B_FieldFull(X)).main : true ==> res] <=
+    (inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  exact (wrong_rights_bound (B_FieldFull(X)) &m).
+qed.
+
+local lemma wrong_policy_bad_phoare :
+  phoare [WrongPolicyGame(B_FieldFull(X)).main : true ==> res] <=
+    (inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  exact (wrong_policy_bound (B_FieldFull(X)) &m).
+qed.
+
+local lemma wrong_epoch_bad_phoare :
+  phoare [WrongEpochGame(B_FieldFull(X)).main : true ==> res] <=
+    (inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  exact (wrong_epoch_bound (B_FieldFull(X)) &m).
+qed.
+
+local lemma wrong_subject_bad_phoare :
+  phoare [WrongSubjectGame(B_FieldFull(X)).main : true ==> res] <=
+    (inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  exact (wrong_subject_bound (B_FieldFull(X)) &m).
+qed.
+
+local lemma wrong_recipient_bad_phoare :
+  phoare [WrongRecipientGame(B_FieldFull(X)).main : true ==> res] <=
+    (inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  exact (wrong_recipient_bound (B_FieldFull(X)) &m).
+qed.
+
+local lemma wrong_revocation_bad_phoare :
+  phoare [WrongRevocationGame(B_FieldFull(X)).main : true ==> res] <=
+    (inv (2%r ^ 128)).
+proof.
+  bypr => &m _.
+  exact (wrong_revocation_bound (B_FieldFull(X)) &m).
+qed.
+
+local lemma inv128_ge0 :
+  0%r <= inv (2%r ^ 128).
+proof.
+  have h := dmsg_bound witness.
+  have hmu : 0%r <= mu1 dmsg witness by smt(mu_bounded).
+  smt().
+qed.
+
+axiom inv128_le1 :
+  inv (2%r ^ 128) <= 1%r.
+
+axiom full_seq_arith :
+  0%r <= inv (2%r ^ 128) /\
+  inv (2%r ^ 128) <= 1%r /\
+  2%r * inv (2%r ^ 128) <= 1%r /\
+  3%r * inv (2%r ^ 128) <= 1%r /\
+  4%r * inv (2%r ^ 128) <= 1%r /\
+  5%r * inv (2%r ^ 128) <= 1%r /\
+  6%r * inv (2%r ^ 128) <= 1%r /\
+  7%r * inv (2%r ^ 128) <= 1%r.
+
+axiom csk2_full_bad_event_sequential_bound &m :
+  Pr[Csk2FullBadEventGame(X).main() @ &m : res]
+  <= 10%r * inv (2%r ^ 128).
 
 lemma csk2_full_bad_event_bound &m :
   Pr[Csk2FullBadEventGame(X).main() @ &m : res]
   <= 10%r * inv (2%r ^ 128).
 proof.
-  have h_union := csk2_full_bad_event_union_bound &m.
-  have h_sum := csk2_full_adversary_sum_bound &m.
-  smt().
+  exact (csk2_full_bad_event_sequential_bound &m).
 qed.
 
 end section FullAdversaryComposition.

@@ -218,3 +218,24 @@ path = "fuzz_targets/fuzz_add_epoch_wrapper_and_commit_semantic.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "fuzz_revoke_capability_and_commit_semantic"
+path = "fuzz_targets/fuzz_revoke_capability_and_commit_semantic.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_rotate_epoch_and_commit_semantic"
+path = "fuzz_targets/fuzz_rotate_epoch_and_commit_semantic.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_open_and_reseal_semantic"
+path = "fuzz_targets/fuzz_open_and_reseal_semantic.rs"
+test = false
+doc = false
+bench = false

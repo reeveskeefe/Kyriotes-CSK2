@@ -85,6 +85,17 @@ module Csk2FullBadEventGame (A : Csk2FullAdversary) = {
   }
 }.
 
+type flags8 = {
+  f_open       : bool;
+  f_object     : bool;
+  f_rights     : bool;
+  f_policy     : bool;
+  f_epoch      : bool;
+  f_subject    : bool;
+  f_recipient  : bool;
+  f_revocation : bool
+}.
+
 section FullSecurityComposition.
 
 declare module A <: Csk2Adv {
@@ -294,34 +305,259 @@ proof.
   exact (wrong_revocation_bound (B_FieldFull(X)) &m).
 qed.
 
-local lemma inv128_ge0 :
-  0%r <= inv (2%r ^ 128).
+local lemma wrong_object_ll :
+  islossless WrongObjectGame(B_FieldFull(X)).main.
 proof.
-  have h := dmsg_bound witness.
-  have hmu : 0%r <= mu1 dmsg witness by smt(mu_bounded).
-  smt().
+  proc; call B_FieldFull_forge_ll; auto.
 qed.
 
-lemma inv128_le1 :
-  inv (2%r ^ 128) <= 1%r.
+local lemma wrong_rights_ll :
+  islossless WrongRightsGame(B_FieldFull(X)).main.
 proof.
-  smt(StdOrder.RealOrder.expr_gt0 StdOrder.RealOrder.exprn_ege1
-      StdOrder.RealOrder.invr_le1).
+  proc; call B_FieldFull_forge_ll; auto.
 qed.
 
-axiom full_seq_arith :
-  0%r <= inv (2%r ^ 128) /\
-  inv (2%r ^ 128) <= 1%r /\
-  2%r * inv (2%r ^ 128) <= 1%r /\
-  3%r * inv (2%r ^ 128) <= 1%r /\
-  4%r * inv (2%r ^ 128) <= 1%r /\
-  5%r * inv (2%r ^ 128) <= 1%r /\
-  6%r * inv (2%r ^ 128) <= 1%r /\
-  7%r * inv (2%r ^ 128) <= 1%r.
+local lemma wrong_policy_ll :
+  islossless WrongPolicyGame(B_FieldFull(X)).main.
+proof.
+  proc; call B_FieldFull_forge_ll; auto.
+qed.
 
-axiom csk2_full_bad_event_sequential_bound &m :
+local lemma wrong_epoch_ll :
+  islossless WrongEpochGame(B_FieldFull(X)).main.
+proof.
+  proc; call B_FieldFull_forge_ll; auto.
+qed.
+
+local lemma wrong_subject_ll :
+  islossless WrongSubjectGame(B_FieldFull(X)).main.
+proof.
+  proc; call B_FieldFull_forge_ll; auto.
+qed.
+
+local lemma wrong_recipient_ll :
+  islossless WrongRecipientGame(B_FieldFull(X)).main.
+proof.
+  proc; call B_FieldFull_forge_ll; auto.
+qed.
+
+local lemma wrong_revocation_ll :
+  islossless WrongRevocationGame(B_FieldFull(X)).main.
+proof.
+  proc; call B_FieldFull_forge_ll; auto.
+qed.
+
+local lemma game0_ll : islossless Game0(B_OpenFull(X)).main.
+proof.
+  proc; call B_OpenFull_attack_ll.
+  by auto; smt(aenc_ll, encap_ll, dkeypair_ll, dmsg_ll).
+qed.
+
+local module Csk2FlagsGame = {
+  proc main() : flags8 = {
+    var b1 : bool;
+    var b2 : bool;
+    var b3 : bool;
+    var b4 : bool;
+    var b5 : bool;
+    var b6 : bool;
+    var b7 : bool;
+    var b8 : bool;
+    b1 <@ Game0(B_OpenFull(X)).main();
+    b2 <@ WrongObjectGame(B_FieldFull(X)).main();
+    b3 <@ WrongRightsGame(B_FieldFull(X)).main();
+    b4 <@ WrongPolicyGame(B_FieldFull(X)).main();
+    b5 <@ WrongEpochGame(B_FieldFull(X)).main();
+    b6 <@ WrongSubjectGame(B_FieldFull(X)).main();
+    b7 <@ WrongRecipientGame(B_FieldFull(X)).main();
+    b8 <@ WrongRevocationGame(B_FieldFull(X)).main();
+    return {|
+      f_open       = b1;
+      f_object     = b2;
+      f_rights     = b3;
+      f_policy     = b4;
+      f_epoch      = b5;
+      f_subject    = b6;
+      f_recipient  = b7;
+      f_revocation = b8
+    |};
+  }
+}.
+
+op flags_any (f : flags8) : bool =
+  f_open f || f_object f || f_rights f || f_policy f ||
+  f_epoch f || f_subject f || f_recipient f || f_revocation f.
+
+local lemma full_game_eq_flags &m :
+  Pr[Csk2FullBadEventGame(X).main() @ &m : res] =
+  Pr[Csk2FlagsGame.main() @ &m : flags_any res].
+proof.
+  byequiv => //; proc.
+  wp.
+  call (: ={glob X} ==> ={glob X, res}); first by sim.
+  call (: ={glob X} ==> ={glob X, res}); first by sim.
+  call (: ={glob X} ==> ={glob X, res}); first by sim.
+  call (: ={glob X} ==> ={glob X, res}); first by sim.
+  call (: ={glob X} ==> ={glob X, res}); first by sim.
+  call (: ={glob X} ==> ={glob X, res}); first by sim.
+  call (: ={glob X} ==> ={glob X, res}); first by sim.
+  call (: ={glob X} ==> ={glob X, res}); first by sim.
+  by skip => />.
+qed.
+
+local lemma flags_union_bound &m :
+  Pr[Csk2FlagsGame.main() @ &m : flags_any res] <=
+  Pr[Csk2FlagsGame.main() @ &m : f_open res] +
+  Pr[Csk2FlagsGame.main() @ &m : f_object res] +
+  Pr[Csk2FlagsGame.main() @ &m : f_rights res] +
+  Pr[Csk2FlagsGame.main() @ &m : f_policy res] +
+  Pr[Csk2FlagsGame.main() @ &m : f_epoch res] +
+  Pr[Csk2FlagsGame.main() @ &m : f_subject res] +
+  Pr[Csk2FlagsGame.main() @ &m : f_recipient res] +
+  Pr[Csk2FlagsGame.main() @ &m : f_revocation res].
+proof.
+  rewrite /flags_any.
+  rewrite Pr[mu_or] Pr[mu_or] Pr[mu_or] Pr[mu_or].
+  rewrite Pr[mu_or] Pr[mu_or] Pr[mu_or].
+  smt(mu_bounded).
+qed.
+
+local lemma flags_open_bound &m :
+  Pr[Csk2FlagsGame.main() @ &m : f_open res] <= 3%r * inv (2%r ^ 128).
+proof.
+  byphoare (: true ==> f_open res) => //; proc; wp.
+  call wrong_revocation_ll.
+  call wrong_recipient_ll.
+  call wrong_subject_ll.
+  call wrong_epoch_ll.
+  call wrong_policy_ll.
+  call wrong_rights_ll.
+  call wrong_object_ll.
+  call open_bad_phoare.
+  auto.
+qed.
+
+local lemma flags_object_bound &m :
+  Pr[Csk2FlagsGame.main() @ &m : f_object res] <= inv (2%r ^ 128).
+proof.
+  byphoare (: true ==> f_object res) => //; proc; wp.
+  call wrong_revocation_ll.
+  call wrong_recipient_ll.
+  call wrong_subject_ll.
+  call wrong_epoch_ll.
+  call wrong_policy_ll.
+  call wrong_rights_ll.
+  call wrong_object_bad_phoare.
+  call game0_ll.
+  auto.
+qed.
+
+local lemma flags_rights_bound &m :
+  Pr[Csk2FlagsGame.main() @ &m : f_rights res] <= inv (2%r ^ 128).
+proof.
+  byphoare (: true ==> f_rights res) => //; proc; wp.
+  call wrong_revocation_ll.
+  call wrong_recipient_ll.
+  call wrong_subject_ll.
+  call wrong_epoch_ll.
+  call wrong_policy_ll.
+  call wrong_rights_bad_phoare.
+  call wrong_object_ll.
+  call game0_ll.
+  auto.
+qed.
+
+local lemma flags_policy_bound &m :
+  Pr[Csk2FlagsGame.main() @ &m : f_policy res] <= inv (2%r ^ 128).
+proof.
+  byphoare (: true ==> f_policy res) => //; proc; wp.
+  call wrong_revocation_ll.
+  call wrong_recipient_ll.
+  call wrong_subject_ll.
+  call wrong_epoch_ll.
+  call wrong_policy_bad_phoare.
+  call wrong_rights_ll.
+  call wrong_object_ll.
+  call game0_ll.
+  auto.
+qed.
+
+local lemma flags_epoch_bound &m :
+  Pr[Csk2FlagsGame.main() @ &m : f_epoch res] <= inv (2%r ^ 128).
+proof.
+  byphoare (: true ==> f_epoch res) => //; proc; wp.
+  call wrong_revocation_ll.
+  call wrong_recipient_ll.
+  call wrong_subject_ll.
+  call wrong_epoch_bad_phoare.
+  call wrong_policy_ll.
+  call wrong_rights_ll.
+  call wrong_object_ll.
+  call game0_ll.
+  auto.
+qed.
+
+local lemma flags_subject_bound &m :
+  Pr[Csk2FlagsGame.main() @ &m : f_subject res] <= inv (2%r ^ 128).
+proof.
+  byphoare (: true ==> f_subject res) => //; proc; wp.
+  call wrong_revocation_ll.
+  call wrong_recipient_ll.
+  call wrong_subject_bad_phoare.
+  call wrong_epoch_ll.
+  call wrong_policy_ll.
+  call wrong_rights_ll.
+  call wrong_object_ll.
+  call game0_ll.
+  auto.
+qed.
+
+local lemma flags_recipient_bound &m :
+  Pr[Csk2FlagsGame.main() @ &m : f_recipient res] <= inv (2%r ^ 128).
+proof.
+  byphoare (: true ==> f_recipient res) => //; proc; wp.
+  call wrong_revocation_ll.
+  call wrong_recipient_bad_phoare.
+  call wrong_subject_ll.
+  call wrong_epoch_ll.
+  call wrong_policy_ll.
+  call wrong_rights_ll.
+  call wrong_object_ll.
+  call game0_ll.
+  auto.
+qed.
+
+local lemma flags_revocation_bound &m :
+  Pr[Csk2FlagsGame.main() @ &m : f_revocation res] <= inv (2%r ^ 128).
+proof.
+  byphoare (: true ==> f_revocation res) => //; proc; wp.
+  call wrong_revocation_bad_phoare.
+  call wrong_recipient_ll.
+  call wrong_subject_ll.
+  call wrong_epoch_ll.
+  call wrong_policy_ll.
+  call wrong_rights_ll.
+  call wrong_object_ll.
+  call game0_ll.
+  auto.
+qed.
+
+lemma csk2_full_bad_event_sequential_bound &m :
   Pr[Csk2FullBadEventGame(X).main() @ &m : res]
   <= 10%r * inv (2%r ^ 128).
+proof.
+  have heq  := full_game_eq_flags &m.
+  have hsum := flags_union_bound &m.
+  have h1   := flags_open_bound &m.
+  have h2   := flags_object_bound &m.
+  have h3   := flags_rights_bound &m.
+  have h4   := flags_policy_bound &m.
+  have h5   := flags_epoch_bound &m.
+  have h6   := flags_subject_bound &m.
+  have h7   := flags_recipient_bound &m.
+  have h8   := flags_revocation_bound &m.
+  smt().
+qed.
 
 lemma csk2_full_bad_event_bound &m :
   Pr[Csk2FullBadEventGame(X).main() @ &m : res]

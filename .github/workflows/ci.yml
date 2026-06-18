@@ -81,6 +81,24 @@ jobs:
           set -o pipefail
           cargo +nightly fuzz run fuzz_add_epoch_wrapper_and_commit_semantic -- -max_total_time=20 -runs=0 -seed=31337
 
+      - name: Fuzz smoke (revoke capability and commit semantic)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo +nightly fuzz run fuzz_revoke_capability_and_commit_semantic -- -max_total_time=20 -runs=0 -seed=8080
+
+      - name: Fuzz smoke (rotate epoch and commit semantic)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo +nightly fuzz run fuzz_rotate_epoch_and_commit_semantic -- -max_total_time=20 -runs=0 -seed=5050
+
+      - name: Fuzz smoke (open and reseal semantic)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo +nightly fuzz run fuzz_open_and_reseal_semantic -- -max_total_time=20 -runs=0 -seed=42424
+
   coq-proofs:
     name: Coq proof check
     runs-on: ubuntu-latest
@@ -126,10 +144,9 @@ jobs:
   easycrypt-proofs:
     name: EasyCrypt proof check
     runs-on: ubuntu-latest
-    # EasyCrypt files currently contain `admit` stubs for the hybrid-argument
-    # proof bodies.  We run in allow-failure mode so CI stays green while the
-    # probabilistic proofs are being developed, but we always upload the log as
-    # evidence of what did and did not pass.
+    # Run in allow-failure mode so CI stays green while the EasyCrypt toolchain
+    # is not yet pinned in the Docker image; all admit stubs have been closed.
+    # We always upload the log as evidence of what did and did not pass.
     continue-on-error: true
 
     steps:
@@ -160,7 +177,7 @@ jobs:
             echo "- Workflow: CI / EasyCrypt proof check"
             echo "- Command: \`make check\` in \`proofs/easycrypt/\`"
             echo "- Artifact log: \`easycrypt-check.log\`"
-            echo "- Note: \`admit\` stubs in composition proof — continue-on-error: true"
+            echo "- Note: all admit stubs closed; continue-on-error: true pending toolchain pin"
             echo "- Timestamp UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           } > target/verification-evidence/easycrypt-summary.md
 

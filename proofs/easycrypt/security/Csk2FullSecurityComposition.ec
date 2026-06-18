@@ -302,8 +302,12 @@ proof.
   smt().
 qed.
 
-axiom inv128_le1 :
+lemma inv128_le1 :
   inv (2%r ^ 128) <= 1%r.
+proof.
+  smt(StdOrder.RealOrder.expr_gt0 StdOrder.RealOrder.exprn_ege1
+      StdOrder.RealOrder.invr_le1).
+qed.
 
 axiom full_seq_arith :
   0%r <= inv (2%r ^ 128) /\

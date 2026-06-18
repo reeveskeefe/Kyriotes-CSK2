@@ -186,12 +186,15 @@ proof.
   by smt().
 qed.
 
-axiom merkle_binding_good_follows_sha256_good
+lemma merkle_binding_good_follows_sha256_good
   (leaf : hash) (r1 r2 : root) :
   ! sha256_merkle_collision
       leaf r1 (merkle_include_path leaf r1)
       r2 (merkle_include_path leaf r2) =>
   ! (merkle_include leaf r1 && merkle_include leaf r2 && (r1 <> r2)).
+proof.
+  smt(merkle_binding_implies_sha256_collision).
+qed.
 
 (* ── Security lemmas ────────────────────────────────────────────── *)
 
@@ -199,13 +202,42 @@ section MerkleBinding.
 
 declare module A <: MerkleAdversary.
 
-axiom merkle_binding_reduces_to_sha256_collision &m :
+axiom A_ll : islossless A.find.
+
+local lemma merkle_binding_ll &m :
+  Pr[MerkleBindingGame(A).main() @ &m : true] = 1%r.
+proof.
+  byphoare (_ : true ==> true) => //.
+  proc; call A_ll; auto.
+qed.
+
+local lemma sha256_merkle_collision_ll &m :
+  Pr[Sha256MerkleCollisionGame(B_Sha256Merkle(A)).main() @ &m : true] = 1%r.
+proof.
+  byphoare (_ : true ==> true) => //.
+  proc; inline B_Sha256Merkle(A).find_collision; wp.
+  call A_ll; auto.
+qed.
+
+lemma merkle_binding_reduces_to_sha256_collision &m :
   Pr[MerkleBindingGame(A).main() @ &m : res] <=
   Pr[Sha256MerkleCollisionGame(B_Sha256Merkle(A)).main() @ &m : res].
+proof.
+  byequiv (_ : ={glob A} ==> (res{1} => res{2})) => //.
+  proc; inline B_Sha256Merkle(A).find_collision; wp.
+  call (: ={glob A} ==> ={glob A, res}); first by sim.
+  by skip => />; smt(merkle_binding_implies_sha256_collision).
+qed.
 
-axiom merkle_binding_good_reduces_to_sha256_good &m :
+lemma merkle_binding_good_reduces_to_sha256_good &m :
   Pr[Sha256MerkleCollisionGame(B_Sha256Merkle(A)).main() @ &m : !res] <=
   Pr[MerkleBindingGame(A).main() @ &m : !res].
+proof.
+  rewrite Pr[mu_not] Pr[mu_not].
+  rewrite (sha256_merkle_collision_ll &m) (merkle_binding_ll &m).
+  have h := merkle_binding_reduces_to_sha256_collision &m.
+  smt().
+qed.
 
 (*
  * merkle_binding_security

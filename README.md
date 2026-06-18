@@ -18,8 +18,23 @@ Kyriotēs-CSK2 is an encryption scheme where opening ciphertext requires these t
 Kyriotēs-CSK2 seals bytes to an authority state (root, policy, rights, object, epoch, revocation), so decryption succeeds only when key possession and current authority are both cryptographically true.
 
 
->This is currently an experiment. It still requires some public audit and verification. It is becomming something ready to be showcased and audited for the future. The issue is it needs to be proven before it can be sent off and battletested and reviewed. Until then, I do not reccomend using it in production environments. 
+## Security Status & Disclaimer
 
+**Kyriotēs-CSK2 is an experimental construction.** It is **not yet recommended for production use** or handling sensitive data.
+
+### Current Security Posture
+- I have invested heavily in formal verification, including:
+- 11/11 mechanical refinement lanes in Rust (backed by Kani)
+- Substantial Coq/Rocq modeling of the protocol, invariants, and Merkle soundness
+- Ongoing EasyCrypt development for computational security reductions (KEM + AEAD core, capability binding, Merkle soundness)
+- The security model, two-gate opening semantics, and reduction roadmap are formally defined.
+- However, the work is still **partial**. Full end-to-end computational reductions, external review, and independent security auditing are not yet complete.
+
+**I am actively seeking funding** for a professional security audit (Trail of Bits, NCC Group, or equivalent) and further formal verification work.
+
+Until an independent audit is completed and the reductions are fully published and reviewed, I strongly advise against using Kyriotēs-CSK2 in any high-stakes or production environment.
+
+So far the computations I have personally completed have shown the design and evidence are promising, but **cryptography is hard** and novel constructions require rigorous external scrutiny before they can be trusted with real secrets.
 
 
 ## Core property

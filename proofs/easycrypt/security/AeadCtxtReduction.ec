@@ -24,7 +24,7 @@
  * 2. game2_swap_eq: byequiv, swap {1} 2 6; sim.
  * 3. mu_guess: mu dmsg (fun m0 => g = Some m0) <= inv(2^128) for any g.
  * 4. game2swap_bound: byphoare; proc; seq 7 (split after A.attack);
- *    prefix is lossless (call A_ll + wp/rnd), suffix is m <$ dmsg
+ *    prefix is handled structurally, suffix is m <$ dmsg
  *    bounded by mu_guess applied to guess{hr}.
  *
  * EasyCrypt version: r2022.04
@@ -37,8 +37,6 @@ require import Csk2TwoGateGame.
 section AeadCtxt.
 
 declare module A <: Csk2Adv { -Game2 }.
-
-axiom A_ll : islossless A.attack.
 
 (* ── Game2swap: m sampled after A.attack ─────────────────────────── *)
 
@@ -106,7 +104,7 @@ qed.
 (*
  * Split the program right after A.attack (instruction 7).  The prefix
  * (instructions 1-7) trivially establishes `true` with probability 1
- * (call A_ll + lossless KEM/AEAD/key-derivation steps).  At that split
+ * (abstract call plus lossless KEM/AEAD/key-derivation steps).  At that split
  * point `guess` is a normal local program variable, addressable as
  * `guess{hr}` once the memory is introduced by `skip`.  The suffix is
  * just `m <$ dmsg; return (guess = Some m)`, bounded directly by

@@ -61,7 +61,10 @@ op root_hash : root -> hash.
 
 op empty_merkle_path : merkle_path = [].
 
-op apply_merkle_sibling : hash -> merkle_sibling -> hash.
+op apply_merkle_sibling (h : hash) (s : merkle_sibling) : hash =
+  if sibling_direction s = MerkleLeft
+  then hash_node_concrete (sibling_hash s) h
+  else hash_node_concrete h (sibling_hash s).
 
 (* Path traversal is a left-fold over the sibling list. *)
 op verify_merkle_path_from (h : hash) (p : merkle_path) : hash =
@@ -71,19 +74,17 @@ op verify_merkle_path_from (h : hash) (p : merkle_path) : hash =
 op verify_merkle_path (leaf : hash) (r : root) (p : merkle_path) : bool =
   verify_merkle_path_from (hash_leaf_concrete leaf) p = root_hash r.
 
-axiom apply_merkle_sibling_left (h s : hash) :
+lemma apply_merkle_sibling_left (h s : hash) :
   apply_merkle_sibling h
     {| sibling_direction = MerkleLeft; sibling_hash = s |}
   = hash_node_concrete s h.
+proof. by rewrite /apply_merkle_sibling. qed.
 
-axiom apply_merkle_sibling_right (h s : hash) :
+lemma apply_merkle_sibling_right (h s : hash) :
   apply_merkle_sibling h
     {| sibling_direction = MerkleRight; sibling_hash = s |}
   = hash_node_concrete h s.
-
-(* Distinct roots have distinct root hashes — roots are content-addressed. *)
-axiom root_hash_injective (r1 r2 : root) :
-  root_hash r1 = root_hash r2 => r1 = r2.
+proof. by rewrite /apply_merkle_sibling. qed.
 
 (* ── Provable path algebra ──────────────────────────────────────── *)
 
@@ -118,21 +119,17 @@ axiom merkle_include_sound (leaf : hash) (r : root) :
   merkle_include leaf r = true =>
   verify_merkle_path leaf r (merkle_include_path leaf r) = true.
 
-(* ── Hash node collision resistance ─────────────────────────────── *)
+(* ── Hash node collision predicate ──────────────────────────────── *)
 
 (*
- * The primitive cryptographic leaf underlying Merkle binding security.
+ * Diagnostic predicate for a single Merkle compression-node collision.
  *
  * sha256_merkle_collision_security (below) captures the difficulty of
  * exhibiting a leaf simultaneously verified in two distinct Merkle roots.
  * The supporting mathematical fact is that any such collision at the
  * TREE level must involve a collision at the HASH NODE level.
  *
- * The two games are DISTINCT hardness assumptions:
- *
- *   hash_node_collision_security ──► second-preimage resistance
- *     (no adversary finds two paths from the same leaf to the SAME root)
- *
+ * The active proof path uses one primitive Merkle leaf:
  *   sha256_merkle_collision_security ──► binding / inclusion uniqueness
  *     (no adversary exhibits a leaf verified against TWO DISTINCT roots
  *      with explicit path witnesses, where the root values are obtained
@@ -141,8 +138,7 @@ axiom merkle_include_sound (leaf : hash) (r : root) :
  * A leaf-in-two-roots win requires the adversary to supply actual `root`
  * values (an opaque protocol type) with matching root hashes, which
  * ultimately requires either inverting root_hash or finding a compression-
- * function path collision.  The games model different facets of SHA-256
- * security; both are required as primitive leaves.
+ * function path collision.
  *)
 
 op hash_node_collision (a b c d : hash) : bool =
@@ -160,26 +156,12 @@ module HashNodeCollisionGame (A : HashNodeCollisionAdversary) = {
   }
 }.
 
-section HashNodeCollisionSecurity.
-
-declare module A <: HashNodeCollisionAdversary.
-
-(*
- * SHA-256 hash node collision resistance: no PPT adversary can find
- * (a, b) ≠ (c, d) with hash_node_concrete a b = hash_node_concrete c d.
- * This is the primitive behind second-preimage resistance and uniqueness
- * of honest Merkle paths.
- *)
-axiom hash_node_collision_security &m :
-  Pr[HashNodeCollisionGame(A).main() @ &m : res] <= inv (2%r ^ 128).
-
-end section HashNodeCollisionSecurity.
-
 (*
  * Note on path uniqueness.
  *
- * hash_node_collision_security is the primitive behind second-preimage
- * resistance of the Merkle path traversal.  Specifically, if two paths of
+ * Hash-node collision resistance is the primitive intuition behind
+ * second-preimage resistance of the Merkle path traversal.  Specifically,
+ * if two paths of
  * the SAME LENGTH from the same starting hash h reach the same endpoint,
  * and hash_node_concrete is injective (no collisions), then the paths are
  * identical element-wise — because each apply_merkle_sibling step expands
@@ -192,13 +174,12 @@ end section HashNodeCollisionSecurity.
  * NOT unique even under collision resistance; uniqueness only holds for
  * paths of equal length.
  *
- * sha256_merkle_collision_security (below) is a DISTINCT hardness assumption:
+ * sha256_merkle_collision_security (below) is the active hardness assumption:
  * it bounds the probability of exhibiting a leaf simultaneously verifiable
  * against two distinct roots WITH EXPLICIT PATH WITNESSES.  Because the
  * adversary must supply actual opaque `root` values from the protocol
  * environment, forging such witnesses requires either preimage attacks on
- * root_hash or second-preimage attacks on the path chain.  This is captured
- * independently of hash_node_collision_security above.
+ * root_hash or second-preimage attacks on the path chain.
  *)
 
 (* ── SHA-256 collision-resistance game ──────────────────────────── *)
@@ -241,10 +222,6 @@ declare module A <: Sha256MerkleCollisionAdversary { -Sha256MerkleCollisionGame 
 
 axiom sha256_merkle_collision_security &m :
   Pr[Sha256MerkleCollisionGame(A).main() @ &m : res] <= inv (2%r ^ 128).
-
-axiom sha256_merkle_collision_security_phoare :
-  phoare [Sha256MerkleCollisionGame(A).main : true ==> !res] >=
-    (1%r - inv (2%r ^ 128)).
 
 end section Sha256MerkleCollisionSecurity.
 
@@ -381,10 +358,9 @@ lemma merkle_binding_security_phoare :
   phoare [MerkleBindingGame(A).main : true ==> !res] >= (1%r - inv (2%r ^ 128)).
 proof.
   bypr => &m _.
-  apply/(StdOrder.RealOrder.ler_trans
-    (Pr[Sha256MerkleCollisionGame(B_Sha256Merkle(A)).main() @ &m : !res])).
-  + by byphoare (sha256_merkle_collision_security_phoare (B_Sha256Merkle(A))).
-  + exact (merkle_binding_good_reduces_to_sha256_good &m).
+  rewrite Pr[mu_not] (merkle_binding_ll &m).
+  have h := merkle_binding_security &m.
+  smt().
 qed.
 
 end section MerkleBinding.

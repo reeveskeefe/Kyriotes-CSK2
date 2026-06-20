@@ -40,8 +40,6 @@ section AeadCpa.
 
 declare module A <: Csk2Adv { -Game1, -Game2, -B_CPA, -Game_CPA_Left, -Game_CPA_Right }.
 
-axiom A_ll : islossless A.attack.
-
 local lemma game1_eq_cpa_left &m :
   Pr[Game1(A).main() @ &m : res] =
   Pr[Game_CPA_Left(B_CPA(A)).main() @ &m : res].

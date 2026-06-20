@@ -318,9 +318,7 @@ end section INT_CTXT_Security.
  * The primitive here documents the underlying hardness.
  *
  * Note: the two games (OneTimeMACGame above and ChaCha20 keystream below)
- * are INDEPENDENT hardness assumptions, exactly as
- * hash_node_collision_security and sha256_merkle_collision_security are
- * independent in Csk2MerkleBinding.ec.  INT-CTXT comes from the MAC;
+ * are INDEPENDENT hardness assumptions.  INT-CTXT comes from the MAC;
  * IND-CPA comes from the keystream cipher.
  *)
 
@@ -388,16 +386,6 @@ axiom chacha20_keystream_indistinguishable &m :
   <= inv (2%r ^ 128).
 
 end section ChaCha20KeystreamSecurity.
-
-section IND_CPA_Security.
-
-declare module A <: IndCpaAdversary { -Game_IND_CPA }.
-
-axiom aead_csk2_ind_cpa_secure &m :
-  `| Pr[Game_IND_CPA(A).main() @ &m : res] - 1%r / 2%r |
-  <= inv (2%r ^ 128).
-
-end section IND_CPA_Security.
 
 section IND_CPA_LR_Security.
 

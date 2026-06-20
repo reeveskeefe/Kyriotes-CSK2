@@ -53,9 +53,6 @@ section KemHybrid.
 
 declare module A <: Csk2Adv { -Game0, -Game1, -Game2 }.
 
-(* Losslessness of A.attack — needed for byequiv termination goals. *)
-axiom A_ll : islossless A.attack.
-
 (*
  * Game0(A) ≡ Game_KEM_RoR_Real(B_KEM(A)).
  *

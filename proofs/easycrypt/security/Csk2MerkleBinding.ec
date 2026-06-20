@@ -26,7 +26,7 @@
  * EasyCrypt version: r2022.04
  *)
 
-require import AllCore Distr Real.
+require import AllCore Distr List Real.
 require import Csk2BaseTypes.
 
 (* ── Concrete Merkle path structure ──────────────────────────────── *)
@@ -100,7 +100,7 @@ lemma verify_merkle_path_from_cons (h : hash) (s : merkle_sibling) (p : merkle_p
   verify_merkle_path_from h (s :: p) =
   verify_merkle_path_from (apply_merkle_sibling h s) p.
 proof.
-  by rewrite /verify_merkle_path_from foldl_cons.
+  by rewrite /verify_merkle_path_from /=.
 qed.
 
 (* Concatenation of path segments. *)

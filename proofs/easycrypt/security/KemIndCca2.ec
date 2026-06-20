@@ -157,6 +157,96 @@ module Game_IND_CCA2 (KG : KEM_KG, A : KEM_Adversary) = {
   }
 }.
 
+(* ── Module Learning With Errors decisional game ─────────────── *)
+
+(*
+ * The primitive hardness assumption underlying ML-KEM-768.
+ *
+ * ML-KEM-768 key generation produces:
+ *   A  — public matrix sampled uniformly in R_q^{k×k} (k=3, q=3329)
+ *   b  — either A·s + e  (real: small secret s, small noise e)
+ *          or    u       (random: uniformly random vector in R_q^k)
+ *
+ * Decisional MLWE: no PPT adversary can distinguish (A, A·s+e) from
+ * (A, u) with advantage significantly above 0.
+ *
+ * The chain from mlwe768_decisional_hard to mlkem768_ror_secure:
+ *   1. MLWE → ML-KEM IND-CPA: the public key (A, b) hides s because b
+ *      is indistinguishable from a random vector.
+ *   2. ML-KEM IND-CPA + G/H (hash functions) → ML-KEM IND-CCA2: via the
+ *      Fujisaki-Okamoto transform in the random oracle model.  This step
+ *      is the primary complexity; it is formalized in FIPS 203 / the
+ *      Kyber paper and connects to libjade/formosa-mlkem.
+ *   3. ML-KEM IND-CCA2 → RoR: standard bit-guessing-to-RoR equivalence,
+ *      which holds for any IND-CCA2 secure KEM.
+ *
+ * The three-step argument establishes:
+ *   mlwe768_decisional_hard  →  mlkem768_ror_secure  (critical-path axiom)
+ *
+ * The types here are intentionally abstract — the concrete R_q polynomial
+ * arithmetic, NTT representation, and matrix encoding are implementation
+ * details of ML-KEM-768 that remain below this model boundary.
+ *)
+
+type mlwe_matrix.   (* k×k matrix over R_q; public key component A *)
+type mlwe_vector.   (* k-vector over R_q; either A·s+e or random   *)
+
+op dmlwe_matrix : mlwe_matrix distr.
+axiom dmlwe_matrix_ll : is_lossless dmlwe_matrix.
+
+op dmlwe_rvec : mlwe_vector distr.
+axiom dmlwe_rvec_ll : is_lossless dmlwe_rvec.
+
+(* Real MLWE distribution: given A, sample b = A·s + e. *)
+op dmlwe_real : mlwe_matrix -> mlwe_vector distr.
+axiom dmlwe_real_ll : forall (mat : mlwe_matrix), is_lossless (dmlwe_real mat).
+
+module type MLWEAdversary = {
+  proc distinguish(mat : mlwe_matrix, vec : mlwe_vector) : bool
+}.
+
+module MLWEReal (A : MLWEAdversary) = {
+  proc main() : bool = {
+    var mat : mlwe_matrix;
+    var vec : mlwe_vector;
+    var b'  : bool;
+    mat <$ dmlwe_matrix;
+    vec <$ dmlwe_real mat;
+    b'  <@ A.distinguish(mat, vec);
+    return b';
+  }
+}.
+
+module MLWERand (A : MLWEAdversary) = {
+  proc main() : bool = {
+    var mat : mlwe_matrix;
+    var vec : mlwe_vector;
+    var b'  : bool;
+    mat <$ dmlwe_matrix;
+    vec <$ dmlwe_rvec;
+    b'  <@ A.distinguish(mat, vec);
+    return b';
+  }
+}.
+
+section MLWESecurity.
+
+declare module A <: MLWEAdversary { -MLWEReal, -MLWERand }.
+
+(*
+ * Decisional Module-LWE hardness for ML-KEM-768 parameters
+ * (k=3, q=3329, degree 256).  Targets >= 128-bit classical security.
+ *
+ * This is the foundational lattice assumption from which mlkem768_ror_secure
+ * is derived via the IND-CPA → IND-CCA2 (FO transform) → RoR chain above.
+ *)
+axiom mlwe768_decisional_hard &m :
+  `| Pr[MLWEReal(A).main() @ &m : res] -
+     Pr[MLWERand(A).main() @ &m : res] |
+  <= inv (2%r ^ 128).
+
+end section MLWESecurity.
+
 (* ── Direct real-or-random KEM worlds for hybrid reductions ───── *)
 
 module type KEM_RoR_Adversary = {

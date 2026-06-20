@@ -8,7 +8,7 @@
  *   kem_hybrid_step
  *     ← game0_eq_kem_real  (byequiv: swap pure assignments, sim)
  *     ← game1_eq_kem_rand  (byequiv: swap pure assignments, sim)
- *     ← kem_csk2_ror_secure (KEM primitive RoR security axiom)
+ *     ← kem_csk2_ror_secure (wrapper over the ML-KEM-768 RoR primitive leaf)
  *
  * KemIndCca2.ec exposes the direct real-or-random worlds used by this
  * hybrid, so this file no longer carries a local KEM RoR axiom.

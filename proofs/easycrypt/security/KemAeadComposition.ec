@@ -3,7 +3,7 @@
  * Assembles the three hybrid-step lemmas into the final concrete
  * KEM+AEAD bound.  The composition path has no local axioms; it depends
  * only on primitive-security leaves in the imported primitive game files:
- * kem_csk2_ror_secure, chacha20poly1305_ind_cpa_lr_secure, and dmsg_bound.
+ * mlkem768_ror_secure, chacha20poly1305_ind_cpa_lr_secure, and dmsg_bound.
  *
  *   kem_hybrid_step  (KemReduction.ec)     : |Pr[G0] - Pr[G1]| <= 2^{-128}
  *   game1_game2_cpa  (AeadCpaReduction.ec) : |Pr[G1] - Pr[G2]| <= 2^{-128}
@@ -12,7 +12,7 @@
  * Combining with the triangle inequality gives Pr[Game0(A)] <= 3 * 2^{-128}.
  *
  * Remaining primitive-security leaves (axioms in their files):
- *   kem_csk2_ror_secure         — direct KEM real-or-random hybrid bound
+ *   mlkem768_ror_secure        — direct ML-KEM-768 real-or-random bound
  *   chacha20poly1305_ind_cpa_lr_secure — direct AEAD left/right hybrid bound
  *   dmsg_bound                  — message-space entropy bound
  *

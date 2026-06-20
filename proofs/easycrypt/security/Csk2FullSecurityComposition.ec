@@ -36,69 +36,6 @@ require import AeadCpaReduction.
 require import KemAeadComposition.
 require import Csk2CapabilityGame.
 
-(* ── Full CSK2 adversary interface ─────────────────────────────── *)
-
-module type Csk2FullAdversary = {
-  proc attack (pk : pkey, ct_k : ctkem, ct_a : ctaead, a : aad) : msg option
-  proc forge() : cap * capctx * capctx * root * root
-}.
-
-module B_OpenFull (A : Csk2FullAdversary) : Csk2Adv = {
-  proc attack (pk : pkey, ct_k : ctkem, ct_a : ctaead, a : aad) : msg option = {
-    var guess : msg option;
-    guess <@ A.attack(pk, ct_k, ct_a, a);
-    return guess;
-  }
-}.
-
-module B_FieldFull (A : Csk2FullAdversary) : CapFieldAdversary = {
-  proc forge() : cap * capctx * capctx * root * root = {
-    var c  : cap;
-    var x1 : capctx;
-    var x2 : capctx;
-    var r1 : root;
-    var r2 : root;
-    (c, x1, x2, r1, r2) <@ A.forge();
-    return (c, x1, x2, r1, r2);
-  }
-}.
-
-module Csk2FullBadEventGame (A : Csk2FullAdversary) = {
-  var open_bad       : bool
-  var object_bad     : bool
-  var rights_bad     : bool
-  var policy_bad     : bool
-  var epoch_bad      : bool
-  var subject_bad    : bool
-  var recipient_bad  : bool
-  var revocation_bad : bool
-
-  proc main() : bool = {
-    open_bad      <@ Game0(B_OpenFull(A)).main();
-    object_bad    <@ WrongObjectGame(B_FieldFull(A)).main();
-    rights_bad    <@ WrongRightsGame(B_FieldFull(A)).main();
-    policy_bad    <@ WrongPolicyGame(B_FieldFull(A)).main();
-    epoch_bad     <@ WrongEpochGame(B_FieldFull(A)).main();
-    subject_bad   <@ WrongSubjectGame(B_FieldFull(A)).main();
-    recipient_bad <@ WrongRecipientGame(B_FieldFull(A)).main();
-    revocation_bad <@ WrongRevocationGame(B_FieldFull(A)).main();
-
-    return (open_bad || object_bad || rights_bad || policy_bad
-            || epoch_bad || subject_bad || recipient_bad || revocation_bad);
-  }
-}.
-
-type flags8 = {
-  f_open       : bool;
-  f_object     : bool;
-  f_rights     : bool;
-  f_policy     : bool;
-  f_epoch      : bool;
-  f_subject    : bool;
-  f_recipient  : bool;
-  f_revocation : bool
-}.
-
 section FullSecurityComposition.
 
 declare module A <: Csk2Adv {
@@ -310,37 +247,6 @@ proof.
   by auto; smt(aenc_ll encap_ll dkeypair_ll dmsg_ll).
 qed.
 
-local module Csk2FlagsGame = {
-  proc main() : flags8 = {
-    var b1 : bool;
-    var b2 : bool;
-    var b3 : bool;
-    var b4 : bool;
-    var b5 : bool;
-    var b6 : bool;
-    var b7 : bool;
-    var b8 : bool;
-    b1 <@ Game0(B_OpenFull(X)).main();
-    b2 <@ WrongObjectGame(B_FieldFull(X)).main();
-    b3 <@ WrongRightsGame(B_FieldFull(X)).main();
-    b4 <@ WrongPolicyGame(B_FieldFull(X)).main();
-    b5 <@ WrongEpochGame(B_FieldFull(X)).main();
-    b6 <@ WrongSubjectGame(B_FieldFull(X)).main();
-    b7 <@ WrongRecipientGame(B_FieldFull(X)).main();
-    b8 <@ WrongRevocationGame(B_FieldFull(X)).main();
-    return {|
-      f_open       = b1;
-      f_object     = b2;
-      f_rights     = b3;
-      f_policy     = b4;
-      f_epoch      = b5;
-      f_subject    = b6;
-      f_recipient  = b7;
-      f_revocation = b8
-    |};
-  }
-}.
-
 op flags_any (f : flags8) : bool =
   f_open f || f_object f || f_rights f || f_policy f ||
   f_epoch f || f_subject f || f_recipient f || f_revocation f.
@@ -446,7 +352,7 @@ local module RevocationFlagGame = {
 
 local lemma full_game_eq_flags &m :
   Pr[Csk2FullBadEventGame(X).main() @ &m : res] =
-  Pr[Csk2FlagsGame.main() @ &m : flags_any res].
+  Pr[Csk2FlagsGame(X).main() @ &m : flags_any res].
 proof.
   byequiv => //; proc.
   wp.
@@ -462,15 +368,15 @@ proof.
 qed.
 
 local lemma flags_union_bound &m :
-  Pr[Csk2FlagsGame.main() @ &m : flags_any res] <=
-  Pr[Csk2FlagsGame.main() @ &m : f_open res] +
-  Pr[Csk2FlagsGame.main() @ &m : f_object res] +
-  Pr[Csk2FlagsGame.main() @ &m : f_rights res] +
-  Pr[Csk2FlagsGame.main() @ &m : f_policy res] +
-  Pr[Csk2FlagsGame.main() @ &m : f_epoch res] +
-  Pr[Csk2FlagsGame.main() @ &m : f_subject res] +
-  Pr[Csk2FlagsGame.main() @ &m : f_recipient res] +
-  Pr[Csk2FlagsGame.main() @ &m : f_revocation res].
+  Pr[Csk2FlagsGame(X).main() @ &m : flags_any res] <=
+  Pr[Csk2FlagsGame(X).main() @ &m : f_open res] +
+  Pr[Csk2FlagsGame(X).main() @ &m : f_object res] +
+  Pr[Csk2FlagsGame(X).main() @ &m : f_rights res] +
+  Pr[Csk2FlagsGame(X).main() @ &m : f_policy res] +
+  Pr[Csk2FlagsGame(X).main() @ &m : f_epoch res] +
+  Pr[Csk2FlagsGame(X).main() @ &m : f_subject res] +
+  Pr[Csk2FlagsGame(X).main() @ &m : f_recipient res] +
+  Pr[Csk2FlagsGame(X).main() @ &m : f_revocation res].
 proof.
   rewrite /flags_any.
   rewrite Pr[mu_or] Pr[mu_or] Pr[mu_or] Pr[mu_or].
@@ -479,7 +385,7 @@ proof.
 qed.
 
 local lemma flags_open_eq_open_flag &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_open res] =
+  Pr[Csk2FlagsGame(X).main() @ &m : f_open res] =
   Pr[OpenFlagGame.main() @ &m : res].
 proof.
   byequiv (_ : ={glob X} ==> f_open res{1} = res{2}) => //.
@@ -507,14 +413,14 @@ proof.
 qed.
 
 local lemma flags_open_bound &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_open res] <= 3%r * inv (2%r ^ 128).
+  Pr[Csk2FlagsGame(X).main() @ &m : f_open res] <= 3%r * inv (2%r ^ 128).
 proof.
   rewrite (flags_open_eq_open_flag &m).
   exact (open_flag_bound &m).
 qed.
 
 local lemma flags_object_eq_object_flag &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_object res] =
+  Pr[Csk2FlagsGame(X).main() @ &m : f_object res] =
   Pr[ObjectFlagGame.main() @ &m : res].
 proof.
   byequiv (_ : ={glob X} ==> f_object res{1} = res{2}) => //.
@@ -544,14 +450,14 @@ proof.
 qed.
 
 local lemma flags_object_bound &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_object res] <= inv (2%r ^ 128).
+  Pr[Csk2FlagsGame(X).main() @ &m : f_object res] <= inv (2%r ^ 128).
 proof.
   rewrite (flags_object_eq_object_flag &m).
   exact (object_flag_bound &m).
 qed.
 
 local lemma flags_rights_eq_rights_flag &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_rights res] =
+  Pr[Csk2FlagsGame(X).main() @ &m : f_rights res] =
   Pr[RightsFlagGame.main() @ &m : res].
 proof.
   byequiv (_ : ={glob X} ==> f_rights res{1} = res{2}) => //.
@@ -581,14 +487,14 @@ proof.
 qed.
 
 local lemma flags_rights_bound &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_rights res] <= inv (2%r ^ 128).
+  Pr[Csk2FlagsGame(X).main() @ &m : f_rights res] <= inv (2%r ^ 128).
 proof.
   rewrite (flags_rights_eq_rights_flag &m).
   exact (rights_flag_bound &m).
 qed.
 
 local lemma flags_policy_eq_policy_flag &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_policy res] =
+  Pr[Csk2FlagsGame(X).main() @ &m : f_policy res] =
   Pr[PolicyFlagGame.main() @ &m : res].
 proof.
   byequiv (_ : ={glob X} ==> f_policy res{1} = res{2}) => //.
@@ -618,14 +524,14 @@ proof.
 qed.
 
 local lemma flags_policy_bound &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_policy res] <= inv (2%r ^ 128).
+  Pr[Csk2FlagsGame(X).main() @ &m : f_policy res] <= inv (2%r ^ 128).
 proof.
   rewrite (flags_policy_eq_policy_flag &m).
   exact (policy_flag_bound &m).
 qed.
 
 local lemma flags_epoch_eq_epoch_flag &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_epoch res] =
+  Pr[Csk2FlagsGame(X).main() @ &m : f_epoch res] =
   Pr[EpochFlagGame.main() @ &m : res].
 proof.
   byequiv (_ : ={glob X} ==> f_epoch res{1} = res{2}) => //.
@@ -655,14 +561,14 @@ proof.
 qed.
 
 local lemma flags_epoch_bound &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_epoch res] <= inv (2%r ^ 128).
+  Pr[Csk2FlagsGame(X).main() @ &m : f_epoch res] <= inv (2%r ^ 128).
 proof.
   rewrite (flags_epoch_eq_epoch_flag &m).
   exact (epoch_flag_bound &m).
 qed.
 
 local lemma flags_subject_eq_subject_flag &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_subject res] =
+  Pr[Csk2FlagsGame(X).main() @ &m : f_subject res] =
   Pr[SubjectFlagGame.main() @ &m : res].
 proof.
   byequiv (_ : ={glob X} ==> f_subject res{1} = res{2}) => //.
@@ -692,14 +598,14 @@ proof.
 qed.
 
 local lemma flags_subject_bound &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_subject res] <= inv (2%r ^ 128).
+  Pr[Csk2FlagsGame(X).main() @ &m : f_subject res] <= inv (2%r ^ 128).
 proof.
   rewrite (flags_subject_eq_subject_flag &m).
   exact (subject_flag_bound &m).
 qed.
 
 local lemma flags_recipient_eq_recipient_flag &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_recipient res] =
+  Pr[Csk2FlagsGame(X).main() @ &m : f_recipient res] =
   Pr[RecipientFlagGame.main() @ &m : res].
 proof.
   byequiv (_ : ={glob X} ==> f_recipient res{1} = res{2}) => //.
@@ -729,14 +635,14 @@ proof.
 qed.
 
 local lemma flags_recipient_bound &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_recipient res] <= inv (2%r ^ 128).
+  Pr[Csk2FlagsGame(X).main() @ &m : f_recipient res] <= inv (2%r ^ 128).
 proof.
   rewrite (flags_recipient_eq_recipient_flag &m).
   exact (recipient_flag_bound &m).
 qed.
 
 local lemma flags_revocation_eq_revocation_flag &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_revocation res] =
+  Pr[Csk2FlagsGame(X).main() @ &m : f_revocation res] =
   Pr[RevocationFlagGame.main() @ &m : res].
 proof.
   byequiv (_ : ={glob X} ==> f_revocation res{1} = res{2}) => //.
@@ -764,7 +670,7 @@ proof.
 qed.
 
 local lemma flags_revocation_bound &m :
-  Pr[Csk2FlagsGame.main() @ &m : f_revocation res] <= inv (2%r ^ 128).
+  Pr[Csk2FlagsGame(X).main() @ &m : f_revocation res] <= inv (2%r ^ 128).
 proof.
   rewrite (flags_revocation_eq_revocation_flag &m).
   exact (revocation_flag_bound &m).

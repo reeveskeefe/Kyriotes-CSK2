@@ -65,6 +65,17 @@ module Game_KEM_RoR_Rand (A : KEM_RoR_Adversary) = {
  * The ML-KEM-768 primitive security statement is imported here as a
  * standard-boundary assumption.  This repository models CSK2's use of
  * ML-KEM-768; it does not prove FIPS 203 / ML-KEM-768 security internally.
+ *
+ * Adapter status:
+ *   - third_party/formosa-mlkem contains a Formosa EasyCrypt proof for
+ *     ML-KEM-768.
+ *   - The closest theorem is `mlkem_spec_security` in
+ *     proof/spec/MLKEMSecurity768.ec.  It is a ROM bit-guessing IND-CCA
+ *     theorem with a concrete multi-term reduction bound, not this direct
+ *     RoR statement.
+ *   - The adapter inventory is documented in
+ *     docs/verification/MLKEM_FORMOSA_ADAPTER_INVENTORY.md.
+ *   - The compile-safe adapter skeleton lives in KemFormosaAdapter.ec.
  *)
 
 section KEM_RoR_Security.
@@ -74,7 +85,9 @@ declare module A <: KEM_RoR_Adversary { -Game_KEM_RoR_Real, -Game_KEM_RoR_Rand }
 (* Direct ML-KEM-768 real-or-random primitive boundary.  This is the
  * exact form consumed by KemReduction.ec.  It is stated separately from
  * the bit-guessing IND-CCA2 game to avoid hiding a factor-of-two or
- * convention conversion in the CSK2 hybrid proof. *)
+ * convention conversion in the CSK2 hybrid proof.  Replace this axiom only
+ * after KemFormosaAdapter.ec imports the Formosa theorem and proves the
+ * CCA bit-guessing-to-RoR conversion with the concrete bound accounting. *)
 axiom mlkem768_ror_secure &m :
   `| Pr[Game_KEM_RoR_Real(A).main() @ &m : res] -
      Pr[Game_KEM_RoR_Rand(A).main() @ &m : res] |

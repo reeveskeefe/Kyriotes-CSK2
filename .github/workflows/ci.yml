@@ -188,6 +188,55 @@ jobs:
           name: easycrypt-proof-check-evidence
           path: target/verification-evidence/
 
+  formosa-mlkem-import:
+    name: Formosa ML-KEM import smoke
+    runs-on: ubuntu-latest
+    # This is an integration smoke target for the vendored Formosa toolchain,
+    # not part of the default CSK2 proof closure yet.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout with Formosa submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Check Formosa-compatible EasyCrypt
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p target/verification-evidence
+          scripts/verification/check_formosa_mlkem_import.sh \
+            2>&1 | tee target/verification-evidence/formosa-mlkem-import-smoke.log
+
+      - name: Record Formosa import evidence summary
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p target/verification-evidence
+          {
+            echo "# Formosa ML-KEM Import Smoke Evidence"
+            echo
+            echo "- Workflow: CI / Formosa ML-KEM import smoke"
+            echo "- Command: \`scripts/verification/check_formosa_mlkem_import.sh\`"
+            echo "- Toolchain: \`third_party/formosa-mlkem/shell.nix\`"
+            echo "- Artifact log: \`formosa-mlkem-import-smoke.log\`"
+            echo "- Note: allow-failure until the Formosa adapter theorem is fully wired."
+            echo "- Timestamp UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          } > target/verification-evidence/formosa-mlkem-import-summary.md
+
+      - name: Upload Formosa import evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: formosa-mlkem-import-evidence
+          path: target/verification-evidence/
+
   seal-open-rust-evidence:
     name: Seal/open concrete Rust evidence
     runs-on: ubuntu-latest
